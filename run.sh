@@ -30,4 +30,4 @@ then
     clear
 fi
 
-./raylib_cpp_example
+./SSG

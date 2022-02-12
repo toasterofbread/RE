@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
-project(raylib_cpp_example)
+
+set(PROJECT_NAME SSG)
+project(${PROJECT_NAME})
 
 # raylib
 find_package(raylib QUIET)
@@ -39,19 +41,21 @@ if (NOT raylib_cpp_FOUND)
 endif()
 
 # This is the main part:
-set(PROJECT_NAME raylib_cpp_example)
 
 # Add all cpp and header files within src/ directory
 file(GLOB_RECURSE PROJECT_SOURCES
      "src/*.h"
      "src/*.cpp"
+     "include/*.h"
+     "include/*.cpp"
+     "include/*.hpp"
 )
 
 # set(PROJECT_SOURCES src/main.cpp)
 set(PLATFORM none)
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 11)
-target_link_libraries(${PROJECT_NAME} PUBLIC raylib raylib_cpp)
+target_link_libraries(${PROJECT_NAME} PUBLIC raylib raylib_cpp -ldw)
 target_include_directories(${PROJECT_NAME} PRIVATE src/)
 
 # Web Configurations

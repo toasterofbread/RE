@@ -1,84 +1,56 @@
 #include "raylib-cpp.hpp"
 #include "utils.h"
-#include "engine/node_manager.h"
-#include "engine/animated_sprite.h"
+#include "core/node_manager.h"
+#include "core/nodes/animated_sprite.h"
+#include "input.h"
 
 constexpr int WindowX = 960, WindowY = 540;
 
-NodeManager manager;
-AnimatedSprite* sprite;
+NodeManager* manager = new NodeManager;
+AnimatedSprite* sprite = new AnimatedSprite;
 
-const int VELOCITY = 10;
-enum KEYS {
-    ARROW_LEFT = 263,
-    ARROW_RIGHT = 262,
-    ARROW_UP = 265,
-    ARROW_DOWN = 264
-};
+const float VELOCITY = 10.0f * 60.0f;
 
 void mainLoop() {
 
     float delta = GetFrameTime();
-    manager.processNodes(delta);
+    manager->processNodes(delta);
 
     Vector2 sprite_position = sprite->getPosition();
-    
-    if (IsKeyDown(ARROW_LEFT)) {
-        sprite_position.x -= VELOCITY;
-    }
-    if (IsKeyDown(ARROW_RIGHT)) {
-        sprite_position.x += VELOCITY;
-    }
-    if (IsKeyDown(ARROW_UP)) {
-        sprite_position.y -= VELOCITY;
-    }
-    if (IsKeyDown(ARROW_DOWN)) {
-        sprite_position.y += VELOCITY;
-    }
-
-    print(sprite_position);
-    sprite->setPosition(sprite_position);
+    sprite->setPosition(aV(sprite_position, mV(getPadVector(false, delta), VELOCITY)));
 
     return;
 }
 
 int main() {
-    const Vector2 centerPos = Vector2{WindowX/2, WindowY/2};
     
-    SetTraceLogLevel(LOG_WARNING);
-    InitWindow(WindowX, WindowY, "raylib test project");
-    SetWindowPosition(1920 + centerPos.x, centerPos.y); // Center of second monitor
-    SetWindowState(FLAG_WINDOW_RESIZABLE);
-    SetTargetFPS(60);
-
-    SpriteSheet* sprite_sheet = new SpriteSheet;
-    sprite_sheet->setTextureFile("../assets/run_left.png", 10);
+    SetTraceLogLevel(LOG_WARNING); // Disable info logs
+    SetConfigFlags(FLAG_VSYNC_HINT); // Enable VSync
+    InitWindow(WindowX, WindowY, "raylib test project"); // Create window
+    SetWindowPosition(1920 + WindowX/2, WindowY/2); // Move window to center of second monitor
+    SetWindowState(FLAG_WINDOW_RESIZABLE); // Make window resizable
 
     sprite = new AnimatedSprite;
-    sprite->setSpriteSheet(sprite_sheet);
-    sprite->setFrameRate(30);
+    manager->addNode(sprite);
+    SpriteAnimationSet* animation_set = new SpriteAnimationSet(sprite);
+    animation_set->loadFile("resources/sprite_animations/samus.json", "assets/sprites/samus/varia/");
 
-    manager.addNode(sprite);
-    
-    // Node* node = new Node;
-    // manager.addNode(node);
+    sprite->setAnimationSet(animation_set);
+    sprite->play("powergrip_aim_down_left");
+
+    // SpriteSheet* sprite_sheet = new SpriteSheet;
+    // sprite_sheet->setTextureFile("assets/run_left.png", 10);
+
+    // sprite->setSpriteSheet(sprite_sheet);
+    // sprite->setFrameRate(30);
+    // manager.addNode(sprite);
 
     print(" --- Main loop started --- ");
     while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(Color{100, 100, 100, 255});
         mainLoop();
+        DrawFPS(GetScreenWidth() - 85, 10);
         EndDrawing();
     }
-
-    // while (!WindowShouldClose()) {
-    //     timer += GetFrameTime();
-
-    //     // print(currentFrame);
-
-
-
-    //     EndDrawing();
-    // }
-
 }
