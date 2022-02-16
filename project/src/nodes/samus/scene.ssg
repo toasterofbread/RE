@@ -1,0 +1,14 @@
+Samus:
+  scale: [3, 3]
+  position: [200, 200]
+  show_gizmos: true
+
+  children:
+    AnimatedSprite:
+      name: MainSprite
+      animation_set: "project/resources/sprite_animations/samus.json"
+
+config:
+  print_tree: true
+  register_nodes: 
+  - "MainSprite"

@@ -1,0 +1,11 @@
+Node:
+  children:
+    AnimatedSprite:
+      name: berry
+      animation_set: resources/sprite_animations/samus.json
+      current_animation_key: run_aim_up_left
+      playing: true
+      scale: [3, 3]
+      position: [400, 200]
+config:
+  print_tree: true

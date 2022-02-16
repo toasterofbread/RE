@@ -40,23 +40,26 @@ if (NOT raylib_cpp_FOUND)
     endif()
 endif()
 
-# This is the main part:
-
-# Add all cpp and header files within src/ directory
+# Add all cpp and header files within src/ and include/ directories
 file(GLOB_RECURSE PROJECT_SOURCES
-     "src/*.h"
-     "src/*.cpp"
+     "engine/*.h"
+     "engine/*.cpp"
+     "project/*.h"
+     "project/*.cpp"
      "include/*.h"
      "include/*.cpp"
      "include/*.hpp"
 )
 
+# Set flags
+# set(CMAKE_CXX_FLAGS "-fpermissive")
+
 # set(PROJECT_SOURCES src/main.cpp)
 set(PLATFORM none)
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 11)
-target_link_libraries(${PROJECT_NAME} PUBLIC raylib raylib_cpp -ldw)
-target_include_directories(${PROJECT_NAME} PRIVATE src/)
+target_link_libraries(${PROJECT_NAME} PUBLIC raylib raylib_cpp -ldw -lyaml-cpp -lponder -lpthread)
+target_include_directories(${PROJECT_NAME} PRIVATE ./)
 
 # Web Configurations
 if (${PLATFORM} STREQUAL "Web")
