@@ -1,11 +1,13 @@
 #include "node_manager.h"
 
-#include "vector"
+#include <vector>
 
 #include "engine/src/utils.h"
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/node/animated_sprite.h"
 #include "engine/src/core/converters.h"
+#include "engine/src/core/resource/resource.h"
+#include "engine/src/input/input_event.h"
 
 // Debug
 #include "icecream.hpp"
@@ -14,8 +16,27 @@ NodeManager::NodeManager() {
     root_node->setName("Root");
 }
 
-void NodeManager::processNodes(float delta) {
+void NodeManager::ensureAsync() {
+    if (this_thread::get_id() == main_thread_id) {
+        warn("Thread is not asynchronous", true);
+    }
+}
+
+void NodeManager::rebuildAndRun() {
+    system("clear && cd /home/spectre7/Projects/raylib/SSG && ./run.sh &");
+    exit(0);
+}
+
+void NodeManager::process(float delta) {
+    input_instance->process(delta);
     root_node->process(delta);
+
+    for (auto i = all_resources.begin(); i != all_resources.end(); ++i) {
+        (*i)->process(delta);
+    }
+    for (auto i = all_inputevents.begin(); i != all_inputevents.end(); ++i) {
+        (*i)->process(delta);
+    }
 }
 
 void NodeManager::addNode(Node* node) {
@@ -287,3 +308,12 @@ void NodeManager::resourceCreated(Resource* resource) {
 void NodeManager::resourceDeleted(Resource* resource) {
     vectorRemoveValue(&all_resources, resource);
 }
+
+void NodeManager::inputEventCreated(InputEvent* event) {
+    all_inputevents.push_back(event);
+}
+
+void NodeManager::inputEvenDeleted(InputEvent* event) {
+    vectorRemoveValue(&all_inputevents, event);
+}
+

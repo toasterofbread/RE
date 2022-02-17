@@ -2,8 +2,9 @@
 
 class Macro {
     public:
-        Macro(vector<KEYBOARD_BUTTON> buttons);
-        Macro(vector<GAMEPAD_BUTTON> buttons);
+        Macro(vector<Input::KEYBOARD_BUTTON> keyboard_buttons);
+        Macro(vector<Input::GAMEPAD_BUTTON> gamepad_buttons);
+        Macro(vector<Input::KEYBOARD_BUTTON> keyboard_buttons, vector<Input::GAMEPAD_BUTTON> gamepad_buttons);
 
         bool isPressed();
         bool isJustPressed();
@@ -17,9 +18,9 @@ class Macro {
         bool isButtonSetJustReleased(vector<T> buttons);
     
     private:
-        enum MACRO_TYPE {MACRO_TYPE_KEYBOARD, MACRO_TYPE_GAMEPAD};
+        enum MACRO_TYPE {MACRO_TYPE_KEYBOARD, MACRO_TYPE_GAMEPAD, MACRO_TYPE_BOTH};
         MACRO_TYPE type;
         bool all_modifiers = false;
-        vector<KEYBOARD_BUTTON> keyboard_buttons;
-        vector<GAMEPAD_BUTTON> gamepad_buttons;
+        vector<Input::KEYBOARD_BUTTON> keyboard_buttons;
+        vector<Input::GAMEPAD_BUTTON> gamepad_buttons;
 };

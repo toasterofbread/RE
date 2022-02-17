@@ -4,6 +4,7 @@ using json = nlohmann::json;
 
 #include "engine/src/utils.h"
 #include "engine/src/core/resource/node_texture.h"
+#include "engine/src/core/resource/sprite_animation.h"
 
 void AnimatedSprite::process(float delta) {
 

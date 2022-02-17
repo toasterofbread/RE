@@ -1,4 +1,3 @@
-using namespace std;
 #include <iostream>
 #include <stdexcept>
 #include <algorithm>
@@ -6,11 +5,12 @@ using namespace std;
 #include <thread>
 #include <functional>
 #include <raylib-cpp.hpp>
+using namespace std;
 
-#include "engine/src/core/node/node.h"
 #include "include/prettyprint.hpp"
 
-// using namespace std;
+// Forward declaration
+class Node;
 
 void markPosition(Vector2 position, std::string text, Color colour = RED, float radius = 10.0f, float width = 1.0f);
 
@@ -100,5 +100,18 @@ void warn(string message, bool throw_error = false);
 
 template<typename F, typename O, typename... A>
 void makeThread(F function, O* object, A... args) {
-    thread(bind(function, object), args...).detach();
+    thread(bind(function, object, args...), args...).detach();
 }
+
+template<class ObjectType, class ReturnType, class... ArgumentTypes>
+struct Functor {
+
+    using TMemberFunction = ReturnType (ObjectType::*)(ArgumentTypes...);
+    TMemberFunction ptr;
+    ObjectType     *object;
+
+
+    ReturnType operator()(ArgumentTypes... params) {
+        return (object->*ptr)(params...);
+    }
+};

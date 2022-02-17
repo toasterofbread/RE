@@ -2,9 +2,11 @@
 
 #include <raylib-cpp.hpp>
 
+#include "project/src/nodes/samus/states/state.h"
 #include "engine/src/utils.h"
 #include "engine/src/input/input.h"
 #include "engine/src/core/node/animated_sprite.h"
+#include "engine/src/input/input.h"
 
 Samus::Samus(NodeManager* node_manager, bool initialise): SceneNode(node_manager) {
     name = getTypeName();
@@ -14,7 +16,8 @@ Samus::Samus(NodeManager* node_manager, bool initialise): SceneNode(node_manager
 
     // Create and register states
     vector<SamusState*> _states = {
-        new SamusStateStanding
+        new SamusStateStand(this),
+        new SamusStateRun(this)
     };
     for (auto i = _states.begin(); i != _states.end(); ++i) {
         states[(*i)->getName()] = *i;
@@ -23,19 +26,18 @@ Samus::Samus(NodeManager* node_manager, bool initialise): SceneNode(node_manager
     current_state = states["standing"];
 }
 
+void test_emitted(void* pointer) {
+    print("TEST EMITTED");
+}
+
 void Samus::ready() {
     SceneNode::ready();
 
     main_sprite = (AnimatedSprite*)getChild("MainSprite");
     main_sprite->play("run_aim_down_left");
 
-    // Signal* SIGNAL_TEST = new Signal();
-    print("WAITING FOR KILL");
-    SIGNAL_KILLED->await();
-    print("KILL EMITTED");
 }
 
-float wait = 0;
 void Samus::process(float delta) {
     SceneNode::process(delta);
     
@@ -43,5 +45,24 @@ void Samus::process(float delta) {
         current_state->process(delta);
     }
 
-    // setPosition(aV(getPosition(), getPadVector(false, delta * 600.0f)));
+}
+
+template<typename... Args>
+void Samus::changeToState(string state_key, Args... data) {
+    SamusState* target_state = getState(state_key);
+    if (target_state == current_state) {
+        warn("Samus's state is already '" + state_key + "'", true);
+        return;
+    }
+
+    SamusState* previous_state = current_state;
+
+    previous_state->stateDisabled(target_state, data...);
+    current_state = target_state;
+    target_state->stateEnabled(previous_state, data...);
+    
+}
+
+SamusState* Samus::getState(string state_key) {
+    return states[state_key];
 }

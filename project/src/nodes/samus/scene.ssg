@@ -10,5 +10,5 @@ Samus:
 
 config:
   print_tree: true
-  register_nodes: 
-  - "MainSprite"
+  # register_nodes: 
+  # - "MainSprite"

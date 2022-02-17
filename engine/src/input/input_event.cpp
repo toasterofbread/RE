@@ -1,6 +1,15 @@
 #include "input_event.h"
 
+#include "engine/src/utils.h"
 #include "engine/src/input/macro.h"
+#include "engine/src/core/signal.h"
+#include "engine/src/core/node/node_manager.h"
+
+void InputEvent::init() {
+    manager->inputEventCreated(this);
+    SIGNAL_TRIGGERED = new Signal<void>();
+    SIGNAL_UNTRIGGERED = new Signal<void>();
+}
 
 bool InputEvent::isTriggered() {
     for (auto i = macros.begin(); i != macros.end(); ++i) {
@@ -25,4 +34,13 @@ bool InputEvent::isJustUntriggered() {
         }
     }
     return false;
+}
+
+void InputEvent::process(float delta) {
+    if (SIGNAL_TRIGGERED->connected() && isJustTriggered()) {
+        SIGNAL_TRIGGERED->emit();
+    }
+    else if (SIGNAL_UNTRIGGERED->connected() && isJustUntriggered()) {
+        SIGNAL_UNTRIGGERED->emit();
+    }
 }

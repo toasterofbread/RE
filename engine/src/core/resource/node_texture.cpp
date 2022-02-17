@@ -1,14 +1,16 @@
-using namespace std;
 #include "node_texture.h"
 
 #include "engine/src/utils.h"
 #include "engine/src/core/node/node_manager.h"
+#include "engine/src/core/signal.h"
 
 #include <functional>
+using namespace std;
 
 NodeTexture::NodeTexture(Node* initial_linked_node, string autoload_file_path): Resource(initial_linked_node) {
-    SIGNAL_NODE_LINKED->connect(onNodeLinked, this);
-    SIGNAL_DELETED->connect(onDeleted, this);
+
+    SIGNAL_NODE_LINKED->connect<NodeTexture>(&NodeTexture::onNodeLinked, this);
+    SIGNAL_DELETED->connect<NodeTexture>(&NodeTexture::onDeleted, this);
 
     autoload_path = autoload_file_path;
     if (!isTextureLoaded() && hasAutoload()) {
@@ -16,16 +18,14 @@ NodeTexture::NodeTexture(Node* initial_linked_node, string autoload_file_path): 
     }
 }
 
-void NodeTexture::onNodeLinked(void* _self, Node* node) {
-    NodeTexture* self = (NodeTexture*)_self;
-
-    if (!self->isTextureLoaded() && self->hasAutoload()) {
-        self->load(self->getAutoload());
+void NodeTexture::onNodeLinked(Node* node) {
+    if (isTextureLoaded() && hasAutoload()) {
+        load(getAutoload());
     }
 }
 
-void NodeTexture::onDeleted(void* _self) {
-    ((NodeTexture*)_self)->unload();
+void NodeTexture::onDeleted() {
+    unload();
 }
 
 void NodeTexture::load(string file_path) {

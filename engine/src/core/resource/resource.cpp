@@ -1,14 +1,16 @@
 #include "resource.h"
 
+#include "engine/src/utils.h"
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/node/node_manager.h"
-#include "engine/src/utils.h"
-
-void linkedNodeKilled(void* self, Node* node) {
-    ((Resource*)self)->unlinkNode(node);
-}
+#include "engine/src/core/signal.h"
 
 Resource::Resource(Node* initial_linked_node) {
+
+    SIGNAL_NODE_LINKED = new Signal<void, Node*>();
+    SIGNAL_NODE_UNLINKED = new Signal<void, Node*>();
+    SIGNAL_DELETED = new Signal<void>();
+    
     linkNode(initial_linked_node);
     manager = initial_linked_node->getManager();
     manager->resourceCreated(this);
@@ -18,7 +20,7 @@ void Resource::linkNode(Node* node) {
         linked_nodes.push_back(node);
         SIGNAL_NODE_LINKED->emit(node);
 
-        node->SIGNAL_KILLED->connect(linkedNodeKilled, this);
+        node->SIGNAL_KILLED->connect<Resource>(&Resource::unlinkNode, this);
     }
 }
 void Resource::unlinkNode(Node* node) {

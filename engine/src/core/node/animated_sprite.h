@@ -6,13 +6,12 @@
 using json = nlohmann::json;
 
 #include "engine/src/core/node/node.h"
-#include "engine/src/core/resource/sprite_animation.h"
 
 // Forward declarations
 class AnimatedSprite;
+class SpriteAnimation;
+class SpriteAnimationSet;
 
-PONDER_TYPE(AnimatedSprite)
-PONDER_TYPE(SpriteAnimationSet)
 class AnimatedSprite: public Node {
     private:
         SpriteAnimationSet* animation_set = NULL;

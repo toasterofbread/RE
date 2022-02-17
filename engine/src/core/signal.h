@@ -1,67 +1,67 @@
-#ifndef SIGNAL_INCLUDED
-#define SIGNAL_INCLUDED
-
-using namespace std;
 #include <raylib-cpp.hpp>
 #include <functional>
 #include <iostream>
+using namespace std;
 
 #include <icecream.hpp> // Debug
 
 // Forward declarations
 class Node;
+class NodeManager;
 
+template<typename CallbackReturnType = void, typename... CallbackArgs>
 class Signal {
-    private:
-        vector<tuple<function<void(void*)>, void*>> callbacks;
-        double last_emission_time = -1;
+    public:
+        void await(NodeManager* manager);
+
+        void emit(CallbackArgs... arguments) {
+            for (auto i = callbacks.begin(); i != callbacks.end(); ++i) {
+                (*i)(arguments...);
+            }
+            for (auto i = member_callbacks.begin(); i != member_callbacks.end(); ++i) {
+                (*i)->call(arguments...);
+            }
+            onEmission();
+        }
+
+        void connect(function<CallbackReturnType(CallbackArgs...)> callback) {
+            callbacks.push_back(callback); 
+        }
+        template<typename ObjectType>
+        void connect(CallbackReturnType (ObjectType::*callback)(CallbackArgs...), ObjectType* object) {
+            member_callbacks.push_back(new MemberCallback<ObjectType>(callback, object));
+        }
+
+        // Why doesn't this work when defined in signal.cpp ?!
+        bool connected() {
+            return callbacks.size() > 0 || member_callbacks.size() > 0;
+        }
+
     protected:
         void onEmission() { last_emission_time = GetTime(); }
-    public:
-        void await() {
-            double start_time = GetTime();
-            while (start_time >= last_emission_time) {
-                // Pass
-            };
-        }
-
-        void emit() {
-            for (auto i = callbacks.begin(); i != callbacks.end(); ++i) {
-                get<0>(*i)(get<1>(*i));
-            }
-            onEmission();
-        }
-        void connect(function<void(void*)> callback, void* argument = NULL) { callbacks.push_back(make_tuple(callback, argument)); }
-};
-
-class NodeSignalStatic: public Signal {
     private:
-        Node* caller;
-        vector<tuple<function<void(void*, Node*)>, void*>> callbacks;
-    public:
-        NodeSignalStatic(Node* caller_node) { caller = caller_node; }
-        void emit() {
-            for (auto i = callbacks.begin(); i != callbacks.end(); ++i) {
-                get<0>(*i)(get<1>(*i), caller);
-                // Check if pointers are valid
-            }
-            onEmission();
-        }
-        void connect(function<void(void*, Node*)> callback, void* argument = NULL) { callbacks.push_back(make_tuple(callback, argument)); }
+
+        class MemberCallbackBase {
+            public:
+                virtual void call(CallbackArgs... args) {}
+        };
+
+        template<typename ObjectType>
+        class MemberCallback: public MemberCallbackBase {
+            private:
+                ObjectType* object;
+                CallbackReturnType (ObjectType::*callback)(CallbackArgs...);
+            public:
+                MemberCallback(CallbackReturnType (ObjectType::*callback_function)(CallbackArgs...), ObjectType* function_object) {
+                    object = function_object;
+                    callback = callback_function;
+                }
+                void call(CallbackArgs... arguments) {
+                    (object->*callback)(arguments...);
+                }
+        };
+
+        vector<MemberCallbackBase*> member_callbacks;
+        vector<function<CallbackReturnType(CallbackArgs...)>> callbacks;
+        double last_emission_time = -1;
 };
-
-class NodeSignal: public Signal {
-    private:
-        vector<tuple<function<void(void*, Node*)>, void*>> callbacks;
-    public:
-        void emit(Node* node) {
-            for (auto i = callbacks.begin(); i != callbacks.end(); ++i) {
-                get<0>(*i)(get<1>(*i), node);
-            }
-            onEmission();
-        }
-        void connect(function<void(void*, Node*)> callback, void* argument = NULL) { callbacks.push_back(make_tuple(callback, argument)); }
-
-};
-
-#endif

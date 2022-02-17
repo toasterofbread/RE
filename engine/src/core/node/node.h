@@ -1,6 +1,5 @@
 #ifndef INCLUDED_NODE
 #define INCLUDED_NODE
-using namespace std;
 
 #include <raylib-cpp.hpp>
 #include <iostream>
@@ -9,8 +8,7 @@ using namespace std;
 #include <unordered_map>
 #include <ponder/classbuilder.hpp>
 #include <ponder/uses/runtime.hpp>
-
-#include "engine/src/core/signal.h"
+using namespace std;
 
 // Debug
 #include <icecream.hpp>
@@ -19,17 +17,18 @@ using namespace std;
 class NodeTexture;
 class NodeManager;
 class Node;
+template<typename A, typename... B>
+class Signal;
 
 PONDER_TYPE(Node)
 class Node {
     private:
         // bool initialised = false;
-
+        
         vector<Node*> children{};
         unordered_map<string, Node*> registered_scene_nodes;
         int id = -1;
 
-        vector<Signal*> signals;
         Node* parent = NULL;
         bool is_root = false;
         NodeManager* manager = NULL;
@@ -47,8 +46,8 @@ class Node {
         Node(NodeManager* node_manager);
 
         // - Signals -
-        NodeSignalStatic* SIGNAL_READY;
-        NodeSignalStatic* SIGNAL_KILLED;
+        Signal<void, Node*>* SIGNAL_READY;
+        Signal<void, Node*>* SIGNAL_KILLED;
 
         // - Ponder -
         static string getSetterName(string property_name) {

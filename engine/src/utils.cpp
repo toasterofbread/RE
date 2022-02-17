@@ -198,7 +198,7 @@ string equaliseStringLineWidths(string str) {
 }
 
 bool stringBeginsWith(string str, string begins) {
-    if (begins.empty() || str.empty()) {
+    if (begins.empty() || str.empty() || str.size() < begins.size()) {
         return false;
     }
     return str.compare(begins) == (str.size() - begins.size());

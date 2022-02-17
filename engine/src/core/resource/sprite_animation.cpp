@@ -7,6 +7,7 @@ using json = nlohmann::json;
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/resource/node_texture.h"
 #include "engine/src/core/node/node_manager.h"
+#include "engine/src/core/signal.h"
 
 // Debug
 #include "icecream.hpp"
@@ -51,16 +52,14 @@ int SpriteAnimation::getFrameWidth() {
 // - SpriteAnimationSet -
 
 SpriteAnimationSet::SpriteAnimationSet(Node* initial_linked_node, string file_path, string base_directory_override): Resource(initial_linked_node) {
-    SIGNAL_NODE_LINKED->connect(onNodeLinked, this);
-    SIGNAL_NODE_UNLINKED->connect(onNodeUnlinked, this);
+    SIGNAL_NODE_LINKED->connect<SpriteAnimationSet>(&SpriteAnimationSet::onNodeLinked, this);
+    SIGNAL_NODE_UNLINKED->connect<SpriteAnimationSet>(&SpriteAnimationSet::onNodeUnlinked, this);
 
     loadFile(initial_linked_node, file_path, base_directory_override);
 }
 
-void SpriteAnimationSet::onNodeLinked(void* _self, Node* node) {
-    SpriteAnimationSet* self = (SpriteAnimationSet*)_self;
-
-    for( const std::pair<std::string, SpriteAnimation*>& n : self->getAnimations() ) {
+void SpriteAnimationSet::onNodeLinked(Node* node) {
+    for( const std::pair<std::string, SpriteAnimation*>& n : getAnimations() ) {
         std::vector<NodeTexture*> animation_frames = n.second->getFrames();
 
         for (auto i = animation_frames.begin(); i != animation_frames.end(); ++i)
@@ -68,10 +67,8 @@ void SpriteAnimationSet::onNodeLinked(void* _self, Node* node) {
     }
 }
 
-void SpriteAnimationSet::onNodeUnlinked(void* _self, Node* node) {
-    SpriteAnimationSet* self = (SpriteAnimationSet*)_self;
-    
-    for( const std::pair<std::string, SpriteAnimation*>& n : self->getAnimations() ) {
+void SpriteAnimationSet::onNodeUnlinked(Node* node) {
+    for( const std::pair<std::string, SpriteAnimation*>& n : getAnimations() ) {
         std::vector<NodeTexture*> animation_frames = n.second->getFrames();
 
         for (auto i = animation_frames.begin(); i != animation_frames.end(); ++i)

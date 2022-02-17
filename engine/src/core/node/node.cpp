@@ -4,6 +4,7 @@
 
 #include "engine/src/utils.h"
 #include "engine/src/core/node/node_manager.h"
+#include "engine/src/core/signal.h"
 
 #include <icecream.hpp> // Debug
 
@@ -11,10 +12,11 @@ const int INDICATOR_RADIUS = 10;
 
 // - Core -
 Node::Node(NodeManager* node_manager) {
-    if (node_manager != NULL) init(node_manager);
 
-    SIGNAL_READY = new NodeSignalStatic(this);
-    SIGNAL_KILLED = new NodeSignalStatic(this);
+    SIGNAL_READY = new Signal<void, Node*>();
+    SIGNAL_KILLED = new Signal<void, Node*>();
+    
+    if (node_manager != NULL) init(node_manager);
 }
 
 void Node::init(NodeManager* node_manager) {
@@ -32,6 +34,7 @@ void Node::removedFromNode(Node* former_parent_node) {
     parent = NULL;
 }
 void Node::process(float delta) {
+
     if (show_gizmos) {
         string text = getTypeName();
         if (getName() != text) {
@@ -52,7 +55,7 @@ void Node::process(float delta) {
 
 }
 void Node::ready() {
-    SIGNAL_READY->emit();
+    SIGNAL_READY->emit(this);
     // print(getTypeName(), " is ready");
 }
 
@@ -115,11 +118,7 @@ void Node::addChild(Node* child) {
     children.push_back(child);
     child->addedToNode(this);
 
-    print("pre-thread");
-    makeThread(&Node::ready, child);
-    // thread(bind(&Node::ready, child)).detach();
-    print("post-thread");
-    // child->ready();
+    child->ready();
 }
 
 void Node::removeChild(int child_idx) {
@@ -369,7 +368,7 @@ void Node::kill() {
         return;
     }
 
-    SIGNAL_KILLED->emit();
+    SIGNAL_KILLED->emit(this);
     getParent()->removeChild(this);
     while (getChildCount() > 0) {
         getChild(0)->kill();

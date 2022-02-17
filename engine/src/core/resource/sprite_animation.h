@@ -1,7 +1,6 @@
 #include "raylib-cpp.hpp"
 #include "json.hpp"
 using json = nlohmann::json;
-using namespace std;
 
 #include "engine/src/core/resource/resource.h"
 
@@ -42,6 +41,6 @@ class SpriteAnimationSet: public Resource {
 
         void loadFile(Node* initial_linked_node, string file_path, string base_directory_override = "//");
         
-        static void onNodeLinked(void* _self, Node* node);
-        static void onNodeUnlinked(void* _self, Node* node);
+        void onNodeLinked(Node* node);
+        void onNodeUnlinked(Node* node);
 };

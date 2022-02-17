@@ -2,65 +2,93 @@
 #define INPUT_INCLUDED
 
 #include "raylib-cpp.hpp"
-
-using namespace std;
 #include <functional>
 #include <vector>
 #include <iostream>
+using namespace std;
 
-const int gamepad_id = 0;
+// Forward declarations
+class InputEvent;
+class NodeManager;
 
-enum GAMEPAD_BUTTON {
-    PAD_LEFT = 4,
-    PAD_RIGHT = 2,
-    PAD_UP = 1,
-    PAD_DOWN = 3,
+class Input {
+    public:
 
-    FACE_LEFT = 8,
-    FACE_RIGHT = 6,
-    FACE_UP = 5,
-    FACE_DOWN = 7,
+        Input(NodeManager* node_manager);
 
-    STICK_CLICK_LEFT = 16,
-    STICK_CLICK_RIGHT = 17,
+        enum GAMEPAD_BUTTON {
+            PAD_LEFT = 4,
+            PAD_RIGHT = 2,
+            PAD_UP = 1,
+            PAD_DOWN = 3,
 
-    L1 = 9,
-    R1 = 11,
+            FACE_LEFT = 8,
+            FACE_RIGHT = 6,
+            FACE_UP = 5,
+            FACE_DOWN = 7,
 
-    START = 15,
-    SELECT = 13,
-    HOME = 14,
+            STICK_CLICK_LEFT = 16,
+            STICK_CLICK_RIGHT = 17,
+
+            L1 = 9,
+            R1 = 11,
+
+            START = 15,
+            SELECT = 13,
+            HOME = 14,
+        };
+
+        enum KEYBOARD_BUTTON {
+            ARROW_LEFT = 263,
+            ARROW_RIGHT = 262,
+            ARROW_UP = 265,
+            ARROW_DOWN = 264,
+
+            F1 = 290,
+            F2 = 291,
+            F3 = 292,
+            F4 = 293,
+            F5 = 294,
+            F6 = 295,
+            F7 = 296,
+            F8 = 297,
+            F9 = 298,
+            F10 = 290,
+            F11 = 300,
+            F12 = 301,
+
+            TAB = 258,
+            LCTRL = 341,
+            LALT = 342,
+            LSHIFT = 340,
+        };
+
+        InputEvent* INPUTEVENT_PAD_UP;
+        InputEvent* INPUTEVENT_PAD_DOWN;
+        InputEvent* INPUTEVENT_PAD_LEFT;
+        InputEvent* INPUTEVENT_PAD_RIGHT;
+
+        InputEvent* INPUTEVENT_REBUILD_AND_RUN;
+
+        static void process(float delta);
+        static void printPressedKey();
+
+        static bool isButtonPressed(GAMEPAD_BUTTON button);
+        static bool isButtonJustPressed(GAMEPAD_BUTTON button);
+        static bool isButtonJustReleased(GAMEPAD_BUTTON button);
+
+        static bool isButtonPressed(KEYBOARD_BUTTON key);
+        static bool isButtonJustPressed(KEYBOARD_BUTTON key);
+        static bool isButtonJustReleased(KEYBOARD_BUTTON key);
+
+        static bool isKeyModifier(KEYBOARD_BUTTON key);
+        static bool isKeyModifier(GAMEPAD_BUTTON key);
+
+        Vector2 getPadVector(bool just_pressed, float delta = 1.0f);
+
+    private:
+        int gamepad_id = 0;
+        NodeManager* manager;
 };
-
-enum KEYBOARD_BUTTON {
-    ARROW_LEFT = 263,
-    ARROW_RIGHT = 262,
-    ARROW_UP = 265,
-    ARROW_DOWN = 264,
-
-    TAB = 258,
-    LCTRL = 341,
-    LALT = 342,
-    LSHIFT = 340,
-};
-
-void inputProcess(float delta);
-void printPressedKey();
-
-bool isButtonPressed(GAMEPAD_BUTTON button);
-bool isButtonJustPressed(GAMEPAD_BUTTON button);
-bool isButtonJustReleased(GAMEPAD_BUTTON button);
-
-bool isButtonPressed(KEYBOARD_BUTTON key);
-bool isButtonJustPressed(KEYBOARD_BUTTON key);
-bool isButtonJustReleased(KEYBOARD_BUTTON key);
-
-bool isKeyModifier(KEYBOARD_BUTTON key);
-bool isKeyModifier(GAMEPAD_BUTTON key);
-
-Vector2 getPadVector(bool just_pressed, float delta = 1.0f);
-
-void addMacro(function<void(void)> func, vector<GAMEPAD_BUTTON> button_combination, string label = "", bool display_label = true);
-void addMacro(function<void(void)> func, vector<KEYBOARD_BUTTON> key_combination, string label = "", bool display_label = true);
 
 #endif

@@ -1,15 +1,15 @@
 #ifndef RESOURCE_INCLUDED
 #define RESOURCE_INCLUDED
 
-using namespace std;
 #include <raylib-cpp.hpp>
 #include <vector>
-
-#include "engine/src/core/signal.h"
+using namespace std;
 
 // Forward declarations
 class Node;
 class NodeManager;
+template<typename A, typename... B>
+class Signal;
 
 class Resource {
     public:
@@ -20,9 +20,11 @@ class Resource {
         std::vector<Node*>* getLinkedNodes() { return &linked_nodes; }
         int getLinkedNodeCount() { return linked_nodes.size(); }
 
-        NodeSignal* SIGNAL_NODE_LINKED = new NodeSignal;
-        NodeSignal* SIGNAL_NODE_UNLINKED = new NodeSignal;
-        Signal* SIGNAL_DELETED = new Signal;
+        Signal<void, Node*>* SIGNAL_NODE_LINKED;
+        Signal<void, Node*>* SIGNAL_NODE_UNLINKED;
+        Signal<void>* SIGNAL_DELETED;
+    
+        virtual void process(float delta) {};
     
     protected:
         NodeManager* manager;

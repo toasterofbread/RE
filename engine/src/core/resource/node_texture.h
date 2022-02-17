@@ -25,9 +25,9 @@ class NodeTexture: public Resource {
 
         std::string autoload_path;
 
-        static void onNodeLinked(void* _self, Node* node);
-        static void onNodeUnlinked(void* _self, Node* node);
-        static void onDeleted(void* _self);
+        void onNodeLinked(Node* node);
+        void onNodeUnlinked(Node* node);
+        void onDeleted();
 };
 
 void onNodeLinked(void* _self, Node* node);
