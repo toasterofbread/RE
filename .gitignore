@@ -1,2 +1,5 @@
 /.vscode
 /build
+*.code-workspace
+/project
+/include
