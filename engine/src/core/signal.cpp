@@ -1,11 +1,12 @@
 #include "engine/src/core/signal.h"
 
+#include "engine/src/engine.h"
 #include "engine/src/core/node/node_manager.h"
  
 //!todo make this less awful
 template<typename CallbackReturnType, typename... CallbackArgs>
-void Signal<CallbackReturnType, CallbackArgs...>::await(NodeManager* manager) {
-    manager->ensureAsync();
+void Signal<CallbackReturnType, CallbackArgs...>::await(Engine* engine) {
+    engine->ensureAsync();
     double start_time = GetTime();
     while (start_time >= last_emission_time) {
         // Pass

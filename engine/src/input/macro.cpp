@@ -1,34 +1,34 @@
 #include "macro.h"
 
-#include "engine/src/input/input.h"
+#include "engine/src/input/input_manager.h"
 #include "engine/src/utils.h"
 
-Macro::Macro(vector<Input::KEYBOARD_BUTTON> _keyboard_buttons) {
+Macro::Macro(vector<InputManager::KEYBOARD_BUTTON> _keyboard_buttons) {
     type = MACRO_TYPE_KEYBOARD;
     keyboard_buttons = _keyboard_buttons;
 
     all_modifiers = true;
     for (auto i = keyboard_buttons.begin(); i != keyboard_buttons.end(); ++i) {
-        if (!Input::isKeyModifier(*i)) {
+        if (!InputManager::isKeyModifier(*i)) {
             all_modifiers = false;
             break;
         }
     }
 }
 
-Macro::Macro(vector<Input::GAMEPAD_BUTTON> _gamepad_buttons) {
+Macro::Macro(vector<InputManager::GAMEPAD_BUTTON> _gamepad_buttons) {
     type = MACRO_TYPE_GAMEPAD;
     gamepad_buttons = _gamepad_buttons;
 }
 
-Macro::Macro(vector<Input::KEYBOARD_BUTTON> _keyboard_buttons, vector<Input::GAMEPAD_BUTTON> _gamepad_buttons) {
+Macro::Macro(vector<InputManager::KEYBOARD_BUTTON> _keyboard_buttons, vector<InputManager::GAMEPAD_BUTTON> _gamepad_buttons) {
     type = MACRO_TYPE_BOTH;
     keyboard_buttons = _keyboard_buttons;
     gamepad_buttons = _gamepad_buttons;
 
     all_modifiers = true;
     for (auto i = keyboard_buttons.begin(); i != keyboard_buttons.end(); ++i) {
-        if (!Input::isKeyModifier(*i)) {
+        if (!InputManager::isKeyModifier(*i)) {
             all_modifiers = false;
             break;
         }
@@ -64,7 +64,7 @@ bool Macro::isJustReleased() {
 template<typename T>
 bool Macro::isButtonSetPressed(vector<T> buttons) {
     for (auto i = buttons.begin(); i != buttons.end(); ++i) {
-        if (!Input::isButtonPressed(*i)) {
+        if (!InputManager::isButtonPressed(*i)) {
             return false;
         }
     }
@@ -74,10 +74,10 @@ template<typename T>
 bool Macro::isButtonSetJustPressed(vector<T> buttons, bool all_are_modifiers) {
     bool just_pressed = false;
     for (auto i = buttons.begin(); i != buttons.end(); ++i) {
-        if (!Input::isButtonPressed(*i)) {
+        if (!InputManager::isButtonPressed(*i)) {
             return false;
         }
-        if (Input::isButtonJustPressed(*i) && (all_are_modifiers || !Input::isKeyModifier(*i))) {
+        if (InputManager::isButtonJustPressed(*i) && (all_are_modifiers || !InputManager::isKeyModifier(*i))) {
             just_pressed = true;
         }
     }
@@ -87,10 +87,10 @@ template<typename T>
 bool Macro::isButtonSetJustReleased(vector<T> buttons) {
     bool released = false;
     for (auto i = buttons.begin(); i != buttons.end(); ++i) {
-        if (!Input::isButtonPressed(*i) && !Input::isButtonJustReleased(*i)) {
+        if (!InputManager::isButtonPressed(*i) && !InputManager::isButtonJustReleased(*i)) {
             return false;
         }
-        if (Input::isButtonJustReleased(*i)) {
+        if (InputManager::isButtonJustReleased(*i)) {
             released = true;
         }
     }

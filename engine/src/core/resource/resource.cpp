@@ -1,6 +1,7 @@
 #include "resource.h"
 
 #include "engine/src/utils.h"
+#include "engine/src/engine.h"
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/node/node_manager.h"
 #include "engine/src/core/signal.h"
@@ -12,8 +13,8 @@ Resource::Resource(Node* initial_linked_node) {
     SIGNAL_DELETED = new Signal<void>();
     
     linkNode(initial_linked_node);
-    manager = initial_linked_node->getManager();
-    manager->resourceCreated(this);
+    engine = initial_linked_node->getEngine();
+    engine->resourceCreated(this);
 }
 void Resource::linkNode(Node* node) {
     if (!vectorContainsValue(&linked_nodes, node)) {
@@ -28,8 +29,8 @@ void Resource::unlinkNode(Node* node) {
 
     if (linked_nodes.size() == 0) {
         SIGNAL_DELETED->emit();
-        manager->resourceDeleted(this);
-        manager->requestDeletion(this);
+        engine->resourceDeleted(this);
+        engine->requestDeletion(this);
     }
     else {
         SIGNAL_NODE_UNLINKED->emit(node);

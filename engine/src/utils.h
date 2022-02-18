@@ -1,3 +1,6 @@
+#ifndef INCLUDED_UTILS
+#define INCLUDED_UTILS
+
 #include <iostream>
 #include <stdexcept>
 #include <algorithm>
@@ -12,7 +15,7 @@ using namespace std;
 // Forward declaration
 class Node;
 
-void markPosition(Vector2 position, std::string text, Color colour = RED, float radius = 10.0f, float width = 1.0f);
+void markPosition(Vector2 position, string text, Color colour = RED, float radius = 10.0f, float width = 1.0f);
 
 template <typename Any>
 float sign(Any value) {
@@ -22,8 +25,8 @@ Vector2 sign(Vector2 value);
 
 vector<string> splitString(string str, char splitter);
 const char* plusFile(const char* path, const char* file_to_add);
-std::string plusFile(std::string path, std::string file_to_add);
-std::string getResPath(std::string absolute_path);
+string plusFile(string path, string file_to_add);
+string getResPath(string absolute_path);
 
 constexpr unsigned int str2int(const char* str, int h = 0) {
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
@@ -40,7 +43,7 @@ string equaliseStringLineWidths(string str);
 bool stringBeginsWith(string str, string begins);
 string vector2str(Vector2 value);
 const char* int2char(int value);
-const char* string2char(std::string value);
+const char* string2char(string value);
 string encaseStringInBox(string str, bool thick = false, int margin = 2);
 string repeatString(string str, int amount);
 
@@ -56,12 +59,12 @@ int vectorFindValue(vector<Any>* vector, Any value) {
     return ret;
 }
 template <typename Any>
-bool vectorContainsValue(std::vector<Any>* vector, Any value) {
-    return std::find(vector->begin(), vector->end(), value) != vector->end();
+bool vectorContainsValue(vector<Any>* vector, Any value) {
+    return find(vector->begin(), vector->end(), value) != vector->end();
 }
 template <typename Any>
-void vectorRemoveValue(std::vector<Any>* vector, Any value) {
-    vector->erase(std::remove(vector->begin(), vector->end(), value), vector->end());
+void vectorRemoveValue(vector<Any>* vector, Any value) {
+    vector->erase(remove(vector->begin(), vector->end(), value), vector->end());
 }
 
 // Add vector2 ( + )
@@ -115,3 +118,5 @@ struct Functor {
         return (object->*ptr)(params...);
     }
 };
+
+#endif

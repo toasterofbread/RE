@@ -3,16 +3,16 @@
 
 class NodeTexture: public Resource {
     public:
-        NodeTexture(Node* initial_linked_node, std::string autoload_file_path = "");
+        NodeTexture(Node* initial_linked_node, string autoload_file_path = "");
         
-        void load(std::string file_path);
+        void load(string file_path);
         void unload();
 
         bool isTextureLoaded() { return texture_loaded; }
         Texture2D getTexture();
 
-        void setAutoload(std::string value) { autoload_path = value; }
-        std::string getAutoload() { return autoload_path; }
+        void setAutoload(string value) { autoload_path = value; }
+        string getAutoload() { return autoload_path; }
         bool hasAutoload() { return !autoload_path.empty(); }
 
         // Texture functions
@@ -23,7 +23,7 @@ class NodeTexture: public Resource {
         Texture2D texture;
         bool texture_loaded = false;
 
-        std::string autoload_path;
+        string autoload_path;
 
         void onNodeLinked(Node* node);
         void onNodeUnlinked(Node* node);

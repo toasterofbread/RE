@@ -8,12 +8,12 @@ using namespace std;
 class Macro;
 template<typename A, typename... B>
 class Signal;
-class NodeManager;
+class Engine;
 
 class InputEvent {
     public:
-        InputEvent(NodeManager* node_manager) { manager = node_manager; init(); }
-        InputEvent(NodeManager* node_manager, vector<Macro*> input_macros) { manager = node_manager; macros = input_macros; init(); }
+        InputEvent(Engine* engine_singleton) { engine = engine_singleton; init(); }
+        InputEvent(Engine* engine_singleton, vector<Macro*> input_macros) { engine = engine_singleton; macros = input_macros; init(); }
 
         bool isTriggered();
         bool isJustTriggered();
@@ -28,7 +28,7 @@ class InputEvent {
         vector<Macro*> macros;
 
 
-        NodeManager* manager;
+        Engine* engine;
 };
 
 #endif

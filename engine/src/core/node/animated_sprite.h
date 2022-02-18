@@ -11,6 +11,7 @@ using json = nlohmann::json;
 class AnimatedSprite;
 class SpriteAnimation;
 class SpriteAnimationSet;
+class Engine;
 
 class AnimatedSprite: public Node {
     private:
@@ -28,7 +29,7 @@ class AnimatedSprite: public Node {
 
         void process(float delta);
     public:
-        AnimatedSprite(NodeManager* node_manager): Node(node_manager) { name = getTypeName(); }
+        AnimatedSprite(Engine* engine_singleton): Node(engine_singleton) { name = getTypeName(); }
         virtual string getTypeName() {return "AnimatedSprite";}
         
         template<typename NodeType>

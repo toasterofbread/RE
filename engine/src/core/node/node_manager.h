@@ -1,24 +1,21 @@
+#ifndef INCLUDED_NODE_MANAGER
+#define INCLUDED_NODE_MANAGER
+
 #include <yaml-cpp/yaml.h>
-#include <ponder/classbuilder.hpp>
-#include <ponder/uses/runtime.hpp>
-#include <unordered_map>
 #include <string>
-#include <thread>
+using namespace std;
 
-#include "engine/src/core/node/node.h"
-#include "engine/src/input/input.h"
+#include "engine/src/core/node/constructor.h"
+#include "engine/src/utils.h"
 
-// Forward declarations
-class NodeTexture;
-class AnimatedSprite;
-class Resource;
+// Forward declaration
+class Engine;
+class Node;
 
 class NodeManager {
     public:
-        NodeManager();
-        void ensureAsync();
-
-        void rebuildAndRun();
+        NodeManager(Engine* engine_singleton);
+        void init();
 
         void process(float delta);
         void addNode(Node* node);
@@ -26,40 +23,49 @@ class NodeManager {
         static void processSceneConfig(YAML::Node& config, Node* root_node);
 
         Node* getRoot() { return root_node; }
-        Input* getInput() { return input_instance; }
 
         int getNewNodeId();
-        
-        Texture2D loadTexture(string file_path, NodeTexture* node_texture);
-        void unloadTexture(Texture2D texture, NodeTexture* node_texture);
-        bool isTextureLoaded(string file_path);
-        // bool isNodeUsingTexture() // TODO
-
-        void resourceCreated(Resource* resource);
-        void resourceDeleted(Resource* resource);
-
-        void inputEventCreated(InputEvent* event);
-        void inputEvenDeleted(InputEvent* event);
 
         Node* synthesiseNode(string node_type, YAML::Node& node_data, Node* root_node_override);
 
-        template<typename T>
-        void requestDeletion(T* what) { delete what; }
+        
+        template<typename PropertyType>
+        void registerNodePropertyType(string type_name, function<PropertyType(YAML::Node)> converter_method) {
+            if (isNodePropertyTypeRegistered(type_name)) {
+                warn("Node '" + type_name + "' is already registered", true);
+                return;
+            }
+            NodePropertyTypeConverter<PropertyType> converter = new NodePropertyTypeConverter<PropertyType>(converter_method);
+            registered_property_type_converters[type_name] = converter;
+        }
 
-        void addMacro(function<void(void)> func, vector<Input::GAMEPAD_BUTTON> gamepad_button_combination, string label, bool display_label);
-        void addMacro(function<void(void)> func, vector<Input::KEYBOARD_BUTTON> keyboard_button_combination, string label, bool display_label);
-    
+        template<typename PropertyType>
+        PropertyType convertYAMLData(string type_name, YAML::Node data) {
+            if (!isNodePropertyTypeRegistered(type_name)) {
+                warn("Property type '" + type_name + "' is not registered", true);
+            }
+            return registered_property_type_converters[type_name]->convertData<PropertyType>(data);
+        }
+
+        bool isNodePropertyTypeRegistered(string type_name) {
+            return registered_property_type_converters.count(type_name);
+        }        
+
+        // template<typename ObjectType>
+        // void connect(CallbackReturnType (ObjectType::*callback)(CallbackArgs...), ObjectType* object) {
+        //     member_callbacks.push_back(new MemberCallback<ObjectType>(callback, object));
+        // }
+
     private:
-        int current_id_max = 0;
-        Node* root_node = new Node(this);
-        unordered_map<string, Texture2D> loaded_textures;
-        unordered_map<unsigned int, vector<NodeTexture*>> texture_resources;
+        Engine* engine;
+        Node* root_node;
 
         Node* instanceNodeFromType(string& node_type, YAML::Node& node_data, bool suppress_warning = false, Node* root_node_override = NULL);
 
-        vector<Resource*> all_resources;
-        vector<InputEvent*> all_inputevents;
-        thread::id main_thread_id = this_thread::get_id();
+        int current_id_max = 0;
 
-        Input* input_instance = new Input(this);
+        
+        unordered_map<string, NodePropertyTypeConveterBase*> registered_property_type_converters;
 };
+
+#endif

@@ -6,8 +6,11 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
+#ifndef INCLUDED_PONDER
+#define INCLUDED_PONDER // !todo fix
 #include <ponder/classbuilder.hpp>
 #include <ponder/uses/runtime.hpp>
+#endif
 using namespace std;
 
 // Debug
@@ -19,6 +22,7 @@ class NodeManager;
 class Node;
 template<typename A, typename... B>
 class Signal;
+class Engine;
 
 PONDER_TYPE(Node)
 class Node {
@@ -32,6 +36,7 @@ class Node {
         Node* parent = NULL;
         bool is_root = false;
         NodeManager* manager = NULL;
+        Engine* engine = NULL;
 
         bool show_gizmos = false;
         Vector2 position = Vector2{0, 0};
@@ -39,11 +44,15 @@ class Node {
         float rotation = 0.0f;
         bool visible = true;
 
-        void init(NodeManager* node_manager);
+        void init(Engine* engine_singleton);
     protected:
         string name;
     public:
-        Node(NodeManager* node_manager);
+        Node(Engine* engine_singleton);
+
+        enum class PROPERTY_TYPE {
+            STRING, INT, FLOAT, BOOL, VECTOR2, SPRITEANIMATIONSET
+        };
 
         // - Signals -
         Signal<void, Node*>* SIGNAL_READY;
@@ -85,7 +94,7 @@ class Node {
         virtual void ready();
         virtual void process(float delta);
         virtual string getTypeName() {return "Node";}
-        std::string getValidName(std::string base_name = "");
+        string getValidName(string base_name = "");
 
         // - Children-
         void addChild(Node* child);
@@ -118,6 +127,7 @@ class Node {
         Node* getRoot();
         bool isRoot();
         NodeManager* getManager();
+        Engine* getEngine();
         void printTree(int max_depth = -1);
         int getIndex(); // Index of this within parent's children
         int getId(); // Unique ID of this node

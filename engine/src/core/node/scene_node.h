@@ -1,9 +1,12 @@
 #include "engine/src/core/node/node.h"
 
+// Forward declarations
+class Engine;
+
 class SceneNode: public Node {
     protected:
         virtual void init_scenenode(string scene_path, string scene_type);
-        SceneNode(NodeManager* node_manager): Node(node_manager) {};
+        SceneNode(Engine* engine_singleton): Node(engine_singleton) {};
     public:
         virtual string getTypeName() {return "SceneNode";}
 };

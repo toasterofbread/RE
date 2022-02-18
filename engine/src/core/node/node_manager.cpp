@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "engine/src/utils.h"
+#include "engine/src/engine.h"
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/node/animated_sprite.h"
 #include "engine/src/core/converters.h"
@@ -12,31 +13,17 @@
 // Debug
 #include "icecream.hpp"
 
-NodeManager::NodeManager() {
+NodeManager::NodeManager(Engine* engine_singleton) {
+    engine = engine_singleton;
+}
+
+void NodeManager::init() {
+    root_node = new Node(engine);
     root_node->setName("Root");
 }
 
-void NodeManager::ensureAsync() {
-    if (this_thread::get_id() == main_thread_id) {
-        warn("Thread is not asynchronous", true);
-    }
-}
-
-void NodeManager::rebuildAndRun() {
-    system("clear && cd /home/spectre7/Projects/raylib/SSG && ./run.sh &");
-    exit(0);
-}
-
 void NodeManager::process(float delta) {
-    input_instance->process(delta);
-    root_node->process(delta);
 
-    for (auto i = all_resources.begin(); i != all_resources.end(); ++i) {
-        (*i)->process(delta);
-    }
-    for (auto i = all_inputevents.begin(); i != all_inputevents.end(); ++i) {
-        (*i)->process(delta);
-    }
 }
 
 void NodeManager::addNode(Node* node) {
@@ -47,6 +34,7 @@ int NodeManager::getNewNodeId() {
     current_id_max++;
     return current_id_max;
 }
+
 Node* NodeManager::loadScene(string file_path, Node* root_node_override, YAML::Node* config_container) {
 
     if (!FileExists(getResPath(file_path).c_str())) {
@@ -72,7 +60,7 @@ Node* NodeManager::loadScene(string file_path, Node* root_node_override, YAML::N
     Node* ret = NULL;
     for (auto i = scene.begin(); i != scene.end(); ++i) {
         if (i->first.as<string>() != "config") {
-            ret = synthesiseNode(i->first.as<std::string>(), i->second, root_node_override);
+            ret = synthesiseNode(i->first.as<string>(), i->second, root_node_override);
             break;
         }
     }
@@ -128,7 +116,7 @@ void NodeManager::processSceneConfig(YAML::Node& config, Node* root_node) {
 }
 
 // Helper function for NodeManager::synthesiseNode()
-PONDER_TYPE(NodeManager)
+PONDER_TYPE(Engine)
 Node* NodeManager::instanceNodeFromType(string& node_type, YAML::Node& node_data, bool suppress_warning, Node* root_node_override) {
 
     // Ensure a node with name node_type exists
@@ -188,7 +176,7 @@ Node* NodeManager::instanceNodeFromType(string& node_type, YAML::Node& node_data
         // Find a valid class constructor
         for (int i = 0; i < node_class.constructorCount(); i++) {
             constructor = node_class.constructor(i);
-            if (constructor->matches(this)) {
+            if (constructor->matches(engine)) {
                 break;
             }
         }
@@ -200,7 +188,7 @@ Node* NodeManager::instanceNodeFromType(string& node_type, YAML::Node& node_data
         }
 
         // Construct node from constructor
-        ponder::UserObject node = constructor->create(NULL, this);
+        ponder::UserObject node = constructor->create(NULL, engine);
         ret = &node.ref<Node>();
 
         cont(node_class, node);
@@ -263,57 +251,11 @@ Node* NodeManager::synthesiseNode(string node_type, YAML::Node& node_data, Node*
         unordered_map<Node*, vector<pair<string, YAML::Node>>>::iterator first_item = to_add.begin();
         unordered_map<Node*, vector<pair<string, YAML::Node>>> children = add_node_children(first_item->first, &(first_item->second));
         to_add.erase(first_item);
-        for( const std::pair<Node*, vector<pair<string, YAML::Node>>>& i : children ) {
+        for( const pair<Node*, vector<pair<string, YAML::Node>>>& i : children ) {
             to_add[i.first] = i.second;
         }
     }
 
     return root;
-}
-
-// - Resource loading / unloading -
-
-Texture2D NodeManager::loadTexture(std::string file_path, NodeTexture* node_texture) {
-
-    std::string path = getResPath(file_path);
-    Texture2D texture;
-
-    if (isTextureLoaded(file_path)) { // Texture is already loaded, just add the node to the userlist
-        texture = loaded_textures[path];
-
-        if (!vectorContainsValue(&texture_resources[texture.id], node_texture)) {
-            texture_resources[texture.id].push_back(node_texture);
-        }
-    }
-    else {
-        texture = LoadTexture(string2char(path));
-        loaded_textures[path] = texture;;
-        texture_resources[texture.id] = vector<NodeTexture*>{node_texture};
-    }
-
-    return texture;
-}
-
-void NodeManager::unloadTexture(Texture2D texture, NodeTexture* node_texture) {
-}
-
-bool NodeManager::isTextureLoaded(std::string file_path) {
-    return loaded_textures.count(getResPath(file_path)) > 0;
-}
-
-void NodeManager::resourceCreated(Resource* resource) {
-    all_resources.push_back(resource);
-}
-
-void NodeManager::resourceDeleted(Resource* resource) {
-    vectorRemoveValue(&all_resources, resource);
-}
-
-void NodeManager::inputEventCreated(InputEvent* event) {
-    all_inputevents.push_back(event);
-}
-
-void NodeManager::inputEvenDeleted(InputEvent* event) {
-    vectorRemoveValue(&all_inputevents, event);
 }
 

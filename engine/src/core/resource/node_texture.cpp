@@ -1,6 +1,7 @@
 #include "node_texture.h"
 
 #include "engine/src/utils.h"
+#include "engine/src/engine.h"
 #include "engine/src/core/node/node_manager.h"
 #include "engine/src/core/signal.h"
 
@@ -33,7 +34,7 @@ void NodeTexture::load(string file_path) {
         warn("Cannot load texture, no nodes are linked", true);
         return;
     }
-    texture = manager->loadTexture(file_path, this);
+    texture = engine ->loadTexture(file_path, this);
     texture_loaded = true;
 }
 
@@ -41,7 +42,7 @@ void NodeTexture::unload() {
     if (!isTextureLoaded()) {
         return;
     }
-    manager->unloadTexture(texture, this);
+    engine->unloadTexture(texture, this);
 }
 
 Texture2D NodeTexture::getTexture() {

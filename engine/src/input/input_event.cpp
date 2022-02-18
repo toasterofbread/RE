@@ -1,12 +1,13 @@
 #include "input_event.h"
 
 #include "engine/src/utils.h"
+#include "engine/src/engine.h"
 #include "engine/src/input/macro.h"
 #include "engine/src/core/signal.h"
 #include "engine/src/core/node/node_manager.h"
 
 void InputEvent::init() {
-    manager->inputEventCreated(this);
+    engine->inputEventCreated(this);
     SIGNAL_TRIGGERED = new Signal<void>();
     SIGNAL_UNTRIGGERED = new Signal<void>();
 }

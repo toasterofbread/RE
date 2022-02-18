@@ -3,7 +3,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "engine/src/utils.h"
-#include "engine/src/core/node/node_manager.h"
+#include "engine/src/engine.h"
 #include "engine/src/core/signal.h"
 
 #include <icecream.hpp> // Debug
@@ -11,17 +11,18 @@
 const int INDICATOR_RADIUS = 10;
 
 // - Core -
-Node::Node(NodeManager* node_manager) {
+Node::Node(Engine* engine_singleton) {
 
     SIGNAL_READY = new Signal<void, Node*>();
     SIGNAL_KILLED = new Signal<void, Node*>();
     
-    if (node_manager != NULL) init(node_manager);
+    if (engine_singleton != NULL) init(engine_singleton);
 }
 
-void Node::init(NodeManager* node_manager) {
+void Node::init(Engine* engine_singleton) {
     name = getValidName();
-    manager = node_manager;
+    engine = engine_singleton;
+    manager = engine->getNodeManager();
     id = manager->getNewNodeId();
     is_root = id == 1;
 }
@@ -47,7 +48,7 @@ void Node::process(float delta) {
         markPosition(getGlobalPosition(true), text);
     }
 
-    std::vector<Node*>* nodes = getChildren();
+    vector<Node*>* nodes = getChildren();
     for (auto i = nodes->cbegin(); i != nodes->cend(); ++i) {
         Node& node = **i;
         node.process(delta);
@@ -301,6 +302,10 @@ NodeManager* Node::getManager() {
     return manager;
 }
 
+Engine* Node::getEngine() {
+    return engine;
+}
+
 void Node::printTree(int max_depth) {
     const string branch_string = "├─ ";
     const string branch_string_blank = "   ";
@@ -373,7 +378,7 @@ void Node::kill() {
     while (getChildCount() > 0) {
         getChild(0)->kill();
     }
-    getManager()->requestDeletion(this);
+    getEngine()->requestDeletion(this);
 }
 
 // --- Values ---

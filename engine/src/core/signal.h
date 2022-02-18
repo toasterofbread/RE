@@ -7,12 +7,12 @@ using namespace std;
 
 // Forward declarations
 class Node;
-class NodeManager;
+class Engine;
 
 template<typename CallbackReturnType = void, typename... CallbackArgs>
 class Signal {
     public:
-        void await(NodeManager* manager);
+        void await(Engine* engine);
 
         void emit(CallbackArgs... arguments) {
             for (auto i = callbacks.begin(); i != callbacks.end(); ++i) {

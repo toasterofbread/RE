@@ -10,11 +10,13 @@ using namespace std;
 // Forward declarations
 class InputEvent;
 class NodeManager;
+class Engine;
 
-class Input {
+class InputManager {
     public:
 
-        Input(NodeManager* node_manager);
+        InputManager(Engine* engine_singleton);
+        void init();
 
         enum GAMEPAD_BUTTON {
             PAD_LEFT = 4,
@@ -88,7 +90,7 @@ class Input {
 
     private:
         int gamepad_id = 0;
-        NodeManager* manager;
+        Engine* engine;
 };
 
 #endif

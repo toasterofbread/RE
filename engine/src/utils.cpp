@@ -344,7 +344,7 @@ void warn(string message, bool throw_error) {
 
     if (throw_error) {
         stacker(1);
-        throw std::runtime_error(format_message(message, "ERROR"));
+        throw runtime_error(format_message(message, "ERROR"));
     }
     else {
         print(format_message(message, "WARNING"));

@@ -4,6 +4,7 @@
 using json = nlohmann::json;
 
 #include "engine/src/utils.h"
+#include "engine/src/engine.h"
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/resource/node_texture.h"
 #include "engine/src/core/node/node_manager.h"
@@ -12,13 +13,13 @@ using json = nlohmann::json;
 // Debug
 #include "icecream.hpp"
 
-void SpriteAnimation::init(std::string animation_name, json* animation_data, json* file_data, Node* initial_linked_node, std::string load_directory) {
+void SpriteAnimation::init(string animation_name, json* animation_data, json* file_data, Node* initial_linked_node, string load_directory) {
     name = animation_name;
     loop = (*animation_data)["loop"];
     framerate = (*animation_data)["speed"];
 
     for (auto it = frames.begin(); it != frames.end(); ++it) {
-        initial_linked_node->getManager()->unloadTexture((*it)->getTexture(), *it);
+        initial_linked_node->getEngine()->unloadTexture((*it)->getTexture(), *it);
     }
     frames.clear();
 
@@ -59,8 +60,8 @@ SpriteAnimationSet::SpriteAnimationSet(Node* initial_linked_node, string file_pa
 }
 
 void SpriteAnimationSet::onNodeLinked(Node* node) {
-    for( const std::pair<std::string, SpriteAnimation*>& n : getAnimations() ) {
-        std::vector<NodeTexture*> animation_frames = n.second->getFrames();
+    for( const pair<string, SpriteAnimation*>& n : getAnimations() ) {
+        vector<NodeTexture*> animation_frames = n.second->getFrames();
 
         for (auto i = animation_frames.begin(); i != animation_frames.end(); ++i)
             (*i)->linkNode(node);
@@ -68,8 +69,8 @@ void SpriteAnimationSet::onNodeLinked(Node* node) {
 }
 
 void SpriteAnimationSet::onNodeUnlinked(Node* node) {
-    for( const std::pair<std::string, SpriteAnimation*>& n : getAnimations() ) {
-        std::vector<NodeTexture*> animation_frames = n.second->getFrames();
+    for( const pair<string, SpriteAnimation*>& n : getAnimations() ) {
+        vector<NodeTexture*> animation_frames = n.second->getFrames();
 
         for (auto i = animation_frames.begin(); i != animation_frames.end(); ++i)
             (*i)->unlinkNode(node);
@@ -95,26 +96,26 @@ void SpriteAnimationSet::loadFile(Node* initial_linked_node, string path, string
     }
 
     // Delete existing animations and clear the map
-    for (std::unordered_map<std::string, SpriteAnimation*>::iterator it=animations.begin(); it!=animations.end(); ++it) {
+    for (unordered_map<string, SpriteAnimation*>::iterator it=animations.begin(); it!=animations.end(); ++it) {
         delete it->second;
     }
     animations.clear();
 
     for (auto& i : data["animations"].items()) {
-        std::string animation_key = i.key();
+        string animation_key = i.key();
         json animation_data = data["animations"][animation_key];
 
         SpriteAnimation* animation = new SpriteAnimation;
         animation->init(animation_key, &animation_data, &data["files"], initial_linked_node, base_directory);
         animations[animation_key] = animation;
-        // animations.insert(std::make_pair(animation_key, animation));
+        // animations.insert(make_pair(animation_key, animation));
     }
 }
 
 bool SpriteAnimationSet::hasAnimation(string animation_key) {
     return animations.count(animation_key);
 }
-SpriteAnimation* SpriteAnimationSet::getAnimation(string animation_key) { // This function returns null. Input is definitely a valid string.
+SpriteAnimation* SpriteAnimationSet::getAnimation(string animation_key) {
     if (!hasAnimation(animation_key)) {
         warn("SpriteAnimationSet does not contain the animation key:");
         print(animation_key);

@@ -7,7 +7,7 @@ using namespace std;
 
 // Forward declarations
 class Node;
-class NodeManager;
+class Engine;
 template<typename A, typename... B>
 class Signal;
 
@@ -17,7 +17,7 @@ class Resource {
         void linkNode(Node* node);
         void unlinkNode(Node* node);
 
-        std::vector<Node*>* getLinkedNodes() { return &linked_nodes; }
+        vector<Node*>* getLinkedNodes() { return &linked_nodes; }
         int getLinkedNodeCount() { return linked_nodes.size(); }
 
         Signal<void, Node*>* SIGNAL_NODE_LINKED;
@@ -27,7 +27,7 @@ class Resource {
         virtual void process(float delta) {};
     
     protected:
-        NodeManager* manager;
+        Engine* engine;
     
     private:
         vector<Node*> linked_nodes;
