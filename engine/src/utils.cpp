@@ -68,9 +68,6 @@ string plusFile(string path, string file_to_add) {
 
     return path;
 }
-string getResPath(string absolute_path) {
-    return plusFile("/home/spectre7/Projects/raylib/SSG/", absolute_path);
-}
 
 string encaseStringInBox(string str, bool thick, int margin) {
     if (margin < 0) {

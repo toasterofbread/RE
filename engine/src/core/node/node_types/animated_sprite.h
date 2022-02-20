@@ -1,7 +1,5 @@
 #include "raylib-cpp.hpp"
 #include <iostream>
-#include <ponder/classbuilder.hpp>
-#include <ponder/uses/runtime.hpp>
 #include "json.hpp"
 using json = nlohmann::json;
 
@@ -33,21 +31,16 @@ class AnimatedSprite: public Node {
         virtual string getTypeName() {return "AnimatedSprite";}
         
         template<typename NodeType>
-        static ponder::ClassBuilder<NodeType> declareSetters(string node_name) {
-
-            if (!Node::isPonderClassDeclared("SpriteAnimationSet")) {
-                ponder::Class::declare<SpriteAnimationSet>("SpriteAnimationSet");
-            }
-
-            return Node::declareSetters<NodeType>(node_name)
-                .function("set animation_set SpriteAnimationSet", &NodeType::setAnimationSet)
-                .function("set current_animation_key string", &NodeType::setCurrentAnimationKey)
-                .function("set current_frame int", &NodeType::setCurrentFrame)
-                .function("set playing bool", &NodeType::setPlaying)
-                .function("set flip_x bool", &NodeType::setFlipX)
-                .function("set flip_y bool", &NodeType::setFlipY)
-                .function("set rotation_origin Vector2", &NodeType::setRotationOrigin)
-                .function("set rotate_around_center bool", &NodeType::setRotateAroundCetner)
+        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name, Engine* engine) {
+            return Node::registerNodeProperties<NodeType>(node_name, engine)
+                ->template registerProperty<SpriteAnimationSet*>("animation_set", &NodeType::setAnimationSet)
+                ->template registerProperty<string>("current_animation_key", &NodeType::setCurrentAnimationKey)
+                ->template registerProperty<int>("current_frame", &NodeType::setCurrentFrame)
+                ->template registerProperty<bool>("playing", &NodeType::setPlaying)
+                ->template registerProperty<bool>("flip_x", &NodeType::setFlipX)
+                ->template registerProperty<bool>("flip_y", &NodeType::setFlipY)
+                ->template registerProperty<Vector2>("rotation_origin", &NodeType::setRotationOrigin)
+                ->template registerProperty<bool>("rotate_around_center", &NodeType::setRotateAroundCetner)
                 ;
         }
 

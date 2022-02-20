@@ -28,9 +28,9 @@ class Resource {
     
     protected:
         Engine* engine;
-    
     private:
         vector<Node*> linked_nodes;
+    
 };
 
 #endif

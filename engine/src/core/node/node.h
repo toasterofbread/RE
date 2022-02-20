@@ -6,12 +6,12 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
-#ifndef INCLUDED_PONDER
-#define INCLUDED_PONDER // !todo fix
-#include <ponder/classbuilder.hpp>
-#include <ponder/uses/runtime.hpp>
-#endif
 using namespace std;
+
+#include "engine/src/core/object_constructor.h"
+
+#undef INCLUDED_ENGINE
+#include "engine/src/engine.h"
 
 // Debug
 #include <icecream.hpp>
@@ -19,12 +19,10 @@ using namespace std;
 // Forward declarations
 class NodeTexture;
 class NodeManager;
-class Node;
 template<typename A, typename... B>
 class Signal;
-class Engine;
+// class Engine;
 
-PONDER_TYPE(Node)
 class Node {
     private:
         // bool initialised = false;
@@ -58,33 +56,23 @@ class Node {
         Signal<void, Node*>* SIGNAL_READY;
         Signal<void, Node*>* SIGNAL_KILLED;
 
-        // - Ponder -
-        static string getSetterName(string property_name) {
-            return "set " + property_name + " ";
-        }
-
         template<typename NodeType>
-        static ponder::ClassBuilder<NodeType> getNodeBuilder(string node_name) {
-            if (isPonderClassDeclared(node_name)) return ponder::ClassBuilder<NodeType>((ponder::Class&)ponder::classByName(node_name));
-            return ponder::Class::declare<NodeType>(node_name);
-        }
-
-        static bool isPonderClassDeclared(string class_name) {
-            for (auto&& cls : ponder::classIterator()) {
-                if (cls.first == class_name) return true;
+        static ObjectConstructor<NodeType>* getNodeConstructor(string node_name, Engine* engine) {
+            if (!engine->getNodeManager()->isNodeTypeRegistered(node_name)) {
+                return engine->registerObjectType<NodeType, Engine*>(node_name);
             }
-            return false;
+            return engine->getObjectConstructor<NodeType>(node_name);
         }
 
         template<typename NodeType>
-        static ponder::ClassBuilder<NodeType> declareSetters(string node_name) {
-            return getNodeBuilder<NodeType>(node_name)
-                .function("set name string", &NodeType::setName)
-                .function("set show_gizmos bool", &NodeType::setShowGizmos)
-                .function("set position Vector2", &NodeType::setPosition)
-                .function("set scale Vector2", &NodeType::setScale)
-                .function("set rotation float", &NodeType::setRotation)
-                .function("set visible bool", &NodeType::setVisible)
+        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name, Engine* engine) {
+            return getNodeConstructor<NodeType>(node_name, engine)
+                ->template registerProperty<bool>("show_gizmos", &NodeType::setShowGizmos)
+                ->template registerProperty<string>("name", &NodeType::setName)
+                ->template registerProperty<Vector2>("position", &NodeType::setPosition)
+                ->template registerProperty<Vector2>("scale", &NodeType::setScale)
+                ->template registerProperty<float>("rotation", &NodeType::setRotation)
+                ->template registerProperty<bool>("visible", &NodeType::setVisible)
                 ;
         }
 

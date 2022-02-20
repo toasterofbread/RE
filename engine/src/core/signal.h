@@ -1,3 +1,6 @@
+#ifndef INCLUDED_SIGNAL
+#define INCLUDED_SIGNAL
+
 #include <raylib-cpp.hpp>
 #include <functional>
 #include <iostream>
@@ -39,8 +42,6 @@ class Signal {
 
     protected:
         void onEmission() { last_emission_time = GetTime(); }
-    private:
-
         class MemberCallbackBase {
             public:
                 virtual void call(CallbackArgs... args) {}
@@ -65,3 +66,5 @@ class Signal {
         vector<function<CallbackReturnType(CallbackArgs...)>> callbacks;
         double last_emission_time = -1;
 };
+
+#endif

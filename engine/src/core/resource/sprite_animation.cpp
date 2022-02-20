@@ -4,11 +4,11 @@
 using json = nlohmann::json;
 
 #include "engine/src/utils.h"
-#include "engine/src/engine.h"
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/resource/node_texture.h"
 #include "engine/src/core/node/node_manager.h"
 #include "engine/src/core/signal.h"
+#include "engine/src/engine.h"
 
 // Debug
 #include "icecream.hpp"
@@ -83,9 +83,9 @@ void SpriteAnimationSet::loadFile(Node* initial_linked_node, string path, string
         warn("SpriteAnimationSet file is not valid");
         return;
     }
-    
+
     file_path = path;
-    data = json::parse(LoadFileText(getResPath(file_path).c_str()));
+    data = json::parse(LoadFileText(Engine::getResPath(file_path).c_str()));
 
     string base_directory;
     if (base_directory_override != "//") {
@@ -117,8 +117,7 @@ bool SpriteAnimationSet::hasAnimation(string animation_key) {
 }
 SpriteAnimation* SpriteAnimationSet::getAnimation(string animation_key) {
     if (!hasAnimation(animation_key)) {
-        warn("SpriteAnimationSet does not contain the animation key:");
-        print(animation_key);
+        warn("SpriteAnimationSet does not contain the animation key '" + animation_key + "'");
         return NULL;
     }
     return animations[animation_key];
@@ -132,7 +131,7 @@ NodeTexture* SpriteAnimationSet::getFrame(string animation_key, int frame_idx) {
 }
 
 bool SpriteAnimationSet::isFileValid(string file_path, string base_directory_override, string* error_container) {
-    file_path = getResPath(file_path);
+    file_path = Engine::getResPath(file_path);
     if (!FileExists(file_path.c_str())) {
         if (error_container != NULL) *error_container = "No file exists at path '" + file_path + "'";
         return false;
@@ -172,8 +171,8 @@ bool SpriteAnimationSet::isFileValid(string file_path, string base_directory_ove
     }
 
     for (auto i = file_data["files"].begin(); i != file_data["files"].end(); ++i) {
-        if (!FileExists(getResPath(plusFile(base_directory, *i)).c_str())) {
-            if (error_container != NULL) *error_container = "Texture at path '" + getResPath(plusFile(base_directory, *i)) + "' does not exist";
+        if (!FileExists(Engine::getResPath(plusFile(base_directory, *i)).c_str())) {
+            if (error_container != NULL) *error_container = "Texture at path '" + Engine::getResPath(plusFile(base_directory, *i)) + "' does not exist";
             return false;
         }
     }

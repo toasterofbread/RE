@@ -1,9 +1,9 @@
 #include "node_texture.h"
 
 #include "engine/src/utils.h"
-#include "engine/src/engine.h"
 #include "engine/src/core/node/node_manager.h"
 #include "engine/src/core/signal.h"
+#include "engine/src/engine.h"
 
 #include <functional>
 using namespace std;

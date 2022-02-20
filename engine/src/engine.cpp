@@ -1,53 +1,22 @@
+#include "engine/src/core/node/node.h"
 #include "engine.h"
 
 #include <raylib-cpp.hpp>
-#include <ponder/classbuilder.hpp>
-#include <ponder/uses/runtime.hpp>
 
 #include "engine/src/utils.h"
 #include "engine/src/core/node/node_manager.h"
 #include "engine/src/input/input_manager.h"
 #include "engine/src/input/input_event.h"
-#include "engine/src/core/node/animated_sprite.h"
+#include "engine/src/core/node/node_types/animated_sprite.h"
 #include "engine/src/core/resource/sprite_animation.h"
 
-#include "engine/src/core/node/constructor.h"
+#include "engine/src/core/object_constructor.h"
 
-PONDER_TYPE(Vector2)
-PONDER_TYPE(Engine)
-PONDER_TYPE(AnimatedSprite)
-PONDER_TYPE(SpriteAnimationSet)
 Engine::Engine() {
-
     getNodeManager()->init();
     getInputManager()->init();
-
-    ponder::Class::declare<Vector2>("Vector2");
-    ponder::Class::declare<Engine>("Engine");
-    Node::declareSetters<Node>("Node");
-    Node::getNodeBuilder<Node>("Node").constructor<Engine*>();
-    AnimatedSprite::declareSetters<AnimatedSprite>("AnimatedSprite");
-    Node::getNodeBuilder<AnimatedSprite>("AnimatedSprite").constructor<Engine*>();
-
-
-    // ObjectConstructor<Node>* constructor = registerObjectForConstruction<Node>("Node");
-
-    // constructor->registerProperty<Vector2>("position", &Node::setPosition);
-
-    // Node* new_node = constructor->createInstance(this);
-    
-    // print(new_node->getPosition());
-
-    // constructor->setProperty(new_node, "position", Vector2{69, 420});
-
-    // print(new_node->getPosition());
-
-    // print(constructor->inheritsType<Node>());
-    // print(constructor->inheritsType<Vector2>());
-    
-
-    
-
+    Node::registerNodeProperties<Node>("Node", this);
+    AnimatedSprite::registerNodeProperties<AnimatedSprite>("AnimatedSprite", this);
 }
 
 void Engine::process(float delta) {
@@ -60,6 +29,10 @@ void Engine::process(float delta) {
     for (auto i = all_inputevents.begin(); i != all_inputevents.end(); ++i) {
         (*i)->process(delta);
     }
+}
+
+string Engine::getResPath(string absolute_path) {
+    return plusFile("/home/spectre7/Projects/raylib/SSG/", absolute_path);
 }
 
 void Engine::ensureAsync() {

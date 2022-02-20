@@ -58,7 +58,7 @@ file(GLOB_RECURSE PROJECT_SOURCES
 set(PLATFORM none)
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 11)
-target_link_libraries(${PROJECT_NAME} PUBLIC raylib raylib_cpp -ldw -lyaml-cpp -lponder -lpthread)
+target_link_libraries(${PROJECT_NAME} PUBLIC raylib raylib_cpp -ldw -lyaml-cpp -lpthread)
 target_include_directories(${PROJECT_NAME} PRIVATE ./)
 
 # Web Configurations

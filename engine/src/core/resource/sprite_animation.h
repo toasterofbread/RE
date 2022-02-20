@@ -43,4 +43,6 @@ class SpriteAnimationSet: public Resource {
         
         void onNodeLinked(Node* node);
         void onNodeUnlinked(Node* node);
+
+        bool initialised = false;
 };

@@ -9,7 +9,6 @@ using json = nlohmann::json;
 void AnimatedSprite::process(float delta) {
 
     Node::process(delta);
-    
     if (getPlaying()) frame_timer += delta;
 
     if (getAnimationSet() == NULL) {
@@ -64,7 +63,6 @@ void AnimatedSprite::process(float delta) {
 }
 
 void AnimatedSprite::setAnimationSet(SpriteAnimationSet* value) {
-
     if (getAnimationSet() != NULL) {
         getAnimationSet()->unlinkNode(this);
     }

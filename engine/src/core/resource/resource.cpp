@@ -1,9 +1,9 @@
 #include "resource.h"
 
 #include "engine/src/utils.h"
-#include "engine/src/engine.h"
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/node/node_manager.h"
+#include "engine/src/engine.h"
 #include "engine/src/core/signal.h"
 
 Resource::Resource(Node* initial_linked_node) {
@@ -25,6 +25,10 @@ void Resource::linkNode(Node* node) {
     }
 }
 void Resource::unlinkNode(Node* node) {
+    if (!vectorContainsValue(&linked_nodes, node)) {
+        return;
+    }
+    
     vectorRemoveValue(&linked_nodes, node);
 
     if (linked_nodes.size() == 0) {

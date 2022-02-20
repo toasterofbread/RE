@@ -26,7 +26,6 @@ Vector2 sign(Vector2 value);
 vector<string> splitString(string str, char splitter);
 const char* plusFile(const char* path, const char* file_to_add);
 string plusFile(string path, string file_to_add);
-string getResPath(string absolute_path);
 
 constexpr unsigned int str2int(const char* str, int h = 0) {
     return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
