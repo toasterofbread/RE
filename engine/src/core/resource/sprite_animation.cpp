@@ -3,37 +3,34 @@
 #include <json.hpp>
 using json = nlohmann::json;
 
-#include "engine/src/utils.h"
 #include "engine/src/core/node/node.h"
-#include "engine/src/core/resource/node_texture.h"
+#include "engine/src/utils.h"
+#include "engine/src/engine.h"
+#include "engine/src/engine_texture.h"
 #include "engine/src/core/node/node_manager.h"
 #include "engine/src/core/signal.h"
-#include "engine/src/engine.h"
 
 // Debug
-#include "icecream.hpp"
+#include <icecream.hpp>
 
-void SpriteAnimation::init(string animation_name, json* animation_data, json* file_data, Node* initial_linked_node, string load_directory) {
+void SpriteAnimation::init(string animation_name, json* animation_data, json* file_data, Engine* engine, string load_directory) {
     name = animation_name;
     loop = (*animation_data)["loop"];
     framerate = (*animation_data)["speed"];
 
-    for (auto it = frames.begin(); it != frames.end(); ++it) {
-        initial_linked_node->getEngine()->unloadTexture((*it)->getTexture(), *it);
-    }
     frames.clear();
 
     for (auto item : (*animation_data)["frames"] ) {
         if (item.is_null()) { break; }
         // Texture2D texture = manager->loadTexture(plusFile(load_directory, (*file_data)[int2char(item)]));
-        NodeTexture* texture = new NodeTexture(initial_linked_node, plusFile(load_directory, (*file_data)[int2char(item)]));
-        frames.push_back(texture);
+        // NodeTexture* texture = new NodeTexture(initial_linked_node, plusFile(load_directory, (*file_data)[int2char(item)]));
+        frames.push_back(engine->loadTexture(plusFile(load_directory, (*file_data)[int2char(item)])));
     }
     
 }
 
-NodeTexture* SpriteAnimation::getFrame(int frame_idx) {
-    if (frame_idx >= getFrameCount()) {
+shared_ptr<EngineTexture> SpriteAnimation::getFrame(int frame_idx) {
+    if (!hasFrame(frame_idx)) {
         warn("Frame index out of bounds", true);
     }
     return frames[frame_idx];
@@ -43,41 +40,38 @@ int SpriteAnimation::getFrameCount() {
     return frames.size();
 }
 
-int SpriteAnimation::getFrameWidth() { 
-    if (frames.empty()) {
-        return 0;
+bool SpriteAnimation::hasFrame(int frame_idx) {
+    return frame_idx >= 0 && frame_idx < getFrameCount();
+}
+
+int SpriteAnimation::getFrameWidth(int frame_idx) { 
+    if (!hasFrame(frame_idx)) {
+        warn("Frame index out of bounds", true);
     }
-    return frames[0]->getWidth(); 
+    return frames[frame_idx]->getWidth(); 
+}
+
+int SpriteAnimation::getFrameHeight(int frame_idx) { 
+    if (!hasFrame(frame_idx)) {
+        warn("Frame index out of bounds", true);
+    }
+    return frames[frame_idx]->getHeight(); 
+}
+
+Vector2 SpriteAnimation::getFrameSize(int frame_idx) { 
+    if (!hasFrame(frame_idx)) {
+        warn("Frame index out of bounds", true);
+    }
+    return frames[frame_idx]->getSize(); 
 }
 
 // - SpriteAnimationSet -
 
-SpriteAnimationSet::SpriteAnimationSet(Node* initial_linked_node, string file_path, string base_directory_override): Resource(initial_linked_node) {
-    SIGNAL_NODE_LINKED->connect<SpriteAnimationSet>(&SpriteAnimationSet::onNodeLinked, this);
-    SIGNAL_NODE_UNLINKED->connect<SpriteAnimationSet>(&SpriteAnimationSet::onNodeUnlinked, this);
-
-    loadFile(initial_linked_node, file_path, base_directory_override);
+SpriteAnimationSet::SpriteAnimationSet(Engine* engine, string file_path, string base_directory_override): Resource(engine) {
+    loadFile(engine, file_path, base_directory_override);
 }
 
-void SpriteAnimationSet::onNodeLinked(Node* node) {
-    for( const pair<string, SpriteAnimation*>& n : getAnimations() ) {
-        vector<NodeTexture*> animation_frames = n.second->getFrames();
-
-        for (auto i = animation_frames.begin(); i != animation_frames.end(); ++i)
-            (*i)->linkNode(node);
-    }
-}
-
-void SpriteAnimationSet::onNodeUnlinked(Node* node) {
-    for( const pair<string, SpriteAnimation*>& n : getAnimations() ) {
-        vector<NodeTexture*> animation_frames = n.second->getFrames();
-
-        for (auto i = animation_frames.begin(); i != animation_frames.end(); ++i)
-            (*i)->unlinkNode(node);
-    }
-}
-
-void SpriteAnimationSet::loadFile(Node* initial_linked_node, string path, string base_directory_override) {
+void SpriteAnimationSet::loadFile(Engine* engine, string path, string base_directory_override) {
     
     if (!isFileValid(path)) {
         warn("SpriteAnimationSet file is not valid");
@@ -106,7 +100,7 @@ void SpriteAnimationSet::loadFile(Node* initial_linked_node, string path, string
         json animation_data = data["animations"][animation_key];
 
         SpriteAnimation* animation = new SpriteAnimation;
-        animation->init(animation_key, &animation_data, &data["files"], initial_linked_node, base_directory);
+        animation->init(animation_key, &animation_data, &data["files"], engine, base_directory);
         animations[animation_key] = animation;
         // animations.insert(make_pair(animation_key, animation));
     }
@@ -123,7 +117,7 @@ SpriteAnimation* SpriteAnimationSet::getAnimation(string animation_key) {
     return animations[animation_key];
 }
 
-NodeTexture* SpriteAnimationSet::getFrame(string animation_key, int frame_idx) {
+shared_ptr<EngineTexture> SpriteAnimationSet::getFrame(string animation_key, int frame_idx) {
     if (!hasAnimation(animation_key)) {
         warn("SpriteAnimationSet does not contain the animation key: " + animation_key, true);
     }

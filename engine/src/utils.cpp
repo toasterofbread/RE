@@ -229,11 +229,6 @@ const char* int2char(int value) {
     sprintf(ret, "%d", value);
     return ret;
 }
-const char* string2char(string value) {
-    char* ret = (char*)calloc(value.length() + 1, sizeof(char));
-    strcpy(ret, value.c_str());
-    return ret;
-}
 
 Vector2 aV(Vector2 a, Vector2 b) {
     return Vector2{a.x+b.x, a.y+b.y};

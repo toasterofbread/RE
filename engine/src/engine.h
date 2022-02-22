@@ -3,18 +3,19 @@
 
 #include <thread>
 #include <unordered_map>
+#include <memory>
 using namespace std;
 
 #include "engine/src/core/signal.h"
+#include "engine/src/core/object_constructor.h"
 #include "engine/src/core/node/node_manager.h"
 #include "engine/src/input/input_manager.h"
-#include "engine/src/core/object_constructor.h"
 #include "engine/src/core/yaml_data_converter.h"
 
 // Forward declarations
 class InputEvent;
 class Resource;
-class NodeTexture;
+class EngineTexture;
 
 class Engine {
     public:
@@ -27,19 +28,20 @@ class Engine {
         InputManager* getInputManager() { return input_manager_singleton; }
         YAMLDataConverter* getYAMLDataConverter() { return yaml_data_converter_singleton; }
 
-        Texture2D loadTexture(string file_path, NodeTexture* node_texture);
-        void unloadTexture(Texture2D texture, NodeTexture* node_texture);
+        // - Texture management -
+        shared_ptr<EngineTexture> loadTexture(string file_path);
         bool isTextureLoaded(string file_path);
-        // bool isNodeUsingTexture() // !TODO
 
+        // - Resource management -
         void resourceCreated(Resource* resource);
         void resourceDeleted(Resource* resource);
 
+        // - InputEvent management -
         void inputEventCreated(InputEvent* event);
         void inputEvenDeleted(InputEvent* event);
 
         template<typename T>
-        void requestDeletion(T* what) { delete what; }
+        void requestDeletion(T* what) { delete what; } // !todo remove
 
         static string getResPath(string absolute_path);
 
@@ -64,7 +66,7 @@ class Engine {
                 return NULL;
             }
 
-            ObjectConstructor<ObjectType>* constructor = new ObjectConstructor<ObjectType>(getYAMLDataConverter());
+            ObjectConstructor<ObjectType>* constructor = new ObjectConstructor<ObjectType>(this, getYAMLDataConverter());
             constructor->template init<ConstructorArgs...>();
             registered_object_constructors[object_type_name] = constructor;
             
@@ -92,9 +94,14 @@ class Engine {
         InputManager* input_manager_singleton = new InputManager(this);
         YAMLDataConverter* yaml_data_converter_singleton = new YAMLDataConverter();
 
-        unordered_map<string, Texture2D> loaded_textures;
-        unordered_map<unsigned int, vector<NodeTexture*>> texture_resources;
+        // - Texture management -
+        unordered_map<string, weak_ptr<EngineTexture>> loaded_textures;
+        void onTextureContainerDeleted(string file_path, Texture2D texture) {
+            loaded_textures.erase(file_path);
+            UnloadTexture(texture);
+        }
 
+        // - Resource management -
         vector<Resource*> all_resources;
         vector<InputEvent*> all_inputevents;
         thread::id main_thread_id = this_thread::get_id();

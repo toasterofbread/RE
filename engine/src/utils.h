@@ -42,7 +42,6 @@ string equaliseStringLineWidths(string str);
 bool stringBeginsWith(string str, string begins);
 string vector2str(Vector2 value);
 const char* int2char(int value);
-const char* string2char(string value);
 string encaseStringInBox(string str, bool thick = false, int margin = 2);
 string repeatString(string str, int amount);
 

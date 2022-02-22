@@ -1,16 +1,18 @@
-#include "engine/src/core/node/node.h"
 #include "engine.h"
 
 #include <raylib-cpp.hpp>
+#include <memory>
 
 #include "engine/src/utils.h"
+#include "engine/src/core/resource/resource.h"
+#include "engine/src/core/node/node.h"
+#include "engine/src/core/object_constructor.h"
 #include "engine/src/core/node/node_manager.h"
 #include "engine/src/input/input_manager.h"
 #include "engine/src/input/input_event.h"
 #include "engine/src/core/node/node_types/animated_sprite.h"
-#include "engine/src/core/resource/sprite_animation.h"
-
-#include "engine/src/core/object_constructor.h"
+#include "engine/src/engine_texture.h"
+#include "engine/src/core/node/registration.cpp"
 
 Engine::Engine() {
     getNodeManager()->init();
@@ -32,7 +34,7 @@ void Engine::process(float delta) {
 }
 
 string Engine::getResPath(string absolute_path) {
-    return plusFile("/home/spectre7/Projects/raylib/SSG/", absolute_path);
+    return plusFile("/home/spectre7/Projects/raylib/RE/", absolute_path);
 }
 
 void Engine::ensureAsync() {
@@ -42,39 +44,33 @@ void Engine::ensureAsync() {
 }
 
 void Engine::rebuildAndRun() {
-    system("clear && cd /home/spectre7/Projects/raylib/SSG && ./run.sh &");
+    system("clear && cd /home/spectre7/Projects/raylib/RE && ./run.sh &");
     exit(0);
 }
 
-// - Resource loading / unloading -
+// - Texture management -
 
-Texture2D Engine::loadTexture(string file_path, NodeTexture* node_texture) {
+shared_ptr<EngineTexture> Engine::loadTexture(string file_path) {
 
-    string path = getResPath(file_path);
-    Texture2D texture;
+    file_path = getResPath(file_path);
+    shared_ptr<EngineTexture> ret;
 
     if (isTextureLoaded(file_path)) { // Texture is already loaded, just add the node to the userlist
-        texture = loaded_textures[path];
-
-        if (!vectorContainsValue(&texture_resources[texture.id], node_texture)) {
-            texture_resources[texture.id].push_back(node_texture);
-        }
+        ret = (shared_ptr<EngineTexture>)loaded_textures[file_path];
     }
     else {
-        texture = LoadTexture(string2char(path));
-        loaded_textures[path] = texture;;
-        texture_resources[texture.id] = vector<NodeTexture*>{node_texture};
+        ret = make_shared<EngineTexture>(LoadTexture(file_path.c_str()));
+        loaded_textures[file_path] = ret;
     }
 
-    return texture;
-}
-
-void Engine::unloadTexture(Texture2D texture, NodeTexture* node_texture) {
+    return ret;
 }
 
 bool Engine::isTextureLoaded(string file_path) {
-    return loaded_textures.count(getResPath(file_path)) > 0;
+    return loaded_textures.count(getResPath(file_path));
 }
+
+// - Resource management -
 
 void Engine::resourceCreated(Resource* resource) {
     all_resources.push_back(resource);
@@ -83,6 +79,8 @@ void Engine::resourceCreated(Resource* resource) {
 void Engine::resourceDeleted(Resource* resource) {
     vectorRemoveValue(&all_resources, resource);
 }
+
+// - InputEvent management -
 
 void Engine::inputEventCreated(InputEvent* event) {
     all_inputevents.push_back(event);

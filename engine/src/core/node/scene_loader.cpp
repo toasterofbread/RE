@@ -1,15 +1,15 @@
 #include "scene_loader.h"
 
+#include "engine/src/engine.h"
 #include "engine/src/utils.h"
 #include "engine/src/core/node/node.h"
-#include "engine/src/engine.h"
 #include "engine/src/core/object_constructor.h"
 #include "engine/src/core/node/node_types/animated_sprite.h"
 
 Node* SceneLoader::loadSceneFromFile(string file_path, Engine* engine, Node* root_node_override, YAML::Node* config_container) {
 
     if (!FileExists(Engine::getResPath(file_path).c_str())) {
-        warn("No file exists at path '" + file_path + "'", true);
+        warn("No file exists at path '" + Engine::getResPath(file_path) + "'", true);
         return NULL;
     }
 
@@ -141,7 +141,7 @@ Node* SceneLoader::synthesiseNode(string node_type, YAML::Node& node_data, Engin
     return root;
 }
 
-Node* SceneLoader::instanceNodeFromType(string& node_type, YAML::Node& node_data, Engine* engine, bool suppress_warning, Node* root_node_override) {
+Node* SceneLoader::instanceNodeFromType(string node_type, YAML::Node& node_data, Engine* engine, bool suppress_warning, Node* root_node_override) {
 
     // Ensure node_type is a registered object and inherits Node
     if (!engine->getNodeManager()->isNodeTypeRegistered(node_type)) {

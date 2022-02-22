@@ -15,12 +15,13 @@ using namespace std;
 // Forward declarations
 class NodeManager;
 class SpriteAnimationSet;
+class Engine;
 
 class YAMLDataConverter {
 
     private:
         template<typename ValueType>
-        static ValueType convertToGenericType(YAML::Node data, string type_name, string error_prefix, Node* owner_node) {
+        static ValueType convertToGenericType(YAML::Node data, string type_name, string error_prefix, Engine* engine) {
             try {
                 return data.as<ValueType>();
             }
@@ -29,8 +30,8 @@ class YAMLDataConverter {
             }
             return (ValueType)NULL;
         }
-        static Vector2 convertToVector2(YAML::Node data, string type_name, string error_prefix, Node* owner_node);
-        static SpriteAnimationSet* convertToSpriteAnimationSet(YAML::Node data, string type_name, string error_prefix, Node* owner_node);
+        static Vector2 convertToVector2(YAML::Node data, string type_name, string error_prefix, Engine* engine);
+        static SpriteAnimationSet* convertToSpriteAnimationSet(YAML::Node data, string type_name, string error_prefix, Engine* engine);
     public:
 
         enum class DATA_TYPE {
@@ -64,15 +65,15 @@ class YAMLDataConverter {
         }
 
         template<typename ValueType>
-        ValueType convertData(YAML::Node data, Node* owner_node = NULL) {
+        ValueType convertData(YAML::Node data, Engine* engine) {
             if (!isTypeConverterRegistered<ValueType>()) {
                 warn("Type has no registered converter", true);
             }
-            return ((Converter<ValueType>*)converters[typeid(ValueType).hash_code()])->convertData(data, owner_node);
+            return ((Converter<ValueType>*)converters[typeid(ValueType).hash_code()])->convertData(data, engine);
         }
 
         template<typename ValueType>
-        void registerTypeConverter(function<ValueType(YAML::Node, string, string, Node*)> converter_method, string type_name, vector<DATA_TYPE> allowed_data_types) {
+        void registerTypeConverter(function<ValueType(YAML::Node, string, string, Engine*)> converter_method, string type_name, vector<DATA_TYPE> allowed_data_types) {
             if (isTypeConverterRegistered<ValueType>()) {
                 warn("Type '" + type_name + "' already has a registered converter");
                 return;
@@ -90,16 +91,16 @@ class YAMLDataConverter {
         template<typename ValueType>
         class Converter: public ConverterBase {
             private:
-                function<ValueType(YAML::Node, string, string, Node*)> method;
+                function<ValueType(YAML::Node, string, string, Engine*)> method;
                 string name;
                 vector<DATA_TYPE> allowed_types;
             public:
-                Converter(function<ValueType(YAML::Node, string, string, Node*)> converter_method, string type_name, vector<DATA_TYPE> allowed_data_types) {
+                Converter(function<ValueType(YAML::Node, string, string, Engine*)> converter_method, string type_name, vector<DATA_TYPE> allowed_data_types) {
                     method = converter_method;
                     name = type_name;
                     allowed_types = allowed_data_types;
                 }
-                ValueType convertData(YAML::Node data, Node* owner_node = NULL) {
+                ValueType convertData(YAML::Node data, Engine* engine) {
                     string error_prefix = "An error occurred while converting YAML data to type '" + name + "': ";
                     DATA_TYPE data_type = getYAMLDataType(data);
                     if (!vectorContainsValue(&allowed_types, data_type)) {
@@ -116,7 +117,7 @@ class YAMLDataConverter {
                         }
                     }
 
-                    return method(data, name, error_prefix, owner_node);
+                    return method(data, name, error_prefix, engine);
                 }
         };
         

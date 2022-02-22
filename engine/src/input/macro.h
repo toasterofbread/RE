@@ -1,3 +1,6 @@
+#ifndef INCLUDED_MACRO
+#define INCLUDED_MACRO
+
 #include "engine/src/input/input_manager.h"
 
 class Macro {
@@ -24,3 +27,5 @@ class Macro {
         vector<InputManager::KEYBOARD_BUTTON> keyboard_buttons;
         vector<InputManager::GAMEPAD_BUTTON> gamepad_buttons;
 };
+
+#endif

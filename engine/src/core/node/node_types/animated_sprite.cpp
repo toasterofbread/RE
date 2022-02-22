@@ -1,9 +1,11 @@
 #include "animated_sprite.h"
-#include "json.hpp"
+
+#include <memory>
+#include <json.hpp>
 using json = nlohmann::json;
 
 #include "engine/src/utils.h"
-#include "engine/src/core/resource/node_texture.h"
+#include "engine/src/engine_texture.h"
 #include "engine/src/core/resource/sprite_animation.h"
 
 void AnimatedSprite::process(float delta) {
@@ -31,7 +33,7 @@ void AnimatedSprite::process(float delta) {
     current_frame = current_frame % animation->getFrameCount();
 
     if (getVisible()) {
-        NodeTexture* frame_texture = animation->getFrame(current_frame);
+        shared_ptr<EngineTexture> frame_texture = animation->getFrame(current_frame);
 
         Vector2 origin;
         if (getRotateAroundCenter()) {
@@ -63,12 +65,7 @@ void AnimatedSprite::process(float delta) {
 }
 
 void AnimatedSprite::setAnimationSet(SpriteAnimationSet* value) {
-    if (getAnimationSet() != NULL) {
-        getAnimationSet()->unlinkNode(this);
-    }
-
     animation_set = value;
-    animation_set->linkNode(this);
 }
 
 void AnimatedSprite::play(string animation_key) {

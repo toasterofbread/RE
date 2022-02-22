@@ -8,35 +8,30 @@
 #include <type_traits>
 using namespace std;
 
-#include "icecream.hpp"
+#include "icecream.hpp" // Debug
 
-// #include "engine/src/core/node/node.h"
 #include "engine/src/utils.h"
 #include "engine/src/core/yaml_data_converter.h"
 
 // Forward declarations
 class NodeManager;
+class Engine;
 
 class ObjectConstructorBase {
-
     public:
         template<typename InheritedType>
         bool inheritsType() { return false; }
-
 };
 
 template<typename ObjectType>
 class ObjectConstructor: public ObjectConstructorBase {
 
     private:
+        Engine* engine;
 
         class SetterBase {
             public:
-                // const type_info& type;
-                // SetterBase() {}
-
-                // virtual void set(ObjectType* object, PropertyType value) {}
-                virtual void set(ObjectType* object, YAML::Node data, YAMLDataConverter* converter, Node* owner_node = NULL) {}
+                virtual void set(ObjectType* object, YAML::Node data, YAMLDataConverter* converter) {}
         };
 
         template<typename PropertyType>
@@ -44,21 +39,24 @@ class ObjectConstructor: public ObjectConstructorBase {
             public:
                 void (ObjectType::*setter_method)(PropertyType);
 
-                Setter(void (ObjectType::*method)(PropertyType)) {
+                Setter(void (ObjectType::*method)(PropertyType), Engine* engine_singleton) {
                     setter_method = method;
+                    engine = engine_singleton;
                 }
 
                 void set(ObjectType* object, PropertyType value) {
                     (object->*setter_method)(value);
                 }
 
-                void set(ObjectType* object, YAML::Node data, YAMLDataConverter* converter, Node* owner_node = NULL) {
+                void set(ObjectType* object, YAML::Node data, YAMLDataConverter* converter) {
                     if (!converter->isTypeConverterRegistered<PropertyType>()) {
                         warn("Cannot set object value, type has no registered YAML data converter", true);
                         return;
                     }
-                    (object->*setter_method)(converter->convertData<PropertyType>(data, owner_node));
+                    (object->*setter_method)(converter->convertData<PropertyType>(data, engine));
                 }
+            private:
+                Engine* engine;
 
         };
 
@@ -80,7 +78,10 @@ class ObjectConstructor: public ObjectConstructorBase {
 
     public:
 
-        ObjectConstructor(YAMLDataConverter* data_converter) { converter = data_converter; }
+        ObjectConstructor(Engine* engine_singleton, YAMLDataConverter* data_converter) {
+            engine = engine_singleton;
+            converter = data_converter;
+        }
 
         template<typename... ConstructorArgs>
         void init() {
@@ -95,7 +96,7 @@ class ObjectConstructor: public ObjectConstructorBase {
                 warn("Property '" + property_name + "' is already registered", true);
                 return this;
             }
-            setters[property_name] = new Setter<PropertyType>(setter);
+            setters[property_name] = new Setter<PropertyType>(setter, engine);
             return this;
         }
         
@@ -113,7 +114,7 @@ class ObjectConstructor: public ObjectConstructorBase {
                 warn("Property '" + property_name + "' is not registered", true);
                 return;
             }
-            setters[property_name]->set(object, data, converter, inheritsType<Node>() ? object : NULL);
+            setters[property_name]->set(object, data, converter);
         }
 
         bool isPropertyRegistered(string property_name) {

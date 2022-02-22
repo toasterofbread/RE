@@ -20,7 +20,7 @@ if ! cmake ..; then
     exit
 fi
 
-if ! make; then
+if ! make -j 8; then
     echo "make failed, exiting run.sh"
     exit
 fi

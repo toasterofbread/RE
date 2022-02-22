@@ -6,9 +6,6 @@
 #include "engine/src/core/signal.h"
 #include "engine/src/core/node/node.h"
 #include "engine/src/engine.h"
-#include "engine/src/core/node/node_types/animated_sprite.h"
-#include "engine/src/core/resource/resource.h"
-#include "engine/src/input/input_event.h"
 
 // Debug
 #include "icecream.hpp"

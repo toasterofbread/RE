@@ -14,6 +14,6 @@ class SceneLoader {
 
     private:
         static Node* synthesiseNode(string node_type, YAML::Node& node_data, Engine* engine, Node* root_node_override = NULL);
-        static Node* instanceNodeFromType(string& node_type, YAML::Node& node_data, Engine* engine, bool suppress_warning = false, Node* root_node = NULL);
+        static Node* instanceNodeFromType(string node_type, YAML::Node& node_data, Engine* engine, bool suppress_warning = false, Node* root_node = NULL);
 
 };

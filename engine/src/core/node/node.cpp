@@ -5,7 +5,6 @@
 #include "engine/src/utils.h"
 #include "engine/src/engine.h"
 #include "engine/src/core/signal.h"
-#include "engine/src/core/object_constructor.h"
 
 #include <icecream.hpp> // Debug
 
@@ -27,14 +26,6 @@ void Node::init(Engine* engine_singleton) {
     id = manager->getNewNodeId();
     is_root = id == 1;
 }
-
-// template<typename NodeType>
-// ObjectConstructor<NodeType>* Node::getNodeConstructor(string node_name, Engine* engine) {
-//     if (!engine->getNodeManager()->isNodeTypeRegistered(node_name)) {
-//         return engine->registerObjectType<NodeType>(node_name);
-//     }
-//     return engine->getObjectConstructor<NodeType>(node_name);
-// }
 
 void Node::addedToNode(Node* parent_node) {
     parent = parent_node;

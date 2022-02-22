@@ -8,7 +8,7 @@
 
 
 
-Vector2 YAMLDataConverter::convertToVector2(YAML::Node data, string type_name, string error_prefix, Node* owner_node) {
+Vector2 YAMLDataConverter::convertToVector2(YAML::Node data, string type_name, string error_prefix, Engine* engine) {
     Vector2 ret;
 
     // Convert and set X value
@@ -22,7 +22,7 @@ Vector2 YAMLDataConverter::convertToVector2(YAML::Node data, string type_name, s
     return ret;
 }
 
-SpriteAnimationSet* YAMLDataConverter::convertToSpriteAnimationSet(YAML::Node data, string type_name, string error_prefix, Node* owner_node) {
+SpriteAnimationSet* YAMLDataConverter::convertToSpriteAnimationSet(YAML::Node data, string type_name, string error_prefix, Engine* engine) {
     string file_path;
     string base_directory_override = "//";
 
@@ -56,10 +56,6 @@ SpriteAnimationSet* YAMLDataConverter::convertToSpriteAnimationSet(YAML::Node da
         return NULL;
     }
 
-    if (owner_node == NULL) {
-        warn(error_prefix + "Owner node must be passed", true);
-    }
-
-    SpriteAnimationSet* ret = new SpriteAnimationSet(owner_node, file_path, base_directory_override);
+    SpriteAnimationSet* ret = new SpriteAnimationSet(engine, file_path, base_directory_override);
     return ret;
 }

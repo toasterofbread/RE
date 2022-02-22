@@ -1,3 +1,6 @@
+#ifndef INCLUDED_ANIMATED_SPRITE
+#define INCLUDED_ANIMATED_SPRITE
+
 #include "raylib-cpp.hpp"
 #include <iostream>
 #include "json.hpp"
@@ -31,18 +34,7 @@ class AnimatedSprite: public Node {
         virtual string getTypeName() {return "AnimatedSprite";}
         
         template<typename NodeType>
-        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name, Engine* engine) {
-            return Node::registerNodeProperties<NodeType>(node_name, engine)
-                ->template registerProperty<SpriteAnimationSet*>("animation_set", &NodeType::setAnimationSet)
-                ->template registerProperty<string>("current_animation_key", &NodeType::setCurrentAnimationKey)
-                ->template registerProperty<int>("current_frame", &NodeType::setCurrentFrame)
-                ->template registerProperty<bool>("playing", &NodeType::setPlaying)
-                ->template registerProperty<bool>("flip_x", &NodeType::setFlipX)
-                ->template registerProperty<bool>("flip_y", &NodeType::setFlipY)
-                ->template registerProperty<Vector2>("rotation_origin", &NodeType::setRotationOrigin)
-                ->template registerProperty<bool>("rotate_around_center", &NodeType::setRotateAroundCetner)
-                ;
-        }
+        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name, Engine* engine);
 
         void play(string animation_key = "");
         bool hasAnimation(string animation_key);
@@ -65,3 +57,5 @@ class AnimatedSprite: public Node {
         void setRotateAroundCetner(bool value) { rotate_around_center = value; }
         bool getRotateAroundCenter() { return rotate_around_center; }
 };
+
+#endif

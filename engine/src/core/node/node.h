@@ -8,25 +8,19 @@
 #include <unordered_map>
 using namespace std;
 
-#include "engine/src/core/object_constructor.h"
-
-#undef INCLUDED_ENGINE
 #include "engine/src/engine.h"
 
-// Debug
-#include <icecream.hpp>
+#include <icecream.hpp> // Debug
 
 // Forward declarations
-class NodeTexture;
 class NodeManager;
 template<typename A, typename... B>
 class Signal;
-// class Engine;
+template<typename ObjectType>
+class ObjectConstructor;
 
 class Node {
     private:
-        // bool initialised = false;
-        
         vector<Node*> children{};
         unordered_map<string, Node*> registered_scene_nodes;
         int id = -1;
@@ -56,6 +50,15 @@ class Node {
         Signal<void, Node*>* SIGNAL_READY;
         Signal<void, Node*>* SIGNAL_KILLED;
 
+
+        // - Core -
+        void addedToNode(Node* parent_node);
+        void removedFromNode(Node* former_parent_node);
+        virtual void ready();
+        virtual void process(float delta);
+        virtual string getTypeName() {return "Node";}
+        string getValidName(string base_name = "");
+
         template<typename NodeType>
         static ObjectConstructor<NodeType>* getNodeConstructor(string node_name, Engine* engine) {
             if (!engine->getNodeManager()->isNodeTypeRegistered(node_name)) {
@@ -65,24 +68,7 @@ class Node {
         }
 
         template<typename NodeType>
-        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name, Engine* engine) {
-            return getNodeConstructor<NodeType>(node_name, engine)
-                ->template registerProperty<bool>("show_gizmos", &NodeType::setShowGizmos)
-                ->template registerProperty<string>("name", &NodeType::setName)
-                ->template registerProperty<Vector2>("position", &NodeType::setPosition)
-                ->template registerProperty<Vector2>("scale", &NodeType::setScale)
-                ->template registerProperty<float>("rotation", &NodeType::setRotation)
-                ->template registerProperty<bool>("visible", &NodeType::setVisible)
-                ;
-        }
-
-        // - Core -
-        void addedToNode(Node* parent_node);
-        void removedFromNode(Node* former_parent_node);
-        virtual void ready();
-        virtual void process(float delta);
-        virtual string getTypeName() {return "Node";}
-        string getValidName(string base_name = "");
+        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name, Engine* engine);
 
         // - Children-
         void addChild(Node* child);
