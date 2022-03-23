@@ -20,13 +20,13 @@ class InputEvent {
         bool isJustUntriggered();
 
         virtual void process(float delta);
-    
+        vector<Macro*> getMacros() { return macros; }
+
         Signal<void>* SIGNAL_TRIGGERED;
         Signal<void>* SIGNAL_UNTRIGGERED;
     private:
         void init();
         vector<Macro*> macros;
-
 
         Engine* engine;
 };

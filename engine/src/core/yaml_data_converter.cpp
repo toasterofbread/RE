@@ -1,12 +1,11 @@
 #include "yaml_data_converter.h"
 
 #include <yaml-cpp/yaml.h>
+#include <raylib-cpp.hpp>
 
 #include "engine/src/utils.h"
 #include "engine/src/core/resource/sprite_animation.h"
 #include "engine/src/engine.h"
-
-
 
 Vector2 YAMLDataConverter::convertToVector2(YAML::Node data, string type_name, string error_prefix, Engine* engine) {
     Vector2 ret;
@@ -22,7 +21,7 @@ Vector2 YAMLDataConverter::convertToVector2(YAML::Node data, string type_name, s
     return ret;
 }
 
-SpriteAnimationSet* YAMLDataConverter::convertToSpriteAnimationSet(YAML::Node data, string type_name, string error_prefix, Engine* engine) {
+shared_ptr<SpriteAnimationSet> YAMLDataConverter::convertToSpriteAnimationSet(YAML::Node data, string type_name, string error_prefix, Engine* engine) {
     string file_path;
     string base_directory_override = "//";
 
@@ -56,6 +55,6 @@ SpriteAnimationSet* YAMLDataConverter::convertToSpriteAnimationSet(YAML::Node da
         return NULL;
     }
 
-    SpriteAnimationSet* ret = new SpriteAnimationSet(engine, file_path, base_directory_override);
+    shared_ptr<SpriteAnimationSet> ret = SpriteAnimationSet::getInstance(engine, file_path, base_directory_override);
     return ret;
 }

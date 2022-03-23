@@ -1,6 +1,11 @@
 #ifndef INCLUDED_ENGINE
 #define INCLUDED_ENGINE
 
+#include <raylib-cpp.hpp>
+
+#include "engine/src/debug_options.h"
+#include "project/src/debug_options.h"
+
 #include <thread>
 #include <unordered_map>
 #include <memory>
@@ -11,6 +16,7 @@ using namespace std;
 #include "engine/src/core/node/node_manager.h"
 #include "engine/src/input/input_manager.h"
 #include "engine/src/core/yaml_data_converter.h"
+#include "engine/src/core/resource/resource.h"
 
 // Forward declarations
 class InputEvent;
@@ -22,9 +28,11 @@ class Engine {
         Engine();
         void process(float delta);
 
+        static Engine* get_singleton();
+
         Signal<void, string, bool>* SIGNAL_OBJECT_TYPE_REGISTERED = new Signal<void, string, bool>();
 
-        NodeManager* getNodeManager() { return node_manager_singleton; }
+        SceneTree* getTree() { return scene_tree_singleton; }
         InputManager* getInputManager() { return input_manager_singleton; }
         YAMLDataConverter* getYAMLDataConverter() { return yaml_data_converter_singleton; }
 
@@ -36,12 +44,19 @@ class Engine {
         void resourceCreated(Resource* resource);
         void resourceDeleted(Resource* resource);
 
+        template<typename ResourcePoolType>
+        Resource::ResourcePool* getResourcePool() {
+            if (resource_pools.count(ResourcePoolType::getName())) {
+                return resource_pools[ResourcePoolType::getName()];
+            }
+            Resource::ResourcePool* ret = new ResourcePoolType();
+            resource_pools[ResourcePoolType::getName()] = ret;
+            return ret;
+        }
+
         // - InputEvent management -
         void inputEventCreated(InputEvent* event);
         void inputEvenDeleted(InputEvent* event);
-
-        template<typename T>
-        void requestDeletion(T* what) { delete what; } // !todo remove
 
         static string getResPath(string absolute_path);
 
@@ -83,30 +98,31 @@ class Engine {
         bool doesObjectInheritType(string object_type_name) {
             if (!isObjectTypeRegistered(object_type_name)) {
                 warn("Object '" + object_type_name + "' is not registered", true);
-                return NULL;
+                return false;
             }
             return (registered_object_constructors[object_type_name])->inheritsType<InheritedType>();
         }
 
 
     private:
-        NodeManager* node_manager_singleton = new NodeManager(this);
+        static Engine* singleton;
+
+        SceneTree* scene_tree_singleton = new SceneTree(this);
         InputManager* input_manager_singleton = new InputManager(this);
         YAMLDataConverter* yaml_data_converter_singleton = new YAMLDataConverter();
 
-        // - Texture management -
-        unordered_map<string, weak_ptr<EngineTexture>> loaded_textures;
-        void onTextureContainerDeleted(string file_path, Texture2D texture) {
-            loaded_textures.erase(file_path);
-            UnloadTexture(texture);
-        }
-
-        // - Resource management -
-        vector<Resource*> all_resources;
         vector<InputEvent*> all_inputevents;
         thread::id main_thread_id = this_thread::get_id();
-
         unordered_map<string, ObjectConstructorBase*> registered_object_constructors;
+
+        // - Texture management -
+        unordered_map<string, weak_ptr<EngineTexture>> loaded_textures;
+        void onTextureContainerDeleted(string file_path, Texture2D texture);
+        // void spriteAnimationSetDeleted(SpriteAnimationSet resource);
+
+        // - Resource pool -
+        vector<Resource*> all_resources;
+        unordered_map<string, Resource::ResourcePool*> resource_pools;
 };
 
 #endif

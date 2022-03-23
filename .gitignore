@@ -1,5 +1,11 @@
-/.vscode
+# Project
 /build
-*.code-workspace
 /project
 /include
+
+# VSCode
+/.vscode
+*.code-workspace
+
+# SCons
+.sconsign.dblite

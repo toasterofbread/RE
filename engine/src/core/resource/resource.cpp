@@ -10,3 +10,7 @@ Resource::Resource(Engine* engine_singleton) {
     engine = engine_singleton;
     engine->resourceCreated(this);
 }
+
+Resource::~Resource() {
+    SIGNAL_DELETED->emit(this);
+}

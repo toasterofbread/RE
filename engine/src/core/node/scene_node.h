@@ -6,6 +6,7 @@
 // Forward declarations
 class Engine;
 
+// !todo Remove or rewrite
 class SceneNode: public Node {
     protected:
         virtual void init_scenenode(string scene_path, string scene_type);

@@ -13,7 +13,7 @@ using namespace std;
 #include <icecream.hpp> // Debug
 
 // Forward declarations
-class NodeManager;
+class SceneTree;
 class SpriteAnimationSet;
 class Engine;
 
@@ -31,7 +31,7 @@ class YAMLDataConverter {
             return (ValueType)NULL;
         }
         static Vector2 convertToVector2(YAML::Node data, string type_name, string error_prefix, Engine* engine);
-        static SpriteAnimationSet* convertToSpriteAnimationSet(YAML::Node data, string type_name, string error_prefix, Engine* engine);
+        static shared_ptr<SpriteAnimationSet> convertToSpriteAnimationSet(YAML::Node data, string type_name, string error_prefix, Engine* engine);
     public:
 
         enum class DATA_TYPE {
@@ -50,8 +50,8 @@ class YAMLDataConverter {
                 case DATA_TYPE::VALUE: return "value";
                 case DATA_TYPE::ARRAY: return "array";
                 case DATA_TYPE::MAP: return "dictionary";
+                default: return "none";
             }
-            return "none";
         }
 
         YAMLDataConverter() {
@@ -61,7 +61,7 @@ class YAMLDataConverter {
             registerTypeConverter<float>(convertToGenericType<float>, "float", {DATA_TYPE::VALUE});
 
             registerTypeConverter<Vector2>(convertToVector2, "Vector2", {DATA_TYPE::ARRAY});
-            registerTypeConverter<SpriteAnimationSet*>(convertToSpriteAnimationSet, "SpriteAnimationSet", {DATA_TYPE::VALUE, DATA_TYPE::ARRAY});
+            registerTypeConverter<shared_ptr<SpriteAnimationSet>>(convertToSpriteAnimationSet, "SpriteAnimationSet", {DATA_TYPE::VALUE, DATA_TYPE::ARRAY});
         }
 
         template<typename ValueType>
@@ -102,9 +102,13 @@ class YAMLDataConverter {
                 }
                 ValueType convertData(YAML::Node data, Engine* engine) {
                     string error_prefix = "An error occurred while converting YAML data to type '" + name + "': ";
+                    
+                    // Get the data type of the passed data
                     DATA_TYPE data_type = getYAMLDataType(data);
+
                     if (!vectorContainsValue(&allowed_types, data_type)) {
 
+                        // If a single value is allowed, and the data is an array with 1 value, use that value instead
                         if (data_type == DATA_TYPE::ARRAY && data.size() == 1 && vectorContainsValue(&allowed_types, DATA_TYPE::VALUE)) {
                             data = data[0];
                         }
@@ -117,14 +121,12 @@ class YAMLDataConverter {
                         }
                     }
 
+                    // Call the converter method with the passed data and return result
                     return method(data, name, error_prefix, engine);
                 }
         };
         
         unordered_map<size_t, ConverterBase*> converters;
-
-        // Vector2
-        // SpriteAnimationSet
 
 };
 

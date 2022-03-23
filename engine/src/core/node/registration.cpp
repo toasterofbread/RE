@@ -1,13 +1,20 @@
 #include "engine/src/core/node/node_types/animated_sprite.h"
 #include "engine/src/core/node/node.h"
+#include "engine/src/core/node/node_types/node_2d.h"
 
 #include "engine/src/core/object_constructor.h"
 
 template<typename NodeType>
 ObjectConstructor<NodeType>* Node::registerNodeProperties(string node_name, Engine* engine) {
     return getNodeConstructor<NodeType>(node_name, engine)
-        ->template registerProperty<bool>("show_gizmos", &NodeType::setShowGizmos)
         ->template registerProperty<string>("name", &NodeType::setName)
+        ;
+}
+
+template<typename NodeType>
+ObjectConstructor<NodeType>* Node2D::registerNodeProperties(string node_name, Engine* engine) {
+    return getNodeConstructor<NodeType>(node_name, engine)
+        ->template registerProperty<bool>("show_gizmos", &NodeType::setShowGizmos)
         ->template registerProperty<Vector2>("position", &NodeType::setPosition)
         ->template registerProperty<Vector2>("scale", &NodeType::setScale)
         ->template registerProperty<float>("rotation", &NodeType::setRotation)
@@ -18,7 +25,7 @@ ObjectConstructor<NodeType>* Node::registerNodeProperties(string node_name, Engi
 template<typename NodeType>
 ObjectConstructor<NodeType>* AnimatedSprite::registerNodeProperties(string node_name, Engine* engine) {
     return Node::registerNodeProperties<NodeType>(node_name, engine)
-        ->template registerProperty<SpriteAnimationSet*>("animation_set", &NodeType::setAnimationSet)
+        ->template registerProperty<shared_ptr<SpriteAnimationSet>>("animation_set", &NodeType::setAnimationSet)
         ->template registerProperty<string>("current_animation_key", &NodeType::setCurrentAnimationKey)
         ->template registerProperty<int>("current_frame", &NodeType::setCurrentFrame)
         ->template registerProperty<bool>("playing", &NodeType::setPlaying)

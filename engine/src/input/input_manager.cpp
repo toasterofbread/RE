@@ -16,11 +16,12 @@ InputManager::InputManager(Engine* engine_singleton) {
 }
 
 void InputManager::init() {
-    InputEvent* INPUTEVENT_PAD_UP = new InputEvent(engine, {new Macro(vector<KEYBOARD_BUTTON>{ARROW_UP})});
-    InputEvent* INPUTEVENT_PAD_DOWN = new InputEvent(engine, {new Macro(vector<KEYBOARD_BUTTON>{ARROW_DOWN})});
-    InputEvent* INPUTEVENT_PAD_LEFT = new InputEvent(engine, {new Macro(vector<KEYBOARD_BUTTON>{ARROW_LEFT})});
-    InputEvent* INPUTEVENT_PAD_RIGHT = new InputEvent(engine, {new Macro(vector<KEYBOARD_BUTTON>{ARROW_RIGHT})});
-    InputEvent* INPUTEVENT_REBUILD_AND_RUN = new InputEvent(engine, {new Macro(vector<KEYBOARD_BUTTON>{F5})});
+    INPUTEVENT_PAD_UP = new InputEvent(engine, {Macro::create_kb({ARROW_UP}), Macro::create_kb({KEY_W})});
+    INPUTEVENT_PAD_DOWN = new InputEvent(engine, {Macro::create_kb({ARROW_DOWN}), Macro::create_kb({KEY_S})});
+    INPUTEVENT_PAD_LEFT = new InputEvent(engine, {Macro::create_kb({ARROW_LEFT}), Macro::create_kb({KEY_A})});
+    INPUTEVENT_PAD_RIGHT = new InputEvent(engine, {Macro::create_kb({ARROW_RIGHT}), Macro::create_kb({KEY_D})});
+
+    INPUTEVENT_REBUILD_AND_RUN = new InputEvent(engine, {Macro::create_kb({F5})});
     INPUTEVENT_REBUILD_AND_RUN->SIGNAL_TRIGGERED->connect<Engine>(&Engine::rebuildAndRun, engine);
 }
 
@@ -66,14 +67,14 @@ bool InputManager::isButtonJustReleased(InputManager::KEYBOARD_BUTTON key) {
 }
 
 bool InputManager::isKeyModifier(InputManager::KEYBOARD_BUTTON key) {
-    vector<KEYBOARD_BUTTON> modifier_keys = {LCTRL, LALT, LSHIFT};
+    vector modifier_keys = {LCTRL, LALT, LSHIFT};
     return vectorContainsValue(&modifier_keys, key);
 }
 bool InputManager::isKeyModifier(InputManager::GAMEPAD_BUTTON key) {
     return false;
 }
 
-Vector2 InputManager::getPadVector(bool just_pressed, float delta) {
+Vector2 InputManager::getPadVector(float delta, bool just_pressed) {
     Vector2 ret = Vector2{0, 0};
 
     if (just_pressed) {
@@ -89,9 +90,7 @@ Vector2 InputManager::getPadVector(bool just_pressed, float delta) {
         ret.y += INPUTEVENT_PAD_DOWN->isTriggered();
     }
 
-    ret = sign(ret);
-
-    return mV(ret, delta);
+    return ret * delta;
 }
 
 // void InputManager::addMacro(function<void(void)> func, vector<InputManager::GAMEPAD_BUTTON> gamepad_button_combination, string label, bool display_label) {

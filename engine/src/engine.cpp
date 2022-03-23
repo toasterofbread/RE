@@ -13,16 +13,26 @@
 #include "engine/src/core/node/node_types/animated_sprite.h"
 #include "engine/src/engine_texture.h"
 #include "engine/src/core/node/registration.cpp"
+#include "engine/src/core/resource/sprite_animation.h"
+
+Engine* Engine::singleton = NULL;
 
 Engine::Engine() {
-    getNodeManager()->init();
+    getTree()->init();
     getInputManager()->init();
     Node::registerNodeProperties<Node>("Node", this);
     AnimatedSprite::registerNodeProperties<AnimatedSprite>("AnimatedSprite", this);
+
+    assert(singleton == NULL);
+    singleton = this;
+}
+
+Engine* Engine::get_singleton() {
+    return singleton;
 }
 
 void Engine::process(float delta) {
-    node_manager_singleton->process(delta);
+    scene_tree_singleton->process(delta);
     input_manager_singleton->process(delta);
 
     for (auto i = all_resources.begin(); i != all_resources.end(); ++i) {
@@ -31,6 +41,11 @@ void Engine::process(float delta) {
     for (auto i = all_inputevents.begin(); i != all_inputevents.end(); ++i) {
         (*i)->process(delta);
     }
+
+    DrawFPS(GetScreenWidth() - 85, 10);
+    DrawText(("Resource count: " + (string)int2char(all_resources.size())).c_str(), GetScreenWidth() - 125, 35, 12, BLACK);
+    DrawText(("Node count: " + (string)int2char(getTree()->getGlobalNodeCount())).c_str(), GetScreenWidth() - 125, 50, 12, BLACK);
+    DrawText(("Texture count: " + (string)int2char(loaded_textures.size())).c_str(), GetScreenWidth() - 125, 65, 12, BLACK);
 }
 
 string Engine::getResPath(string absolute_path) {
@@ -44,7 +59,7 @@ void Engine::ensureAsync() {
 }
 
 void Engine::rebuildAndRun() {
-    system("clear && cd /home/spectre7/Projects/raylib/RE && ./run.sh &");
+    system("clear && cd /home/spectre7/Projects/raylib/RE && build build_and_run &");
     exit(0);
 }
 
@@ -55,11 +70,12 @@ shared_ptr<EngineTexture> Engine::loadTexture(string file_path) {
     file_path = getResPath(file_path);
     shared_ptr<EngineTexture> ret;
 
-    if (isTextureLoaded(file_path)) { // Texture is already loaded, just add the node to the userlist
+    if (isTextureLoaded(file_path)) {
         ret = (shared_ptr<EngineTexture>)loaded_textures[file_path];
     }
     else {
-        ret = make_shared<EngineTexture>(LoadTexture(file_path.c_str()));
+        ret = make_shared<EngineTexture>(LoadTexture(file_path.c_str()), file_path);
+        ret->SIGNAL_DELETED->connect(&Engine::onTextureContainerDeleted, this);
         loaded_textures[file_path] = ret;
     }
 
@@ -70,12 +86,16 @@ bool Engine::isTextureLoaded(string file_path) {
     return loaded_textures.count(getResPath(file_path));
 }
 
-// - Resource management -
-
-void Engine::resourceCreated(Resource* resource) {
-    all_resources.push_back(resource);
+void Engine::onTextureContainerDeleted(string file_path, Texture2D texture) {
+    loaded_textures.erase(file_path);
+    UnloadTexture(texture);
 }
 
+// - Resource management -
+void Engine::resourceCreated(Resource* resource) {
+    all_resources.push_back(resource);
+    resource->SIGNAL_DELETED->connect(&Engine::resourceDeleted, this);
+}
 void Engine::resourceDeleted(Resource* resource) {
     vectorRemoveValue(&all_resources, resource);
 }

@@ -3,6 +3,7 @@
 
 #include <raylib-cpp.hpp>
 #include <vector>
+#include <memory>
 using namespace std;
 
 // Forward declarations
@@ -14,10 +15,19 @@ class Signal;
 class Resource {
     public:
         Resource(Engine* engine_singleton);
+        ~Resource();
+        
         virtual void process(float delta) {};
+        unique_ptr<Signal<void, Resource*>> SIGNAL_DELETED = make_unique<Signal<void, Resource*>>();
+
+        class ResourcePool {
+            static string getName() {
+                return "Resource";
+            }
+        };
+
     protected:
         Engine* engine;
-    
 };
 
 #endif

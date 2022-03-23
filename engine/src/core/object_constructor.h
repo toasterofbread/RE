@@ -14,7 +14,7 @@ using namespace std;
 #include "engine/src/core/yaml_data_converter.h"
 
 // Forward declarations
-class NodeManager;
+class SceneTree;
 class Engine;
 
 class ObjectConstructorBase {
@@ -34,8 +34,9 @@ class ObjectConstructor: public ObjectConstructorBase {
                 virtual void set(ObjectType* object, YAML::Node data, YAMLDataConverter* converter) {}
         };
 
+        // Stores the setter method for this object type
         template<typename PropertyType>
-        class Setter: public SetterBase { // Stores the setter method for this object type
+        class Setter: public SetterBase {
             public:
                 void (ObjectType::*setter_method)(PropertyType);
 
@@ -92,7 +93,7 @@ class ObjectConstructor: public ObjectConstructorBase {
 
         template<typename PropertyType>
         ObjectConstructor<ObjectType>* registerProperty(string property_name, void (ObjectType::*setter)(PropertyType)) {
-            if (setters.count(property_name)) {
+            if (isPropertyRegistered(property_name)) {
                 warn("Property '" + property_name + "' is already registered", true);
                 return this;
             }
@@ -102,7 +103,7 @@ class ObjectConstructor: public ObjectConstructorBase {
         
         template<typename PropertyType>
         void setProperty(ObjectType* object, string property_name, PropertyType value) {
-            if (!setters.count(property_name)) {
+            if (!isPropertyRegistered(property_name)) {
                 warn("Property '" + property_name + "' is not registered", true);
                 return;
             }
@@ -110,7 +111,7 @@ class ObjectConstructor: public ObjectConstructorBase {
         }
 
         void setProperty(ObjectType* object, string property_name, YAML::Node data) {
-            if (!setters.count(property_name)) {
+            if (!isPropertyRegistered(property_name)) {
                 warn("Property '" + property_name + "' is not registered", true);
                 return;
             }

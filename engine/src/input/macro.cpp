@@ -96,3 +96,13 @@ bool Macro::isButtonSetJustReleased(vector<T> buttons) {
     }
     return released;
 }
+
+Macro* Macro::create_kb(vector<InputManager::KEYBOARD_BUTTON> keyboard_buttons) {
+    return new Macro(keyboard_buttons);
+}
+Macro* Macro::create_pad(vector<InputManager::GAMEPAD_BUTTON> gamepad_buttons) {
+    return new Macro(gamepad_buttons);
+}
+Macro* Macro::create_both(vector<InputManager::KEYBOARD_BUTTON> keyboard_buttons, vector<InputManager::GAMEPAD_BUTTON> gamepad_buttons) {
+    return new Macro(keyboard_buttons, gamepad_buttons);
+}

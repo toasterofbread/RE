@@ -13,17 +13,27 @@ using namespace std;
 class Engine;
 class Node;
 
-class NodeManager {
+class SceneTree {
     public:
-        NodeManager(Engine* engine_singleton);
+        enum class STATE {
+            PREINIT, IDLE, PROCESS, POST_PROCESS
+        };
+
+        SceneTree(Engine* engine_singleton);
         void init();
 
         void process(float delta);
         void addNode(Node* node);
+        void queueNodeKill(Node* node);
+
+        void onNodeCreated(Node* node);
+        void onNodeKilled(Node* node);
+        int getGlobalNodeCount();
 
         Node* getRoot() { return root_node; }
 
         int getNewNodeId();
+        STATE getCurrentState() { return current_state; }
        
         void objectRegisteredAsConstructor(string object_type_name, bool is_node) {
             if (is_node) {
@@ -41,6 +51,10 @@ class NodeManager {
 
         int current_id_max = 0;
         vector<string> registered_nodes;
+        int global_node_count = 0;
+
+        STATE current_state = STATE::PREINIT;
+        vector<Node*> kill_queue;
 };
 
 #endif

@@ -144,7 +144,7 @@ Node* SceneLoader::synthesiseNode(string node_type, YAML::Node& node_data, Engin
 Node* SceneLoader::instanceNodeFromType(string node_type, YAML::Node& node_data, Engine* engine, bool suppress_warning, Node* root_node_override) {
 
     // Ensure node_type is a registered object and inherits Node
-    if (!engine->getNodeManager()->isNodeTypeRegistered(node_type)) {
+    if (!engine->getTree()->isNodeTypeRegistered(node_type)) {
         warn("Node type '" + node_type + "' is not registered, skipping");
         return NULL;
     }
@@ -183,7 +183,6 @@ Node* SceneLoader::instanceNodeFromType(string node_type, YAML::Node& node_data,
 
         constructor->setProperty(ret, property_name, i->second);
     }
-    IC(2);
 
     return ret;
 }

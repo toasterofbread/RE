@@ -4,6 +4,7 @@
 #include <raylib-cpp.hpp>
 #include <functional>
 #include <iostream>
+#include <unordered_map>
 using namespace std;
 
 #include <icecream.hpp> // Debug
@@ -18,21 +19,59 @@ class Signal {
         void await(Engine* engine);
 
         void emit(CallbackArgs... arguments) {
-            for (auto i = callbacks.begin(); i != callbacks.end(); ++i) {
-                (*i)(arguments...);
+
+            for (auto pair : callbacks) {
+                for (auto i : pair.second) {
+                    i(arguments...);
+                }
             }
-            for (auto i = member_callbacks.begin(); i != member_callbacks.end(); ++i) {
-                (*i)->call(arguments...);
+            
+            for (auto pair : member_callbacks) {
+                for (auto i : pair.second) {
+                    i->call(arguments...);
+                }
             }
+
             onEmission();
         }
 
-        void connect(function<CallbackReturnType(CallbackArgs...)> callback) {
-            callbacks.push_back(callback); 
+        void connect(function<CallbackReturnType(CallbackArgs...)> callback, string tag = "") {
+            if (callbacks.count(tag)) {
+                callbacks[tag].push_back(callback);
+            }
+            else {
+                callbacks[tag] = vector<function<CallbackReturnType(CallbackArgs...)>>{callback};
+            }
         }
         template<typename ObjectType>
-        void connect(CallbackReturnType (ObjectType::*callback)(CallbackArgs...), ObjectType* object) {
-            member_callbacks.push_back(new MemberCallback<ObjectType>(callback, object));
+        void connect(CallbackReturnType (ObjectType::*callback)(CallbackArgs...), ObjectType* object, string tag = "") {
+            if (member_callbacks.count(tag)) {
+                member_callbacks[tag].push_back(make_shared<MemberCallback<ObjectType>>(callback, object));
+            }
+            else {
+                member_callbacks[tag] = vector<shared_ptr<MemberCallbackBase>>{make_shared<MemberCallback<ObjectType>>(callback, object)};
+            }
+        }
+
+        void disconnect(string tag) {
+            callbacks.erase(tag);
+
+            if (member_callbacks.count(tag)) {
+                for (auto i : member_callbacks[tag]) {
+                    delete i;
+                }
+                member_callbacks.erase(tag);
+            }
+        }
+
+        void disconnectAll() {
+            callbacks.clear();
+            for (auto pair : member_callbacks) {
+                for (auto i : pair.second) {
+                    delete i;
+                }
+            }
+            member_callbacks.clear();
         }
 
         // Why doesn't this work when defined in signal.cpp ?!
@@ -62,8 +101,8 @@ class Signal {
                 }
         };
 
-        vector<MemberCallbackBase*> member_callbacks;
-        vector<function<CallbackReturnType(CallbackArgs...)>> callbacks;
+        unordered_map<string, vector<function<CallbackReturnType(CallbackArgs...)>>> callbacks;
+        unordered_map<string, vector<shared_ptr<MemberCallbackBase>>> member_callbacks;
         double last_emission_time = -1;
 };
 

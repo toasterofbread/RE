@@ -16,15 +16,13 @@ Node::Node(Engine* engine_singleton) {
     SIGNAL_READY = new Signal<void, Node*>();
     SIGNAL_KILLED = new Signal<void, Node*>();
     
-    if (engine_singleton != NULL) init(engine_singleton);
-}
-
-void Node::init(Engine* engine_singleton) {
     name = getValidName();
     engine = engine_singleton;
-    manager = engine->getNodeManager();
+    manager = engine->getTree();
     id = manager->getNewNodeId();
     is_root = id == 1;
+
+    manager->onNodeCreated(this);
 }
 
 void Node::addedToNode(Node* parent_node) {
@@ -35,26 +33,13 @@ void Node::removedFromNode(Node* former_parent_node) {
     parent = NULL;
 }
 void Node::process(float delta) {
-
-    if (show_gizmos) {
-        string text = getTypeName();
-        if (getName() != text) {
-            text += " | " + getName();
-        }
-        if (!getVisible()) {
-            text += " (invisible)";
-        }
-        // text += " | " + (string)int2char(getId());
-        markPosition(getGlobalPosition(true), text);
-    }
-
     vector<Node*>* nodes = getChildren();
     for (auto i = nodes->cbegin(); i != nodes->cend(); ++i) {
         Node& node = **i;
         node.process(delta);
     }
-
 }
+
 void Node::ready() {
     SIGNAL_READY->emit(this);
 }
@@ -172,11 +157,11 @@ void Node::removeChild(Node* child) {
         return;
     }
 
-    child->removedFromNode(this);
 }
 
 Node* Node::getChild(int child_idx) {
     if (!hasChild(child_idx)) {
+        warn("Node '" + getName() + "' has no child at index '" + int2str(child_idx) + "'", true);
         return NULL;
     }
     return children[child_idx];
@@ -188,6 +173,7 @@ Node* Node::getChild(string child_name) {
             return *i;
         }
     }
+    warn("Node '" + getName() + "' has no child with name '" + child_name + "'", true);
     return NULL;
 }
 
@@ -285,6 +271,24 @@ bool Node::isInsideTree() {
     }
 }
 
+bool Node::isIndirectParentOf(Node* node) {
+    if (node == this) {
+        return true;
+    }
+    if (node->isRoot()) {
+        return false;
+    }
+
+    Node* parent = node->getParent();
+    while (!parent->isRoot()) {
+        if (parent == this) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 Node* Node::getParent() {
     return parent;
 }
@@ -297,7 +301,7 @@ bool Node::isRoot() {
     return is_root;
 }
 
-NodeManager* Node::getManager() {
+SceneTree* Node::getManager() {
     return manager;
 }
 
@@ -366,17 +370,29 @@ int Node::getId() {
 
 void Node::kill() {
 
+    if (getManager()->getCurrentState() == SceneTree::STATE::PROCESS) {
+        warn("Cannot kill node, SceneTree is in process state", true);
+        return;
+    }
+
     if (isRoot()) {
-        warn("The root node cannot be killed (it's power level is over 9000)");
+        warn("The root node cannot be killed (its power level is over 9000)");
         return;
     }
 
     SIGNAL_KILLED->emit(this);
+    getManager()->onNodeKilled(this);
     getParent()->removeChild(this);
+    
     while (getChildCount() > 0) {
-        getChild(0)->kill();
+        Node* child = getChild(0);
+        child->kill();
+        delete child;
     }
-    getEngine()->requestDeletion(this);
+}
+
+void Node::queue_kill() {
+    getManager()->queueNodeKill(this);
 }
 
 // --- Values ---
@@ -391,80 +407,3 @@ void Node::setName(string value) {
     name = getValidName(value); 
 }
 
-Vector2 Node::getPosition() {
-    return position;
-}
-void Node::setPosition(Vector2 value) {
-    position = value;
-}
-
-Vector2 Node::getGlobalPosition(bool suppress_warning) {
-    if (!isInsideTree() && !suppress_warning) {
-        warn("Node is not inside tree, cannot provide global position");
-    }
-    
-    if (getParent() == NULL) {
-        return getPosition();
-    }
-
-    return aV(getParent()->getGlobalPosition(suppress_warning), getPosition());
-}
-void Node::setGlobalPosition(Vector2 value) {
-    if (!isInsideTree()) {
-        warn("Node is not inside tree, cannot set global position");
-    }
-
-    setPosition(sV(value, getGlobalPosition(true)));
-}
-
-Vector2 Node::getScale() {
-    return scale;
-}
-void Node::setScale(Vector2 value) {
-    scale = value;
-}
-
-Vector2 Node::getGlobalScale(bool suppress_warning) {
-    if (!isInsideTree() && !suppress_warning) {
-        warn("Node is not inside tree, cannot provide global scale");
-    }
-    
-    if (getParent() == NULL) {
-        return getScale();
-    }
-
-    return mV(getParent()->getGlobalScale(suppress_warning), getScale());
-}
-void Node::setGlobalScale(Vector2 value) {
-    if (!isInsideTree()) {
-        warn("Node is not inside tree, cannot set global scale");
-    }
-
-    setScale(sV(value, getGlobalScale(true)));
-}
-
-float Node::getRotation() {
-    return rotation;
-}
-void Node::setRotation(float value) {
-    rotation = value;
-}
-
-float Node::getGlobalRotation(bool suppress_warning) {
-    if (!isInsideTree() && !suppress_warning) {
-        warn("Node is not inside tree, cannot provide global rotation");
-    }
-    
-    if (getParent() == NULL) {
-        return getRotation();
-    }
-
-    return getParent()->getGlobalRotation(suppress_warning) + getRotation();
-}
-void Node::setGlobalRotation(float value) {
-    if (!isInsideTree()) {
-        warn("Node is not inside tree, cannot set global scale");
-    }
-
-    setRotation(value - getGlobalRotation(true));
-}

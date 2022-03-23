@@ -10,8 +10,8 @@
 using namespace std;
 
 void markPosition(Vector2 position, string text, Color colour, float radius, float width) {
-    DrawLineEx(sV(position, Vector2{radius, 0}), aV(position, Vector2{radius, 0}), 1.0f, colour);
-    DrawLineEx(sV(position, Vector2{0, radius}), aV(position, Vector2{0, radius}), 1.0f, colour);
+    DrawLineEx(position - Vector2{radius, 0}, position + Vector2{radius, 0}, 1.0f, colour);
+    DrawLineEx(position - Vector2{0, radius}, position + Vector2{0, radius}, 1.0f, colour);
     DrawText(text.c_str(), position.x + 5, position.y - 15, 10, colour);
 }
 
@@ -130,6 +130,22 @@ string repeatString(string str, int amount) {
     }
     return str;
 }
+string strVector2str(vector<string> vector, string splitter) {
+    string ret;
+
+    for (int i = 0; i < vector.size(); i++) {
+        ret += vector[i];
+        if (i + 1 < vector.size()) {
+            ret += splitter;
+        }
+    }
+
+    return ret;
+}
+string concatChars(const char* A, const char* B) {
+    return (string(A) + string(B));
+}
+
 int getStringWidth(string str) {
     int max_length = 0;
     int current_length = 0;
@@ -201,9 +217,14 @@ bool stringBeginsWith(string str, string begins) {
     return str.compare(begins) == (str.size() - begins.size());
 }
 
-string vector2str(Vector2 value) {
+string vector2str(Vector2 value, int max_decimals, bool decorate) {
 
-    string s0{"Vector2{ "}, s1{", "}, s2{" }"};
+    assert(max_decimals >= 0);
+    if (max_decimals == 0) {
+        max_decimals = -1;
+    }
+
+    string s0{decorate ? "Vector2{ " : "{ "}, s1{", "}, s2{" }"};
     string sink;
 
     char bufferx[64];
@@ -213,6 +234,16 @@ string vector2str(Vector2 value) {
 
     string bx{bufferx};
     string by{buffery};
+
+    int decimal_point = bx.find(".");
+    if (decimal_point >= 0) {
+        bx.erase(decimal_point + max_decimals + 1, bx.size() - decimal_point - max_decimals);
+    }
+
+    decimal_point = by.find(".");
+    if (decimal_point >= 0) {
+        by.erase(decimal_point + max_decimals + 1, by.size() - decimal_point - max_decimals);
+    }
 
     sink.reserve(s0.size() + s1.size() + s2.size() + 1 + bx.size() + by.size());
     sink += s0;
@@ -230,32 +261,8 @@ const char* int2char(int value) {
     return ret;
 }
 
-Vector2 aV(Vector2 a, Vector2 b) {
-    return Vector2{a.x+b.x, a.y+b.y};
-}
-Vector2 sV(Vector2 a, Vector2 b) {
-    return Vector2{a.x-b.x, a.y-b.y};
-}
-Vector2 mV(Vector2 a, Vector2 b) {
-    return Vector2{a.x*b.x, a.y*b.y};
-}
-Vector2 mV(Vector2 a, float b) {
-    return Vector2{a.x*b, a.y*b};
-}
-Vector2 mV(Vector2 a, int b) {
-    return Vector2{a.x*b, a.y*b};
-}
-Vector2 dV(Vector2 a, Vector2 b) {
-    return Vector2{a.x/b.x, a.y/b.y};
-}
-Vector2 dV(Vector2 a, float b) {
-    return Vector2{a.x/b, a.y/b};
-}
-Vector2 dV(Vector2 a, int b) {
-    return Vector2{a.x/b, a.y/b};
-}
-bool cV(Vector2 a, Vector2 b) {
-    return (a.x == b.x && a.y == b.y);
+string int2str(int value) {
+    return int2char(value);
 }
 
 void printNode(Node* value) {
@@ -281,7 +288,7 @@ void print_trace(void) {
     free(strings);
 }
 
-void stacker(int additional_skip) {
+void print_stacktrace(int additional_skip) {
     using namespace backward;
     StackTrace st;
 
@@ -335,7 +342,7 @@ void warn(string message, bool throw_error) {
     };
 
     if (throw_error) {
-        stacker(1);
+        print_stacktrace(1);
         throw runtime_error(format_message(message, "ERROR"));
     }
     else {

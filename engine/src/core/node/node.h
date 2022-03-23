@@ -13,7 +13,7 @@ using namespace std;
 #include <icecream.hpp> // Debug
 
 // Forward declarations
-class NodeManager;
+class SceneTree;
 template<typename A, typename... B>
 class Signal;
 template<typename ObjectType>
@@ -27,20 +27,16 @@ class Node {
 
         Node* parent = NULL;
         bool is_root = false;
-        NodeManager* manager = NULL;
+        SceneTree* manager = NULL;
         Engine* engine = NULL;
 
-        bool show_gizmos = false;
-        Vector2 position = Vector2{0, 0};
-        Vector2 scale = Vector2{1, 1};
-        float rotation = 0.0f;
-        bool visible = true;
-
-        void init(Engine* engine_singleton);
     protected:
         string name;
     public:
         Node(Engine* engine_singleton);
+        virtual ~Node() {
+            delete SIGNAL_KILLED;
+        }
 
         enum class PROPERTY_TYPE {
             STRING, INT, FLOAT, BOOL, VECTOR2, SPRITEANIMATIONSET
@@ -49,7 +45,6 @@ class Node {
         // - Signals -
         Signal<void, Node*>* SIGNAL_READY;
         Signal<void, Node*>* SIGNAL_KILLED;
-
 
         // - Core -
         void addedToNode(Node* parent_node);
@@ -61,7 +56,7 @@ class Node {
 
         template<typename NodeType>
         static ObjectConstructor<NodeType>* getNodeConstructor(string node_name, Engine* engine) {
-            if (!engine->getNodeManager()->isNodeTypeRegistered(node_name)) {
+            if (!engine->getTree()->isNodeTypeRegistered(node_name)) {
                 return engine->registerObjectType<NodeType, Engine*>(node_name);
             }
             return engine->getObjectConstructor<NodeType>(node_name);
@@ -97,40 +92,21 @@ class Node {
 
         // - Hierarchy -
         bool isInsideTree();
+        bool isIndirectParentOf(Node* node);
         Node* getParent();
         Node* getRoot();
         bool isRoot();
-        NodeManager* getManager();
+        SceneTree* getManager();
         Engine* getEngine();
         void printTree(int max_depth = -1);
         int getIndex(); // Index of this within parent's children
         int getId(); // Unique ID of this node
         void kill();
+        void queue_kill();
 
         // - Values -
-        void setShowGizmos(bool value) { show_gizmos = value; }
-        bool getShowGizmos() { return show_gizmos; }
-
         void setName(string value);
         string getName() { return name; }
-
-        void setPosition(Vector2 value);
-        Vector2 getPosition();
-        void setGlobalPosition(Vector2 value);
-        Vector2 getGlobalPosition(bool suppress_warning = false);
-
-        void setScale(Vector2 value);
-        Vector2 getScale();
-        void setGlobalScale(Vector2 value);
-        Vector2 getGlobalScale(bool suppress_warning = false);
-
-        void setRotation(float value);
-        float getRotation();
-        void setGlobalRotation(float value);
-        float getGlobalRotation(bool suppress_warning = false);
-
-        void setVisible(bool value) { visible = value; }
-        bool getVisible() { return visible; }
 
 };
 

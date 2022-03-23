@@ -13,20 +13,46 @@ using json = nlohmann::json;
 // Debug
 #include <icecream.hpp>
 
-void SpriteAnimation::init(string animation_name, json* animation_data, json* file_data, Engine* engine, string load_directory) {
+SpriteAnimation::SpriteAnimation(Engine* engine, string animation_name, json animation_data, json file_data, string load_directory): Resource(engine) {
     name = animation_name;
-    loop = (*animation_data)["loop"];
-    framerate = (*animation_data)["speed"];
+
+    if (animation_data.count("loop"))  {
+        loop = animation_data["loop"];
+    }
+    else if (animation_data.count("l")) {
+        loop = animation_data["l"];
+    }
+    else {
+        loop = false;
+    }
+
+    if (animation_data.count("speed")) {
+        framerate = animation_data["speed"];
+    }
+    else if (animation_data.count("s")) {
+        framerate = animation_data["s"];
+    }
+    else {
+        warn("SpriteAnimation with name '" + animation_name + "' has no speed/framerate value", true);
+    }
 
     frames.clear();
 
-    for (auto item : (*animation_data)["frames"] ) {
-        if (item.is_null()) { break; }
-        // Texture2D texture = manager->loadTexture(plusFile(load_directory, (*file_data)[int2char(item)]));
-        // NodeTexture* texture = new NodeTexture(initial_linked_node, plusFile(load_directory, (*file_data)[int2char(item)]));
-        frames.push_back(engine->loadTexture(plusFile(load_directory, (*file_data)[int2char(item)])));
+    json frames_data;
+    if (animation_data.count("frames")) {
+        frames_data = animation_data["frames"];
     }
-    
+    else if (animation_data.count("f")) {
+        frames_data = animation_data["f"];
+    }
+    else {
+        warn("SpriteAnimation with name '" + animation_name + "' has no frames value", true);
+    }
+
+    for (auto item : frames_data ) {
+        if (item.is_null()) { break; }
+        frames.push_back(engine->loadTexture(plusFile(load_directory, file_data[int2char(item)])));
+    }
 }
 
 shared_ptr<EngineTexture> SpriteAnimation::getFrame(int frame_idx) {
@@ -67,18 +93,19 @@ Vector2 SpriteAnimation::getFrameSize(int frame_idx) {
 
 // - SpriteAnimationSet -
 
-SpriteAnimationSet::SpriteAnimationSet(Engine* engine, string file_path, string base_directory_override): Resource(engine) {
-    loadFile(engine, file_path, base_directory_override);
+SpriteAnimationSet::SpriteAnimationSet(Engine* engine, string _file_path, string _base_directory_override): Resource(engine) {
+    loadFile(engine, _file_path, _base_directory_override);
 }
 
-void SpriteAnimationSet::loadFile(Engine* engine, string path, string base_directory_override) {
+void SpriteAnimationSet::loadFile(Engine* engine, string _file_path, string base_directory_override) {
     
-    if (!isFileValid(path)) {
+    if (!isFileValid(_file_path)) {
         warn("SpriteAnimationSet file is not valid");
         return;
     }
 
-    file_path = path;
+    file_path = _file_path;
+    base_directory_override = base_directory_override;
     data = json::parse(LoadFileText(Engine::getResPath(file_path).c_str()));
 
     string base_directory;
@@ -89,32 +116,53 @@ void SpriteAnimationSet::loadFile(Engine* engine, string path, string base_direc
         base_directory = data["base_directory"];
     }
 
-    // Delete existing animations and clear the map
-    for (unordered_map<string, SpriteAnimation*>::iterator it=animations.begin(); it!=animations.end(); ++it) {
-        delete it->second;
+    if (data.count("animation_tree_depth")) {
+        tree_depth = data["animation_tree_depth"];
+    }    
+    else {
+        tree_depth = 1;
     }
-    animations.clear();
 
-    for (auto& i : data["animations"].items()) {
-        string animation_key = i.key();
-        json animation_data = data["animations"][animation_key];
+    animation_container.reset();
+    animation_container = make_shared<AnimationContainer>(engine, tree_depth, data["animations"], data["files"], base_directory);
 
-        SpriteAnimation* animation = new SpriteAnimation;
-        animation->init(animation_key, &animation_data, &data["files"], engine, base_directory);
-        animations[animation_key] = animation;
-        // animations.insert(make_pair(animation_key, animation));
-    }
+    // for (auto& i : data["animations"].items()) {
+    //     string animation_key = i.key();
+
+    //     shared_ptr<SpriteAnimation> animation = make_shared<SpriteAnimation>(engine, animation_key, data["animations"][animation_key], data["files"], base_directory);
+    //     animations[animation_key] = animation;
+    //     // animations.insert(make_pair(animation_key, animation));
+    // }
 }
 
 bool SpriteAnimationSet::hasAnimation(string animation_key) {
-    return animations.count(animation_key);
+    if (animation_container->isFinalLayer()) {
+        return animation_container->hasKey(animation_key);
+    }
+    return false;
 }
-SpriteAnimation* SpriteAnimationSet::getAnimation(string animation_key) {
+bool SpriteAnimationSet::hasAnimation(vector<string> animation_keys) {
+    if (getTreeDepth() != animation_keys.size()) {
+        // warn("animation_keys size (" + int2str(animation_keys.size()) + ") doesn't match the animation tree depth (" + int2str(getTreeDepth()) + ")", true);
+        return false;
+    }
+    return animation_container->hasKeys(animation_keys);
+}
+
+shared_ptr<SpriteAnimation> SpriteAnimationSet::getAnimation(string animation_key) {
     if (!hasAnimation(animation_key)) {
         warn("SpriteAnimationSet does not contain the animation key '" + animation_key + "'");
         return NULL;
     }
-    return animations[animation_key];
+    return animation_container->getSubAnimation(animation_key);
+}
+
+shared_ptr<SpriteAnimation> SpriteAnimationSet::getAnimation(vector<string> animation_keys) {
+    if (!hasAnimation(animation_keys)) {
+        warn("SpriteAnimationSet does not contain the animation key set [" + strVector2str(animation_keys) + "]");
+        return NULL;
+    }
+    return animation_container->getKeys(animation_keys);
 }
 
 shared_ptr<EngineTexture> SpriteAnimationSet::getFrame(string animation_key, int frame_idx) {
@@ -122,6 +170,13 @@ shared_ptr<EngineTexture> SpriteAnimationSet::getFrame(string animation_key, int
         warn("SpriteAnimationSet does not contain the animation key: " + animation_key, true);
     }
     return getAnimation(animation_key)->getFrame(frame_idx);
+}
+
+shared_ptr<EngineTexture> SpriteAnimationSet::getFrame(vector<string> animation_keys, int frame_idx) {
+    if (!hasAnimation(animation_keys)) {
+        warn("SpriteAnimationSet does not contain the animation key set [" + strVector2str(animation_keys) + "]");
+    }
+    return getAnimation(animation_keys)->getFrame(frame_idx);
 }
 
 bool SpriteAnimationSet::isFileValid(string file_path, string base_directory_override, string* error_container) {
@@ -133,26 +188,31 @@ bool SpriteAnimationSet::isFileValid(string file_path, string base_directory_ove
 
     json file_data = json::parse(LoadFileText(file_path.c_str()));
 
-    if (file_data.count("base_directory") && !file_data["base_directory"].is_string()) {
-        if (error_container != NULL) *error_container = "Base directory must be a string";
-        return false;
-    }
-
     if (!file_data.count("files")) {
-        if (error_container != NULL) *error_container = "Must contain 'files' item (dictionary)";
+        if (error_container != NULL) *error_container = "Must contain 'files' (dictionary)";
         return false;
     }
     if (!file_data["files"].is_object()) {
-        if (error_container != NULL) *error_container = "'files' item must be a dictionary";
+        if (error_container != NULL) *error_container = "'files' must be a dictionary";
         return false;
     }
 
     if (!file_data.count("animations")) {
-        if (error_container != NULL) *error_container = "Must contain 'animations' item (dictionary)";
+        if (error_container != NULL) *error_container = "Must contain 'animations' (dictionary)";
         return false;
     }
     if (!file_data["animations"].is_object()) {
-        if (error_container != NULL) *error_container = "'animations' item must be a dictionary";
+        if (error_container != NULL) *error_container = "'animations' must be a dictionary";
+        return false;
+    }
+
+    if (file_data.count("base_directory") && !file_data["base_directory"].is_string()) {
+        if (error_container != NULL) *error_container = "'base_directory' must be a string";
+        return false;
+    }
+
+    if (file_data.count("animation_tree_depth") && (!file_data["animation_tree_depth"].is_number_integer() || file_data["animation_tree_depth"] <= 0)) {
+        if (error_container != NULL) *error_container = "'animation_tree_depth' must be a positive integer";
         return false;
     }
 

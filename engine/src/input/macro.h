@@ -20,6 +20,10 @@ class Macro {
         template<typename T>
         bool isButtonSetJustReleased(vector<T> buttons);
     
+        static Macro* create_kb(vector<InputManager::KEYBOARD_BUTTON> keyboard_buttons);
+        static Macro* create_pad(vector<InputManager::GAMEPAD_BUTTON> gamepad_buttons);
+        static Macro* create_both(vector<InputManager::KEYBOARD_BUTTON> keyboard_buttons, vector<InputManager::GAMEPAD_BUTTON> gamepad_buttons);
+
     private:
         enum MACRO_TYPE {MACRO_TYPE_KEYBOARD, MACRO_TYPE_GAMEPAD, MACRO_TYPE_BOTH};
         MACRO_TYPE type;

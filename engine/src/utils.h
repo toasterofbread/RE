@@ -40,10 +40,13 @@ const vector<string> long_characters = {
 int getStringActualLength(string str);
 string equaliseStringLineWidths(string str);
 bool stringBeginsWith(string str, string begins);
-string vector2str(Vector2 value);
+string vector2str(Vector2 value, int max_decimals = 1, bool decorate = false);
 const char* int2char(int value);
+string int2str(int value);
 string encaseStringInBox(string str, bool thick = false, int margin = 2);
 string repeatString(string str, int amount);
+string strVector2str(vector<string> vector, string splitter = ", ");
+string concatChars(const char* A, const char* B);
 
 template <typename Any>
 int vectorFindValue(vector<Any>* vector, Any value) {
@@ -65,21 +68,6 @@ void vectorRemoveValue(vector<Any>* vector, Any value) {
     vector->erase(remove(vector->begin(), vector->end(), value), vector->end());
 }
 
-// Add vector2 ( + )
-Vector2 aV(Vector2 a, Vector2 b);
-// Subtract vector2 ( - )
-Vector2 sV(Vector2 a, Vector2 b);
-// Multiply vector2 ( * )
-Vector2 mV(Vector2 a, Vector2 b);
-Vector2 mV(Vector2 a, float b);
-Vector2 mV(Vector2 a, int b);
-// Divide vector2 ( / )
-Vector2 dV(Vector2 a, Vector2 b);
-Vector2 dV(Vector2 a, float b);
-Vector2 dV(Vector2 a, int b);
-// Compare vector2 ( == )
-bool cV(Vector2 a, Vector2 b);
-
 void printNode(Node* value);
 template <typename Any>
 void print(Any msg) {
@@ -87,8 +75,7 @@ void print(Any msg) {
 }
 void print(Vector2 value);
 void print(bool value);
-
-void stacker(int additional_skip = 0);
+void print_stacktrace(int additional_skip = 0);
 
 void warn(string message, bool throw_error = false);
 
