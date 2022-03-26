@@ -15,8 +15,8 @@ class Engine;
 class InputManager {
     public:
 
-        InputManager(Engine* engine_singleton);
-        void init();
+        InputManager();
+        static InputManager* getSingleton();
 
         enum GAMEPAD_BUTTON {
             PAD_LEFT = 4,
@@ -90,6 +90,8 @@ class InputManager {
             LCTRL = 341,
             LALT = 342,
             LSHIFT = 340,
+
+            TILDE = 96,
         };
 
         InputEvent* INPUTEVENT_PAD_UP;
@@ -116,8 +118,9 @@ class InputManager {
         Vector2 getPadVector(float delta = 1.0f, bool just_pressed = false);
 
     private:
+        static InputManager* singleton;
+        
         int gamepad_id = 0;
-        Engine* engine;
 };
 
 #endif

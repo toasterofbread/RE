@@ -15,7 +15,7 @@ class SpriteAnimation: public Resource {
         int framerate = 30;
         vector<shared_ptr<EngineTexture>> frames;
     public:
-        SpriteAnimation(Engine* engine, string animation_name, json animation_data, json file_data, string load_directory);
+        SpriteAnimation(string animation_name, json animation_data, json file_data, string load_directory);
         ~SpriteAnimation() {
             frames.clear();
         }
@@ -37,9 +37,9 @@ class SpriteAnimation: public Resource {
 class SpriteAnimationSet: public Resource {
     public:
 
-        static shared_ptr<SpriteAnimationSet> getInstance(Engine* engine, string _file_path, string _base_directory_override = "//") {
-            LocalResourcePool* pool = (LocalResourcePool*)engine->getResourcePool<LocalResourcePool>();
-            return pool->getResource(engine, _file_path, _base_directory_override);
+        static shared_ptr<SpriteAnimationSet> getInstance(string _file_path, string _base_directory_override = "//") {
+            LocalResourcePool* pool = (LocalResourcePool*)Engine::getSingleton()->getResourcePool<LocalResourcePool>();
+            return pool->getResource(_file_path, _base_directory_override);
         }
 
         bool hasAnimation(string animation_key);
@@ -65,27 +65,27 @@ class SpriteAnimationSet: public Resource {
 
         int tree_depth = 1;
 
-        SpriteAnimationSet(Engine* engine, string _file_path, string _base_directory_override = "//");
-        void loadFile(Engine* engine, string _file_path, string _base_directory_override = "//");
+        SpriteAnimationSet(string _file_path, string _base_directory_override = "//");
+        void loadFile(string _file_path, string _base_directory_override = "//");
 
         class AnimationContainer {
             
             public:
                 bool isFinalLayer() { return is_final_layer; }
 
-                AnimationContainer(Engine* engine, int tree_depth, json& data, json& file_data, string base_directory) {
+                AnimationContainer(int tree_depth, json& data, json& file_data, string base_directory) {
                     is_final_layer = tree_depth == 1;
                     
                     if (is_final_layer) {
                         for (auto i : data.items()) {
                             string animation_key = i.key();
-                            animations[animation_key] = make_shared<SpriteAnimation>(engine, animation_key, data[animation_key], file_data, base_directory);
+                            animations[animation_key] = make_shared<SpriteAnimation>(animation_key, data[animation_key], file_data, base_directory);
                         }
                     }
                     else {
                         for (auto i : data.items()) {
                             string animation_key = i.key();
-                            containers[animation_key] = make_shared<AnimationContainer>(engine, tree_depth - 1, data[animation_key], file_data, base_directory);;
+                            containers[animation_key] = make_shared<AnimationContainer>(tree_depth - 1, data[animation_key], file_data, base_directory);;
                         }
                     }
 
@@ -162,11 +162,11 @@ class SpriteAnimationSet: public Resource {
                 static string getName() {
                     return "SpriteAnimationSet";
                 }
-                shared_ptr<SpriteAnimationSet> getResource(Engine* engine, string file_path, string base_directory_override = "//") {
+                shared_ptr<SpriteAnimationSet> getResource(string file_path, string base_directory_override = "//") {
                     if (pool.count(file_path) && pool[file_path].count(base_directory_override)) {
                         return (shared_ptr<SpriteAnimationSet>)pool[file_path][base_directory_override];
                     }
-                    shared_ptr<SpriteAnimationSet> ret = shared_ptr<SpriteAnimationSet>(new SpriteAnimationSet(engine, file_path, base_directory_override));
+                    shared_ptr<SpriteAnimationSet> ret = shared_ptr<SpriteAnimationSet>(new SpriteAnimationSet(file_path, base_directory_override));
 
                     if (pool.count(file_path)) {
                         pool[file_path][base_directory_override] = (weak_ptr<SpriteAnimationSet>)ret;

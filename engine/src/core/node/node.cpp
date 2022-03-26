@@ -11,32 +11,62 @@
 const int INDICATOR_RADIUS = 10;
 
 // - Core -
-Node::Node(Engine* engine_singleton) {
+Node::Node() {
 
     SIGNAL_READY = new Signal<void, Node*>();
     SIGNAL_KILLED = new Signal<void, Node*>();
     
     name = getValidName();
-    engine = engine_singleton;
-    manager = engine->getTree();
-    id = manager->getNewNodeId();
-    is_root = id == 1;
+    id = Engine::getSingleton()->getNewNodeId();
 
-    manager->onNodeCreated(this);
+    Engine::getSingleton()->onNodeCreated(this);
 }
 
 void Node::addedToNode(Node* parent_node) {
+    assert(tree == NULL);
+    assert(parent == NULL);
+    
     parent = parent_node;
     name = getValidName();
+    tree = parent->getTree();
+    
+    if (tree) {
+        tree->onNodeAddedToTree(this);
+
+        for (auto child : getChildrenRecursive()) {
+            child.first->tree = tree;
+            tree->onNodeAddedToTree(child.first);
+        }
+    }
 }
 void Node::removedFromNode(Node* former_parent_node) {
     parent = NULL;
+
+    if (tree) {
+        tree->onNodeRemovedFromTree(this);
+        
+        for (auto child : getChildrenRecursive()) {
+            tree->onNodeRemovedFromTree(child.first);
+            child.first->tree = NULL;
+        }
+        
+        tree = NULL;
+    }
 }
+
 void Node::process(float delta) {
     vector<Node*>* nodes = getChildren();
     for (auto i = nodes->cbegin(); i != nodes->cend(); ++i) {
         Node& node = **i;
         node.process(delta);
+    }
+}
+
+void Node::physicsProcess(float delta) {
+    vector<Node*>* nodes = getChildren();
+    for (auto i = nodes->cbegin(); i != nodes->cend(); ++i) {
+        Node& node = **i;
+        node.physicsProcess(delta);
     }
 }
 
@@ -90,6 +120,15 @@ string Node::getValidName(string base_name) {
     }
     
     return getAppendedName(ret, append);
+}
+
+void Node::makeRoot(SceneTree* of_tree) {
+    assert(!is_root);
+    assert(tree == NULL);
+    assert(of_tree->getRoot() == this);
+
+    is_root = true;
+    tree = of_tree;
 }
 
 // - Children -
@@ -262,13 +301,11 @@ int Node::getChildIndex(Node* child) {
 
 // - Hierarchy -
 bool Node::isInsideTree() {
+    return tree != NULL;
+}
 
-    if (getParent() == NULL) {
-        return is_root;
-    }
-    else {
-        return getParent()->isInsideTree();
-    }
+SceneTree* Node::getTree() {
+    return tree;
 }
 
 bool Node::isIndirectParentOf(Node* node) {
@@ -293,20 +330,8 @@ Node* Node::getParent() {
     return parent;
 }
 
-Node* Node::getRoot() {
-    return getManager()->getRoot();
-}
-
 bool Node::isRoot() {
     return is_root;
-}
-
-SceneTree* Node::getManager() {
-    return manager;
-}
-
-Engine* Node::getEngine() {
-    return engine;
 }
 
 void Node::printTree(int max_depth) {
@@ -370,7 +395,7 @@ int Node::getId() {
 
 void Node::kill() {
 
-    if (getManager()->getCurrentState() == SceneTree::STATE::PROCESS) {
+    if (tree && tree->getCurrentState() == SceneTree::STATE::PROCESS) {
         warn("Cannot kill node, SceneTree is in process state", true);
         return;
     }
@@ -381,8 +406,13 @@ void Node::kill() {
     }
 
     SIGNAL_KILLED->emit(this);
-    getManager()->onNodeKilled(this);
+
+    Engine::getSingleton()->onNodeKilled(this);
     getParent()->removeChild(this);
+
+    if (tree) {
+        tree->onNodeRemovedFromTree(this);
+    }
     
     while (getChildCount() > 0) {
         Node* child = getChild(0);
@@ -392,7 +422,8 @@ void Node::kill() {
 }
 
 void Node::queue_kill() {
-    getManager()->queueNodeKill(this);
+    assert(tree);
+    tree->queueNodeKill(this);
 }
 
 // --- Values ---

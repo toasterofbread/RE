@@ -7,7 +7,7 @@
 #include "engine/src/core/resource/sprite_animation.h"
 #include "engine/src/engine.h"
 
-Vector2 YAMLDataConverter::convertToVector2(YAML::Node data, string type_name, string error_prefix, Engine* engine) {
+Vector2 YAMLDataConverter::convertToVector2(YAML::Node data, string type_name, string error_prefix) {
     Vector2 ret;
 
     // Convert and set X value
@@ -21,7 +21,7 @@ Vector2 YAMLDataConverter::convertToVector2(YAML::Node data, string type_name, s
     return ret;
 }
 
-shared_ptr<SpriteAnimationSet> YAMLDataConverter::convertToSpriteAnimationSet(YAML::Node data, string type_name, string error_prefix, Engine* engine) {
+shared_ptr<SpriteAnimationSet> YAMLDataConverter::convertToSpriteAnimationSet(YAML::Node data, string type_name, string error_prefix) {
     string file_path;
     string base_directory_override = "//";
 
@@ -55,6 +55,6 @@ shared_ptr<SpriteAnimationSet> YAMLDataConverter::convertToSpriteAnimationSet(YA
         return NULL;
     }
 
-    shared_ptr<SpriteAnimationSet> ret = SpriteAnimationSet::getInstance(engine, file_path, base_directory_override);
+    shared_ptr<SpriteAnimationSet> ret = SpriteAnimationSet::getInstance(file_path, base_directory_override);
     return ret;
 }

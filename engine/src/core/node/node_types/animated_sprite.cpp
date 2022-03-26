@@ -9,18 +9,17 @@ using json = nlohmann::json;
 #include "engine/src/core/resource/sprite_animation.h"
 
 void AnimatedSprite::process(float delta) {
+    Sprite::process(delta);
 
     if (getPlaying()) frame_timer += delta;
 
     if (getAnimationSet() == NULL) {
-        Sprite::process(delta);
         return;
     }
     if (!hasAnimation(getCurrentAnimationKeys())) {
         if (!getCurrentAnimationKeys().empty()) {
             warn("AnimatedSprite's animation_set has no animation at key [" + strVector2str(getCurrentAnimationKeys()) + "]");
         }
-        Sprite::process(delta);
         return;
     }
 
@@ -43,7 +42,6 @@ void AnimatedSprite::process(float delta) {
     }
 
     setTexture(animation->getFrame(current_frame));
-    Sprite::process(delta);
 
     // current_frame = current_frame % animation->getFrameCount();
 }

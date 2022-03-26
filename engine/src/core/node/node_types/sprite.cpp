@@ -4,11 +4,11 @@
 
 #include "engine/src/engine_texture.h"
 
-void Sprite::process(float delta) {
+void Sprite::draw() {
 
-    Node::process(delta);
+    Node2D::draw();
 
-    if (!getVisible() || !hasTexture()) {
+    if (!isVisible(true) || !hasTexture()) {
         return;
     }
 

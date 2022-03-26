@@ -8,12 +8,11 @@ using namespace std;
 class Macro;
 template<typename A, typename... B>
 class Signal;
-class Engine;
 
 class InputEvent {
     public:
-        InputEvent(Engine* engine_singleton) { engine = engine_singleton; init(); }
-        InputEvent(Engine* engine_singleton, vector<Macro*> input_macros) { engine = engine_singleton; macros = input_macros; init(); }
+        InputEvent() { init(); }
+        InputEvent(vector<Macro*> input_macros) { macros = input_macros; init(); }
 
         bool isTriggered();
         bool isJustTriggered();
@@ -27,8 +26,6 @@ class InputEvent {
     private:
         void init();
         vector<Macro*> macros;
-
-        Engine* engine;
 };
 
 #endif

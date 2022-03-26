@@ -25,12 +25,12 @@ class AnimatedSprite: public Sprite {
 
         void process(float delta);
     public:
-        AnimatedSprite(Engine* engine_singleton): Sprite(engine_singleton) { name = getTypeName(); }
+        AnimatedSprite(): Sprite() { name = getTypeName(); }
         ~AnimatedSprite() {}
-        virtual string getTypeName() {return "AnimatedSprite";}
+        static string getTypeName() {return "AnimatedSprite";}
         
         template<typename NodeType>
-        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name, Engine* engine);
+        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name);
 
         shared_ptr<Signal<void, bool>> SIGNAL_ANIMATION_ENDED = make_shared<Signal<void, bool>>();
 

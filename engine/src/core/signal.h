@@ -16,7 +16,7 @@ class Engine;
 template<typename CallbackReturnType = void, typename... CallbackArgs>
 class Signal {
     public:
-        void await(Engine* engine);
+        void await();
 
         void emit(CallbackArgs... arguments) {
 
@@ -57,20 +57,20 @@ class Signal {
             callbacks.erase(tag);
 
             if (member_callbacks.count(tag)) {
-                for (auto i : member_callbacks[tag]) {
-                    delete i;
-                }
+                // for (auto i : member_callbacks[tag]) {
+                //     delete i;
+                // }
                 member_callbacks.erase(tag);
             }
         }
 
         void disconnectAll() {
             callbacks.clear();
-            for (auto pair : member_callbacks) {
-                for (auto i : pair.second) {
-                    delete i;
-                }
-            }
+            // for (auto pair : member_callbacks) {
+            //     for (auto i : pair.second) {
+            //         delete i;
+            //     }
+            // }
             member_callbacks.clear();
         }
 

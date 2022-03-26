@@ -11,6 +11,13 @@ sys.path.append("/usr/lib/python3.10/site-packages")
 from spectre7 import utils
 
 # - Constants -
+INCLUDE_LIBRARIES = [
+    "raylib",
+    "dw", 
+    "yaml-cpp",
+    "pthread",
+    "box2d"
+]
 
 OUTPUT_DIR = "build/"
 OBJ_DIR = "build/obj/"
@@ -45,35 +52,27 @@ def RunProjectBinary():
 
 AddOption("--print-binary-path", dest="print_binary_path", action="store_true", default=False)
 AddOption("--run", dest="run_after_build", action="store_true", default=False)
+AddOption("--clear-console", dest="clear_before_build", action="store_true", default=False)
 
 if GetOption("print_binary_path"):
     print(OUTPUT_DIR + PROJECT_BINARY_NAME)
     exit()
 
+if GetOption("clear_before_build"):
+    os.system("clear")
+
 engine_env = Environment(
     CPPPATH = ["include/raylib", "include/raylib-cpp", "."],
     CCFLAGS = ["-std=c++17", "-g", "-fpermissive", "-fdiagnostics-color=always", f"-DGIT_COMMIT_HASH='\"{GetGitHash()}\"'"],
-    LIBPATH = [LIB_DIR],
-    LIBS = [
-        "raylib",
-        "dw", 
-        "yaml-cpp",
-        "pthread",
-        "box2d"
-    ],
+    LIBPATH = [LIB_DIR, "include/lib/"],
+    LIBS = INCLUDE_LIBRARIES,
     CXX = "g++",
 )
 
 engine_env["CXXCOMSTR"]    = "Compiling $SOURCE"
 engine_env["LINKCOMSTR"]   = "Linking $TARGET"
 
-project_env = engine_env.Clone(LIBS = [
-        "raylib",
-        "dw", 
-        "yaml-cpp",
-        "pthread",
-        ENGINE_BINARY_NAME
-    ])
+project_env = engine_env.Clone(LIBS = INCLUDE_LIBRARIES + [ENGINE_BINARY_NAME])
 
 engine_objs = []
 for file in RecursiveGlob(ENGINE_SRC, "cpp"):
@@ -139,7 +138,6 @@ def convert_scons_line(line: str, progress: int):
         line = "Indexing library " + utils.format_colour(INDEXING_FILEPATH_COLOUR["colour"], line[len("ranlib "):], INDEXING_FILEPATH_COLOUR["attrs"])
     elif line.startswith("Linking "):
         line = "Linking program " + utils.format_colour(LINKING_FILEPATH_COLOUR["colour"], line[len("Linking "):], LINKING_FILEPATH_COLOUR["attrs"])
-
     elif line == "scons: Building targets ...":
         return utils.format_colour("magenta", f"\n - - Starting build - - \n", ["reverse"])
 

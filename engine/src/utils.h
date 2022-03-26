@@ -1,6 +1,7 @@
 #ifndef INCLUDED_UTILS
 #define INCLUDED_UTILS
 
+#include <box2d/box2d.h>
 #include <iostream>
 #include <stdexcept>
 #include <algorithm>
@@ -11,6 +12,8 @@
 using namespace std;
 
 #include "include/prettyprint.hpp"
+
+// !todo Clean this file up
 
 // Forward declaration
 class Node;
@@ -40,7 +43,8 @@ const vector<string> long_characters = {
 int getStringActualLength(string str);
 string equaliseStringLineWidths(string str);
 bool stringBeginsWith(string str, string begins);
-string vector2str(Vector2 value, int max_decimals = 1, bool decorate = false);
+string vector2str(Vector2 value, int max_decimals = 2, bool decorate = false);
+string vector2str(b2Vec2 value, int max_decimals = 2, bool decorate = false);
 const char* int2char(int value);
 string int2str(int value);
 string encaseStringInBox(string str, bool thick = false, int margin = 2);
@@ -74,17 +78,23 @@ void print(Any msg) {
     cout << msg << endl; 
 }
 void print(Vector2 value);
+void print(b2Vec2 value);
 void print(bool value);
 void print_stacktrace(int additional_skip = 0);
 
 void warn(string message, bool throw_error = false);
 
+#undef assert
 
-
-//   template<typename _Func, typename... _BoundArgs>
-//     inline _GLIBCXX20_CONSTEXPR typename
-//     _Bind_helper<__is_socketlike<_Func>::value, _Func, _BoundArgs...>::type
-//     bind(_Func&& __f, _BoundArgs&&... __args)
+#ifdef DEBUG_ENABLED
+#define assert(expr)						                          \
+    if (!static_cast<bool>(expr)) {                                  \
+        print_stacktrace();                                           \
+        __assert_fail (#expr, __FILE__, __LINE__, __ASSERT_FUNCTION); \
+    }
+#else
+#define assert(expr)
+#endif
 
 template<typename F, typename O, typename... A>
 void makeThread(F function, O* object, A... args) {
@@ -103,5 +113,8 @@ struct Functor {
         return (object->*ptr)(params...);
     }
 };
+
+Vector2 convertVector2(b2Vec2 value);
+b2Vec2 convertVector2(Vector2 value);
 
 #endif

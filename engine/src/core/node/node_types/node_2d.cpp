@@ -6,7 +6,7 @@ void Node2D::draw() {
         if (getName() != text) {
             text += " | " + getName();
         }
-        if (!getVisible()) {
+        if (!isVisible()) {
             text += " (invisible)";
         }
         
@@ -41,7 +41,12 @@ void Node2D::setGlobalPosition(Vector2 value) {
         warn("Node is not inside tree, cannot set global position");
     }
 
-    setPosition(value - getGlobalPosition(true));
+    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+        setPosition(value - parent_2d->getGlobalPosition(true));
+    }
+    else {
+        setPosition(value);
+    }
 }
 
 Vector2 Node2D::getScale() {
@@ -98,4 +103,58 @@ void Node2D::setGlobalRotation(float value) {
     }
 
     setRotation(value - getGlobalRotation(true));
+}
+
+bool Node2D::isVisible(bool consider_parents) {
+    
+    if (!visible) {
+        return false;
+    }
+    
+    if (!consider_parents) {
+        return visible;
+    }
+
+    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+        return parent_2d->isVisible(true);
+    }
+
+    return visible;
+}
+
+void Node2D::setDrawLayer(int value) {
+    int original_draw_layer = getDrawLayer(true);
+    draw_layer = value; 
+    SIGNAL_DRAW_LAYER_CHANGED.emit(this, original_draw_layer); 
+}
+
+int Node2D::getDrawLayer(bool consider_parents) {
+    
+    if (!consider_parents) {
+        return draw_layer;
+    }
+
+    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+        return clamp(parent_2d->getDrawLayer(true) + draw_layer, SceneTree::MIN_DRAW_LAYER, SceneTree::MAX_DRAW_LAYER);
+    }
+
+    return draw_layer;
+}
+
+void Node2D::onParentDrawLayerChanged(Node2D* _node, int old_draw_layer) {
+    SIGNAL_DRAW_LAYER_CHANGED.emit(this, old_draw_layer + draw_layer);
+}
+
+void Node2D::addedToNode(Node* parent_node) {
+    Node::addedToNode(parent_node);
+    if (Node2D* parent_2d = dynamic_cast<Node2D*>(parent_node)) {
+        return parent_2d->SIGNAL_DRAW_LAYER_CHANGED.connect(&Node2D::onParentDrawLayerChanged, this, "Child" + int2str(getId()));
+    }
+}
+void Node2D::removedFromNode(Node* former_parent_node) {
+    Node::removedFromNode(former_parent_node);
+    
+    if (Node2D* parent_2d = dynamic_cast<Node2D*>(former_parent_node)) {
+        return parent_2d->SIGNAL_DRAW_LAYER_CHANGED.disconnect("Child" + int2str(getId()));
+    }
 }

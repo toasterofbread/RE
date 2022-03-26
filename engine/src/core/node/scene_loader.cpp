@@ -6,7 +6,7 @@
 #include "engine/src/core/object_constructor.h"
 #include "engine/src/core/node/node_types/animated_sprite.h"
 
-Node* SceneLoader::loadSceneFromFile(string file_path, Engine* engine, Node* root_node_override, YAML::Node* config_container) {
+Node* SceneLoader::loadSceneFromFile(string file_path, Node* root_node_override, YAML::Node* config_container) {
 
     if (!FileExists(Engine::getResPath(file_path).c_str())) {
         warn("No file exists at path '" + Engine::getResPath(file_path) + "'", true);
@@ -31,7 +31,7 @@ Node* SceneLoader::loadSceneFromFile(string file_path, Engine* engine, Node* roo
     Node* ret = NULL;
     for (auto i = scene.begin(); i != scene.end(); ++i) {
         if (i->first.as<string>() != "config") {
-            ret = synthesiseNode(i->first.as<string>(), i->second, engine, root_node_override);
+            ret = synthesiseNode(i->first.as<string>(), i->second, root_node_override);
             break;
         }
     }
@@ -88,9 +88,9 @@ void SceneLoader::processSceneConfig(YAML::Node& config, Node* root_node) {
 
 }
 
-Node* SceneLoader::synthesiseNode(string node_type, YAML::Node& node_data, Engine* engine, Node* root_node_override) {
+Node* SceneLoader::synthesiseNode(string node_type, YAML::Node& node_data, Node* root_node_override) {
     unordered_map<Node*, vector<pair<string, YAML::Node>>> to_add;
-    Node* root = instanceNodeFromType(node_type, node_data, engine, true, root_node_override);
+    Node* root = instanceNodeFromType(node_type, node_data, true, root_node_override);
     if (root == NULL) {
         warn("Root node type is unregistered: " + node_type, true);
         return NULL;
@@ -104,7 +104,7 @@ Node* SceneLoader::synthesiseNode(string node_type, YAML::Node& node_data, Engin
         to_add[root] = children;
     }
 
-    auto add_node_children = [engine](Node* node, vector<pair<string, YAML::Node>>* children) {
+    auto add_node_children = [](Node* node, vector<pair<string, YAML::Node>>* children) {
         unordered_map<Node*, vector<pair<string, YAML::Node>>> ret;
 
         for (auto i = children->begin(); i != children->end(); ++i) {
@@ -112,7 +112,7 @@ Node* SceneLoader::synthesiseNode(string node_type, YAML::Node& node_data, Engin
             YAML::Node child_data = i->second;
 
             vector<pair<string, YAML::Node>> grandchildren;
-            Node* child = instanceNodeFromType(child_type, child_data, engine);
+            Node* child = instanceNodeFromType(child_type, child_data);
             if (child == NULL) {
                 continue;
             }
@@ -141,16 +141,20 @@ Node* SceneLoader::synthesiseNode(string node_type, YAML::Node& node_data, Engin
     return root;
 }
 
-Node* SceneLoader::instanceNodeFromType(string node_type, YAML::Node& node_data, Engine* engine, bool suppress_warning, Node* root_node_override) {
+Node* SceneLoader::instanceNodeFromType(string node_type, YAML::Node& node_data, bool suppress_warning, Node* root_node_override) {
 
     // Ensure node_type is a registered object and inherits Node
-    if (!engine->getTree()->isNodeTypeRegistered(node_type)) {
-        warn("Node type '" + node_type + "' is not registered, skipping");
+    if (!Engine::getSingleton()->isObjectTypeRegistered(node_type)) {
+        warn("Node type '" + node_type + "' is not registered. Skipping...");
+        return NULL;
+    }
+    else if (Engine::getSingleton()->doesRegisteredObjectInheritType<Node>(node_type)) {
+        warn("Node type '" + node_type + "' is registered, but doesn't inherit Node. Skipping...");
         return NULL;
     }
 
     // Get the constructor for node_type
-    ObjectConstructor<Node>* constructor = engine->getObjectConstructor<Node>(node_type);
+    ObjectConstructor<Node>* constructor = Engine::getSingleton()->getObjectConstructor<Node>(node_type);
 
     Node* ret;
 
@@ -160,7 +164,7 @@ Node* SceneLoader::instanceNodeFromType(string node_type, YAML::Node& node_data,
     }
     // Otherwise, instantiate a new node using the constructor
     else {
-        ret = constructor->createInstance(engine);
+        ret = constructor->createInstance();
     }
 
     // Set node properties

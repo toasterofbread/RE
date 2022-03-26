@@ -4,10 +4,10 @@
 #include "engine/src/engine.h"
 #include "engine/src/input/macro.h"
 #include "engine/src/core/signal.h"
-#include "engine/src/core/node/node_manager.h"
+#include "engine/src/core/node/scene_tree.h"
 
 void InputEvent::init() {
-    engine->inputEventCreated(this);
+    Engine::getSingleton()->inputEventCreated(this);
     SIGNAL_TRIGGERED = new Signal<void>();
     SIGNAL_UNTRIGGERED = new Signal<void>();
 }

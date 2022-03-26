@@ -9,20 +9,28 @@ using namespace std;
 #include "engine/src/input/input_event.h"
 #include "engine/src/input/macro.h"
 #include "engine/src/core/signal.h"
-#include "engine/src/core/node/node_manager.h"
+#include "engine/src/core/node/scene_tree.h"
 
-InputManager::InputManager(Engine* engine_singleton) {
-    engine = engine_singleton;
+InputManager* InputManager::singleton = NULL;
+
+InputManager::InputManager() {
+    assert(singleton == NULL);
+    singleton = this;
+
+    Engine* engine = Engine::getSingleton();
+
+    INPUTEVENT_PAD_UP = new InputEvent({Macro::create_kb({ARROW_UP}), Macro::create_kb({KEY_W})});
+    INPUTEVENT_PAD_DOWN = new InputEvent({Macro::create_kb({ARROW_DOWN}), Macro::create_kb({KEY_S})});
+    INPUTEVENT_PAD_LEFT = new InputEvent({Macro::create_kb({ARROW_LEFT}), Macro::create_kb({KEY_A})});
+    INPUTEVENT_PAD_RIGHT = new InputEvent({Macro::create_kb({ARROW_RIGHT}), Macro::create_kb({KEY_D})});
+
+    INPUTEVENT_REBUILD_AND_RUN = new InputEvent({Macro::create_kb({F5})});
+    INPUTEVENT_REBUILD_AND_RUN->SIGNAL_TRIGGERED->connect<Engine>(&Engine::rebuildAndRun, Engine::getSingleton());
 }
 
-void InputManager::init() {
-    INPUTEVENT_PAD_UP = new InputEvent(engine, {Macro::create_kb({ARROW_UP}), Macro::create_kb({KEY_W})});
-    INPUTEVENT_PAD_DOWN = new InputEvent(engine, {Macro::create_kb({ARROW_DOWN}), Macro::create_kb({KEY_S})});
-    INPUTEVENT_PAD_LEFT = new InputEvent(engine, {Macro::create_kb({ARROW_LEFT}), Macro::create_kb({KEY_A})});
-    INPUTEVENT_PAD_RIGHT = new InputEvent(engine, {Macro::create_kb({ARROW_RIGHT}), Macro::create_kb({KEY_D})});
-
-    INPUTEVENT_REBUILD_AND_RUN = new InputEvent(engine, {Macro::create_kb({F5})});
-    INPUTEVENT_REBUILD_AND_RUN->SIGNAL_TRIGGERED->connect<Engine>(&Engine::rebuildAndRun, engine);
+InputManager* InputManager::getSingleton() {
+    assert(singleton != NULL);
+    return singleton;
 }
 
 void InputManager::process(float delta) {

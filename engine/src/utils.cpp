@@ -2,6 +2,7 @@
 #include "cstring"
 #include <stdio.h>
 #include <execinfo.h>
+#include <box2d/box2d.h>
 
 #include "engine/src/utils.h"
 #include "engine/src/core/node/node.h"
@@ -255,6 +256,10 @@ string vector2str(Vector2 value, int max_decimals, bool decorate) {
     return sink;
 }
 
+string vector2str(b2Vec2 value, int max_decimals, bool decorate) {
+    return vector2str(convertVector2(value), max_decimals, decorate);
+}
+
 const char* int2char(int value) {
     char* ret = (char*)calloc(100, sizeof(char));
     sprintf(ret, "%d", value);
@@ -269,6 +274,9 @@ void printNode(Node* value) {
     print(value->getTypeName() + " | ID: " + int2char(value->getId()));
 }
 void print(Vector2 value) {
+    cout << vector2str(value) << endl;
+}
+void print(b2Vec2 value) {
     cout << vector2str(value) << endl;
 }
 void print(bool value) {
@@ -348,4 +356,12 @@ void warn(string message, bool throw_error) {
     else {
         print(format_message(message, "WARNING"));
     }
+}
+
+Vector2 convertVector2(b2Vec2 value) {
+    return Vector2{value.x, value.y};
+}
+
+b2Vec2 convertVector2(Vector2 value) {
+    return b2Vec2(value.x, value.y);
 }

@@ -1,0 +1,52 @@
+#ifndef INCLUDED_scene_tree
+#define INCLUDED_scene_tree
+
+#include <yaml-cpp/yaml.h>
+#include <string>
+using namespace std;
+
+#include "engine/src/utils.h"
+
+#include "icecream.hpp" // Debug
+#include <vector>
+using namespace std;
+
+// Forward declaration
+class Engine;
+class Node;
+class Node2D;
+
+class SceneTree {
+    public:
+        enum class STATE {
+            PREINIT, IDLE, PROCESS, POST_PROCESS, DRAW
+        };
+
+        void init();
+
+        void process(float delta);
+        void addNode(Node* node);
+        void queueNodeKill(Node* node);
+
+        Node* getRoot() { return root_node; }
+
+        STATE getCurrentState() { return current_state; }
+
+        void onNodeAddedToTree(Node* node);
+        void onNodeRemovedFromTree(Node* node);
+
+        static const int MIN_DRAW_LAYER = -2048;
+        static const int MAX_DRAW_LAYER = 2048;
+
+    private:
+        Node* root_node;
+        
+        vector<Node2D*> drawable_nodes[MAX_DRAW_LAYER - MIN_DRAW_LAYER];
+
+        STATE current_state = STATE::PREINIT;
+        vector<Node*> kill_queue;
+
+        void onDrawableNodeLayerChanged(Node2D* node, int old_draw_layer);
+};
+
+#endif

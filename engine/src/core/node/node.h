@@ -27,43 +27,33 @@ class Node {
 
         Node* parent = NULL;
         bool is_root = false;
-        SceneTree* manager = NULL;
-        Engine* engine = NULL;
+        SceneTree* tree = NULL;
 
     protected:
+    
+        virtual void addedToNode(Node* parent_node);
+        virtual void removedFromNode(Node* former_parent_node);
         string name;
     public:
-        Node(Engine* engine_singleton);
+        Node();
         virtual ~Node() {
             delete SIGNAL_KILLED;
         }
 
-        enum class PROPERTY_TYPE {
-            STRING, INT, FLOAT, BOOL, VECTOR2, SPRITEANIMATIONSET
-        };
+        template<typename NodeType>
+        static ObjectConstructor<NodeType>* registerNodeProperties(string node_type_name);
+        static string getTypeName() { return "Node"; }
 
         // - Signals -
         Signal<void, Node*>* SIGNAL_READY;
         Signal<void, Node*>* SIGNAL_KILLED;
 
         // - Core -
-        void addedToNode(Node* parent_node);
-        void removedFromNode(Node* former_parent_node);
         virtual void ready();
         virtual void process(float delta);
-        virtual string getTypeName() {return "Node";}
+        virtual void physicsProcess(float delta);
         string getValidName(string base_name = "");
-
-        template<typename NodeType>
-        static ObjectConstructor<NodeType>* getNodeConstructor(string node_name, Engine* engine) {
-            if (!engine->getTree()->isNodeTypeRegistered(node_name)) {
-                return engine->registerObjectType<NodeType, Engine*>(node_name);
-            }
-            return engine->getObjectConstructor<NodeType>(node_name);
-        }
-
-        template<typename NodeType>
-        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name, Engine* engine);
+        void makeRoot(SceneTree* of_tree);
 
         // - Children-
         void addChild(Node* child);
@@ -94,10 +84,8 @@ class Node {
         bool isInsideTree();
         bool isIndirectParentOf(Node* node);
         Node* getParent();
-        Node* getRoot();
         bool isRoot();
-        SceneTree* getManager();
-        Engine* getEngine();
+        SceneTree* getTree();
         void printTree(int max_depth = -1);
         int getIndex(); // Index of this within parent's children
         int getId(); // Unique ID of this node

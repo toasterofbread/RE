@@ -13,7 +13,7 @@ using namespace std;
 
 #include "engine/src/core/signal.h"
 #include "engine/src/core/object_constructor.h"
-#include "engine/src/core/node/node_manager.h"
+#include "engine/src/core/node/scene_tree.h"
 #include "engine/src/input/input_manager.h"
 #include "engine/src/core/yaml_data_converter.h"
 #include "engine/src/core/resource/resource.h"
@@ -28,12 +28,11 @@ class Engine {
         Engine();
         void process(float delta);
 
-        static Engine* get_singleton();
+        static Engine* getSingleton();
 
         Signal<void, string, bool>* SIGNAL_OBJECT_TYPE_REGISTERED = new Signal<void, string, bool>();
 
         SceneTree* getTree() { return scene_tree_singleton; }
-        InputManager* getInputManager() { return input_manager_singleton; }
         YAMLDataConverter* getYAMLDataConverter() { return yaml_data_converter_singleton; }
 
         // - Texture management -
@@ -81,11 +80,12 @@ class Engine {
                 return NULL;
             }
 
-            ObjectConstructor<ObjectType>* constructor = new ObjectConstructor<ObjectType>(this, getYAMLDataConverter());
+            ObjectConstructor<ObjectType>* constructor = new ObjectConstructor<ObjectType>(getYAMLDataConverter());
             constructor->template init<ConstructorArgs...>();
             registered_object_constructors[object_type_name] = constructor;
             
             SIGNAL_OBJECT_TYPE_REGISTERED->emit(object_type_name, constructor->template inheritsType<Node>());
+            // onObjectRegisteredAsConstructor();
 
             return constructor;
         }
@@ -95,7 +95,7 @@ class Engine {
         }
 
         template<typename InheritedType>
-        bool doesObjectInheritType(string object_type_name) {
+        bool doesRegisteredObjectInheritType(string object_type_name) {
             if (!isObjectTypeRegistered(object_type_name)) {
                 warn("Object '" + object_type_name + "' is not registered", true);
                 return false;
@@ -103,12 +103,26 @@ class Engine {
             return (registered_object_constructors[object_type_name])->inheritsType<InheritedType>();
         }
 
+        // void onObjectRegisteredAsConstructor(string object_type_name, bool is_node) {
+        //     if (is_node) {
+        //         registered_nodes.push_back(object_type_name);
+        //     }
+        // }
+
+        // Nodes
+        int getNewNodeId();
+
+        void onNodeCreated(Node* node);
+        void onNodeKilled(Node* node);
+        int getGlobalNodeCount();
 
     private:
         static Engine* singleton;
 
-        SceneTree* scene_tree_singleton = new SceneTree(this);
-        InputManager* input_manager_singleton = new InputManager(this);
+        int current_node_id_max = 0;
+        int global_node_count = 0;
+
+        SceneTree* scene_tree_singleton = new SceneTree();
         YAMLDataConverter* yaml_data_converter_singleton = new YAMLDataConverter();
 
         vector<InputEvent*> all_inputevents;

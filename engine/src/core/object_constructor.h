@@ -15,7 +15,6 @@ using namespace std;
 
 // Forward declarations
 class SceneTree;
-class Engine;
 
 class ObjectConstructorBase {
     public:
@@ -27,8 +26,6 @@ template<typename ObjectType>
 class ObjectConstructor: public ObjectConstructorBase {
 
     private:
-        Engine* engine;
-
         class SetterBase {
             public:
                 virtual void set(ObjectType* object, YAML::Node data, YAMLDataConverter* converter) {}
@@ -40,9 +37,8 @@ class ObjectConstructor: public ObjectConstructorBase {
             public:
                 void (ObjectType::*setter_method)(PropertyType);
 
-                Setter(void (ObjectType::*method)(PropertyType), Engine* engine_singleton) {
+                Setter(void (ObjectType::*method)(PropertyType)) {
                     setter_method = method;
-                    engine = engine_singleton;
                 }
 
                 void set(ObjectType* object, PropertyType value) {
@@ -54,10 +50,8 @@ class ObjectConstructor: public ObjectConstructorBase {
                         warn("Cannot set object value, type has no registered YAML data converter", true);
                         return;
                     }
-                    (object->*setter_method)(converter->convertData<PropertyType>(data, engine));
+                    (object->*setter_method)(converter->convertData<PropertyType>(data));
                 }
-            private:
-                Engine* engine;
 
         };
 
@@ -79,8 +73,7 @@ class ObjectConstructor: public ObjectConstructorBase {
 
     public:
 
-        ObjectConstructor(Engine* engine_singleton, YAMLDataConverter* data_converter) {
-            engine = engine_singleton;
+        ObjectConstructor(YAMLDataConverter* data_converter) {
             converter = data_converter;
         }
 
@@ -97,7 +90,7 @@ class ObjectConstructor: public ObjectConstructorBase {
                 warn("Property '" + property_name + "' is already registered", true);
                 return this;
             }
-            setters[property_name] = new Setter<PropertyType>(setter, engine);
+            setters[property_name] = new Setter<PropertyType>(setter);
             return this;
         }
         

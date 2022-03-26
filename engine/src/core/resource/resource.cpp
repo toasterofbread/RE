@@ -2,13 +2,12 @@
 
 #include "engine/src/utils.h"
 #include "engine/src/core/node/node.h"
-#include "engine/src/core/node/node_manager.h"
+#include "engine/src/core/node/scene_tree.h"
 #include "engine/src/engine.h"
 #include "engine/src/core/signal.h"
 
-Resource::Resource(Engine* engine_singleton) {
-    engine = engine_singleton;
-    engine->resourceCreated(this);
+Resource::Resource() {
+    Engine::getSingleton()->resourceCreated(this);
 }
 
 Resource::~Resource() {

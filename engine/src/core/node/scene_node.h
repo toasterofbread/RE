@@ -10,9 +10,9 @@ class Engine;
 class SceneNode: public Node {
     protected:
         virtual void init_scenenode(string scene_path, string scene_type);
-        SceneNode(Engine* engine_singleton): Node(engine_singleton) {};
+        SceneNode(): Node() {};
     public:
-        virtual string getTypeName() {return "SceneNode";}
+        static string getTypeName() {return "SceneNode";}
 };
 
 #endif

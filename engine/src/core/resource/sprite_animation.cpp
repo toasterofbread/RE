@@ -7,13 +7,13 @@ using json = nlohmann::json;
 #include "engine/src/utils.h"
 #include "engine/src/engine.h"
 #include "engine/src/engine_texture.h"
-#include "engine/src/core/node/node_manager.h"
+#include "engine/src/core/node/scene_tree.h"
 #include "engine/src/core/signal.h"
 
 // Debug
 #include <icecream.hpp>
 
-SpriteAnimation::SpriteAnimation(Engine* engine, string animation_name, json animation_data, json file_data, string load_directory): Resource(engine) {
+SpriteAnimation::SpriteAnimation(string animation_name, json animation_data, json file_data, string load_directory): Resource() {
     name = animation_name;
 
     if (animation_data.count("loop"))  {
@@ -51,7 +51,7 @@ SpriteAnimation::SpriteAnimation(Engine* engine, string animation_name, json ani
 
     for (auto item : frames_data ) {
         if (item.is_null()) { break; }
-        frames.push_back(engine->loadTexture(plusFile(load_directory, file_data[int2char(item)])));
+        frames.push_back(Engine::getSingleton()->loadTexture(plusFile(load_directory, file_data[int2char(item)])));
     }
 }
 
@@ -93,11 +93,11 @@ Vector2 SpriteAnimation::getFrameSize(int frame_idx) {
 
 // - SpriteAnimationSet -
 
-SpriteAnimationSet::SpriteAnimationSet(Engine* engine, string _file_path, string _base_directory_override): Resource(engine) {
-    loadFile(engine, _file_path, _base_directory_override);
+SpriteAnimationSet::SpriteAnimationSet(string _file_path, string _base_directory_override): Resource() {
+    loadFile(_file_path, _base_directory_override);
 }
 
-void SpriteAnimationSet::loadFile(Engine* engine, string _file_path, string base_directory_override) {
+void SpriteAnimationSet::loadFile(string _file_path, string base_directory_override) {
     
     if (!isFileValid(_file_path)) {
         warn("SpriteAnimationSet file is not valid");
@@ -124,7 +124,7 @@ void SpriteAnimationSet::loadFile(Engine* engine, string _file_path, string base
     }
 
     animation_container.reset();
-    animation_container = make_shared<AnimationContainer>(engine, tree_depth, data["animations"], data["files"], base_directory);
+    animation_container = make_shared<AnimationContainer>(tree_depth, data["animations"], data["files"], base_directory);
 
     // for (auto& i : data["animations"].items()) {
     //     string animation_key = i.key();

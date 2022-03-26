@@ -14,7 +14,7 @@ class Signal;
 
 class Resource {
     public:
-        Resource(Engine* engine_singleton);
+        Resource();
         ~Resource();
         
         virtual void process(float delta) {};
@@ -25,9 +25,6 @@ class Resource {
                 return "Resource";
             }
         };
-
-    protected:
-        Engine* engine;
 };
 
 #endif

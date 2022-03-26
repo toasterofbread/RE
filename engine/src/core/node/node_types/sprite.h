@@ -11,10 +11,14 @@ using namespace std;
 class Sprite: public Node2D {
 
     public:
-        Sprite(Engine* engine_singleton): Node2D(engine_singleton) { name = getTypeName(); }
-        virtual string getTypeName() {return "Sprite";}
+        Sprite(): Node2D() { name = getTypeName(); }
+        static string getTypeName() { return "Sprite"; }
 
-        void process(float delta);
+        template<typename NodeType>
+        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name);
+
+        // void process(float delta);
+        void draw();
 
         bool hasTexture() { return texture != NULL; }
         void setTexture(shared_ptr<EngineTexture> value) { texture = value; }
