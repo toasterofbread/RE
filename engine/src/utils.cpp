@@ -10,7 +10,7 @@
 
 using namespace std;
 
-void markPosition(Vector2 position, string text, Color colour, float radius, float width) {
+void markPosition(Vector2 position, string text, Colour colour, float radius, float width) {
     DrawLineEx(position - Vector2{radius, 0}, position + Vector2{radius, 0}, 1.0f, colour);
     DrawLineEx(position - Vector2{0, radius}, position + Vector2{0, radius}, 1.0f, colour);
     DrawText(text.c_str(), position.x + 5, position.y - 15, 10, colour);
@@ -270,8 +270,8 @@ string int2str(int value) {
     return int2char(value);
 }
 
-void printNode(Node* value) {
-    print(value->getTypeName() + " | ID: " + int2char(value->getId()));
+void print(Node* value) {
+    print("Node type: " + value->getTypeName() + " | ID: " + int2char(value->getId()) + " | Name: " + value->getName());
 }
 void print(Vector2 value) {
     cout << vector2str(value) << endl;
@@ -281,6 +281,9 @@ void print(b2Vec2 value) {
 }
 void print(bool value) {
     cout << (value ? "true" : "false") << endl;
+}
+void print(Colour value) {
+    cout << "(" << int2str(value.r) << ", " << int2str(value.g) << ", " << int2str(value.b) << ", " << int2str(value.a) << ")" << endl;
 }
 
 void print_trace(void) {

@@ -11,8 +11,7 @@ using namespace std;
 class Sprite: public Node2D {
 
     public:
-        Sprite(): Node2D() { name = getTypeName(); }
-        static string getTypeName() { return "Sprite"; }
+        REGISTER_NODE(Sprite);
 
         template<typename NodeType>
         static ObjectConstructor<NodeType>* registerNodeProperties(string node_name);
@@ -36,9 +35,6 @@ class Sprite: public Node2D {
         void setRotateAroundCetner(bool value) { rotate_around_center = value; }
         bool getRotateAroundCenter() { return rotate_around_center; }
 
-        void setModulate(Color value) { modulate = value; }
-        Color getModulate() { return modulate; }
-
     private:
         shared_ptr<EngineTexture> texture = NULL;
 
@@ -46,7 +42,6 @@ class Sprite: public Node2D {
         bool flip_y = false;
         Vector2 rotation_origin = Vector2{0, 0};
         bool rotate_around_center = false;
-        Color modulate = RAYWHITE;
 };
 
 #endif

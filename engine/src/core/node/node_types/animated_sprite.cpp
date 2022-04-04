@@ -32,11 +32,11 @@ void AnimatedSprite::process(float delta) {
         if (current_frame >= animation->getFrameCount()) {
             if (animation->getLoop()) {
                 current_frame = 0;
-                SIGNAL_ANIMATION_ENDED->emit(true);
+                SIGNAL_ANIMATION_ENDED.emit(true);
             }
             else {
                 current_frame = animation->getFrameCount() - 1;
-                SIGNAL_ANIMATION_ENDED->emit(false);
+                SIGNAL_ANIMATION_ENDED.emit(false);
             }
         }
     }

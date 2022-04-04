@@ -8,19 +8,19 @@ void Sprite::draw() {
 
     Node2D::draw();
 
-    if (!isVisible(true) || !hasTexture()) {
+    if (!isGlobalVisible() || !hasTexture()) {
         return;
     }
 
     Vector2 origin;
     if (getRotateAroundCenter()) {
-        origin = Vector2{texture->getWidth() / 2.0f, texture->getHeight() / 2.0f};
+        origin = (texture->getSize() * getGlobalScale()) / 2.0f;
     }
     else {
         origin = getRotationOrigin();
     }
 
-    Vector2 global_position = getGlobalPosition();
+    Vector2 global_position = getGlobalPosition() + origin;
 
     DrawTexturePro(
         texture->getTexture(),
@@ -37,8 +37,8 @@ void Sprite::draw() {
             (float)texture->getHeight() * getGlobalScale().y
         },
         origin,
-        getGlobalRotation(),
-        getModulate()
+        getGlobalRotation() * RAD2DEG,
+        getGlobalModulate()
     );
 
 }

@@ -1,7 +1,7 @@
 #ifndef INCLUDED_ANIMATED_SPRITE
 #define INCLUDED_ANIMATED_SPRITE
 
-#include <raylib-cpp.hpp>
+#include "engine/src/raylib_include.h"
 #include <iostream>
 #include <memory>
 
@@ -25,14 +25,13 @@ class AnimatedSprite: public Sprite {
 
         void process(float delta);
     public:
-        AnimatedSprite(): Sprite() { name = getTypeName(); }
-        ~AnimatedSprite() {}
-        static string getTypeName() {return "AnimatedSprite";}
-        
+    
+        REGISTER_NODE(AnimatedSprite);
+                
         template<typename NodeType>
         static ObjectConstructor<NodeType>* registerNodeProperties(string node_name);
 
-        shared_ptr<Signal<void, bool>> SIGNAL_ANIMATION_ENDED = make_shared<Signal<void, bool>>();
+        Signal<bool> SIGNAL_ANIMATION_ENDED;
 
         void play(string animation_key = "", bool reset_frame = true);
         void play(vector<string> animation_keys, bool reset_frame = true);

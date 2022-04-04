@@ -5,6 +5,7 @@
 #include "engine/src/utils.h"
 #include "engine/src/engine.h"
 #include "engine/src/core/signal.h"
+#include "engine/src/core/node/node_types/node_2d.h"
 
 #include <icecream.hpp> // Debug
 
@@ -12,10 +13,6 @@ const int INDICATOR_RADIUS = 10;
 
 // - Core -
 Node::Node() {
-
-    SIGNAL_READY = new Signal<void, Node*>();
-    SIGNAL_KILLED = new Signal<void, Node*>();
-    
     name = getValidName();
     id = Engine::getSingleton()->getNewNodeId();
 
@@ -71,7 +68,9 @@ void Node::physicsProcess(float delta) {
 }
 
 void Node::ready() {
-    SIGNAL_READY->emit(this);
+    assert(!ready_called);
+    SIGNAL_READY.emit();
+    ready_called = true;
 }
 
 string Node::getValidName(string base_name) {
@@ -133,16 +132,13 @@ void Node::makeRoot(SceneTree* of_tree) {
 
 // - Children -
 void Node::addChild(Node* child) {
-    
-    if (child->isInsideTree()) {
-        warn("Node is already inside tree", true);
-        return;
-    }
-    
+    assert(!child->isInsideTree());
     children.push_back(child);
     child->addedToNode(this);
 
-    child->ready();
+    if (!child->isReady()) {
+        child->ready();
+    }
 }
 
 void Node::removeChild(int child_idx) {
@@ -341,6 +337,12 @@ void Node::printTree(int max_depth) {
 
     auto getInfoString = [](Node* node) {
         string ret = "   │ Name: " + node->getName() + ", ID: " + int2char(node->getId()) + ", Children: " + int2char(node->getChildCount());
+        
+        if (Node2D* node_2d = dynamic_cast<Node2D*>(node)) {
+            ret += ", Scale: " + vector2str(node_2d->getScale());
+            ret += ", Global scale: " + vector2str(node_2d->getGlobalScale());
+        }
+        
         return ret;
     };
 
@@ -405,7 +407,13 @@ void Node::kill() {
         return;
     }
 
-    SIGNAL_KILLED->emit(this);
+    SIGNAL_KILLED.emit();
+
+    // DEBUG
+    if (notify_when_killed) {
+        print("NODE KILLED:");
+        print(this);
+    }
 
     Engine::getSingleton()->onNodeKilled(this);
     getParent()->removeChild(this);
@@ -421,7 +429,7 @@ void Node::kill() {
     }
 }
 
-void Node::queue_kill() {
+void Node::queueKill() {
     assert(tree);
     tree->queueNodeKill(this);
 }

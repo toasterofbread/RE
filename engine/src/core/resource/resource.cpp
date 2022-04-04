@@ -11,5 +11,5 @@ Resource::Resource() {
 }
 
 Resource::~Resource() {
-    SIGNAL_DELETED->emit(this);
+    SIGNAL_DELETED.emit();
 }

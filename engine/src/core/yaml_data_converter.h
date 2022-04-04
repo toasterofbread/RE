@@ -5,7 +5,7 @@
 #include <functional>
 #include <string>
 #include <yaml-cpp/yaml.h>
-#include <raylib-cpp.hpp>
+#include "engine/src/raylib_include.h"
 using namespace std;
 
 #include "engine/src/utils.h"

@@ -1,7 +1,7 @@
 #include "yaml_data_converter.h"
 
 #include <yaml-cpp/yaml.h>
-#include <raylib-cpp.hpp>
+#include "engine/src/raylib_include.h"
 
 #include "engine/src/utils.h"
 #include "engine/src/core/resource/sprite_animation.h"

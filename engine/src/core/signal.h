@@ -1,109 +1,206 @@
 #ifndef INCLUDED_SIGNAL
 #define INCLUDED_SIGNAL
 
-#include <raylib-cpp.hpp>
+#include "engine/src/raylib_include.h"
 #include <functional>
 #include <iostream>
 #include <unordered_map>
+#include <any>
 using namespace std;
-
-#include <icecream.hpp> // Debug
 
 // Forward declarations
 class Node;
 class Engine;
 
-template<typename CallbackReturnType = void, typename... CallbackArgs>
+template<typename... CallbackArgs>
 class Signal {
     public:
-        void await();
+
+        ~Signal() {
+            for (BaseConnectionHolder* holder : connections) {
+                delete holder;
+            }
+        }
+
+        class BaseConnection;
 
         void emit(CallbackArgs... arguments) {
 
-            for (auto pair : callbacks) {
-                for (auto i : pair.second) {
-                    i(arguments...);
-                }
-            }
-            
-            for (auto pair : member_callbacks) {
-                for (auto i : pair.second) {
-                    i->call(arguments...);
+            for (BaseConnectionHolder* holder : connections) {
+                for (BaseConnection* connection : holder->connections) {
+                    connection->call(arguments...);
                 }
             }
 
             onEmission();
         }
 
-        void connect(function<CallbackReturnType(CallbackArgs...)> callback, string tag = "") {
-            if (callbacks.count(tag)) {
-                callbacks[tag].push_back(callback);
+        template<typename ObjectType, typename... BindArguments, typename MethodReturnType = void>
+        void connect(MethodReturnType (ObjectType::*callback)(CallbackArgs..., BindArguments...), ObjectType* object, BindArguments... binds) {
+
+            Connection<ObjectType, MethodReturnType, BindArguments...>* connection = new Connection<ObjectType, MethodReturnType, BindArguments...>(binds...);
+            connection->setup(callback, object);
+
+            ConnectionHolder<ObjectType>* connection_holder = NULL;
+            for (BaseConnectionHolder* holder : connections) {
+                if (holder->matches(object)) {
+                    connection_holder = (ConnectionHolder<ObjectType>*)holder;
+                    break;
+                }
             }
-            else {
-                callbacks[tag] = vector<function<CallbackReturnType(CallbackArgs...)>>{callback};
+
+            if (connection_holder == NULL) {
+                connection_holder = new ConnectionHolder(object);
+                connections.push_back(connection_holder);
             }
+
+            connection_holder->connections.push_back(connection);
         }
+
+        template<typename ObjectType, typename... BindArguments, typename MethodReturnType = void>
+        void connectWithoutArgs(MethodReturnType (ObjectType::*callback)(BindArguments...), ObjectType* object, BindArguments... binds) {
+
+            Connection<ObjectType, MethodReturnType, BindArguments...>* connection = new Connection<ObjectType, MethodReturnType, BindArguments...>(binds...);
+            connection->setupWithoutArgs(callback, object);
+
+            ConnectionHolder<ObjectType>* connection_holder = NULL;
+            for (BaseConnectionHolder* holder : connections) {
+                if (holder->matches(object)) {
+                    connection_holder = (ConnectionHolder<ObjectType>*)holder;
+                    break;
+                }
+            }
+
+            if (connection_holder == NULL) {
+                connection_holder = new ConnectionHolder<ObjectType>(object);
+                connections.push_back(connection_holder);
+            }
+
+            connection_holder->connections.push_back(connection);
+        }
+
         template<typename ObjectType>
-        void connect(CallbackReturnType (ObjectType::*callback)(CallbackArgs...), ObjectType* object, string tag = "") {
-            if (member_callbacks.count(tag)) {
-                member_callbacks[tag].push_back(make_shared<MemberCallback<ObjectType>>(callback, object));
-            }
-            else {
-                member_callbacks[tag] = vector<shared_ptr<MemberCallbackBase>>{make_shared<MemberCallback<ObjectType>>(callback, object)};
-            }
-        }
-
-        void disconnect(string tag) {
-            callbacks.erase(tag);
-
-            if (member_callbacks.count(tag)) {
-                // for (auto i : member_callbacks[tag]) {
-                //     delete i;
-                // }
-                member_callbacks.erase(tag);
+        void disconnect(ObjectType* object) {
+            for (int i = 0; i < connections.size(); i++) {
+                if (connections[i]->matches(object)) {
+                    delete connections[i];
+                    connections.erase(connections.begin() + i);
+                    break;
+                }
             }
         }
 
         void disconnectAll() {
-            callbacks.clear();
-            // for (auto pair : member_callbacks) {
-            //     for (auto i : pair.second) {
-            //         delete i;
-            //     }
-            // }
-            member_callbacks.clear();
+            for (BaseConnectionHolder* holder : connections) {
+                delete holder;
+            }
+            connections.clear();
         }
 
-        // Why doesn't this work when defined in signal.cpp ?!
-        bool connected() {
-            return callbacks.size() > 0 || member_callbacks.size() > 0;
+        int getConnectionCount() {
+            int total = 0;
+            for (BaseConnectionHolder* holder : connections) {
+                total += holder->connections.size();
+            }
+            return total;
         }
 
-    protected:
-        void onEmission() { last_emission_time = GetTime(); }
-        class MemberCallbackBase {
+        template<typename ObjectType>
+        vector<BaseConnection*>* getConnections(ObjectType* object) {
+            for (BaseConnectionHolder* holder : connections) {
+                if (holder->matches(object)) {
+                    return &holder->connections;
+                }
+            }
+            return NULL;
+        }
+        
+        // unordered_map<any, vector<BaseConnection*>>* getAllConnections() {
+        //     return &connections;
+        // }
+
+        class BaseConnection {
             public:
                 virtual void call(CallbackArgs... args) {}
         };
 
-        template<typename ObjectType>
-        class MemberCallback: public MemberCallbackBase {
+        template<typename ObjectType, typename MethodReturnType, typename... BindArguments>
+        class Connection: public BaseConnection {
             private:
                 ObjectType* object;
-                CallbackReturnType (ObjectType::*callback)(CallbackArgs...);
+                MethodReturnType (ObjectType::*callback)(CallbackArgs..., BindArguments...);
+                MethodReturnType (ObjectType::*callback_noargs)(BindArguments...);
+                tuple<BindArguments...> binds;
+
+                bool ignore_arguments = false;
+
+                template<size_t ...I>
+                void callWithBinds(CallbackArgs... arguments, index_sequence<I...>) {
+                    if (!ignore_arguments) {
+                        (object->*callback)(arguments..., get<I>(binds)...);
+                    }
+                    else {
+                        (object->*callback_noargs)(get<I>(binds)...);
+                    }
+                }
+
             public:
-                MemberCallback(CallbackReturnType (ObjectType::*callback_function)(CallbackArgs...), ObjectType* function_object) {
+                Connection(BindArguments... bind_args)
+                    :binds(forward<BindArguments>(bind_args)...) {}
+
+                void setup(MethodReturnType (ObjectType::*callback_function)(CallbackArgs..., BindArguments...), ObjectType* function_object) {
                     object = function_object;
                     callback = callback_function;
+                    ignore_arguments = false;
                 }
+
+                void setupWithoutArgs(MethodReturnType (ObjectType::*callback_function)(BindArguments...), ObjectType* function_object) {
+                    object = function_object;
+                    callback_noargs = callback_function;
+                    ignore_arguments = true;
+                }
+                
                 void call(CallbackArgs... arguments) {
-                    (object->*callback)(arguments...);
+                    static constexpr auto size = tuple_size<tuple<BindArguments...>>::value;
+                    callWithBinds(arguments..., make_index_sequence<size>{});
+                }
+
+                ObjectType* getObject() {
+                    return object;
                 }
         };
 
-        unordered_map<string, vector<function<CallbackReturnType(CallbackArgs...)>>> callbacks;
-        unordered_map<string, vector<shared_ptr<MemberCallbackBase>>> member_callbacks;
+    private:
+        void onEmission() { last_emission_time = GetTime(); }
+
         double last_emission_time = -1;
+
+        struct BaseConnectionHolder {
+            virtual bool matches(any match_object) = 0;
+            vector<BaseConnection*> connections;
+            ~BaseConnectionHolder() {
+                for (BaseConnection* connection : connections) {
+                    delete connection;
+                }
+            }
+        };
+
+        template<typename ObjectType>
+        struct ConnectionHolder: BaseConnectionHolder {
+            ConnectionHolder(ObjectType* _object) {
+                object = _object;
+            }
+            
+            ObjectType* object;
+
+            bool matches(any match_object) {
+                if (match_object.type() != typeid(ObjectType*)) {
+                    return false;
+                }
+                return any_cast<ObjectType*>(match_object) == object;
+            }
+        };
+        vector<BaseConnectionHolder*> connections;
 };
 
 #endif

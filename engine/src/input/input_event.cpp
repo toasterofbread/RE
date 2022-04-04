@@ -1,15 +1,13 @@
 #include "input_event.h"
 
-#include "engine/src/utils.h"
 #include "engine/src/engine.h"
+#include "engine/src/utils.h"
 #include "engine/src/input/macro.h"
 #include "engine/src/core/signal.h"
 #include "engine/src/core/node/scene_tree.h"
 
 void InputEvent::init() {
     Engine::getSingleton()->inputEventCreated(this);
-    SIGNAL_TRIGGERED = new Signal<void>();
-    SIGNAL_UNTRIGGERED = new Signal<void>();
 }
 
 bool InputEvent::isTriggered() {
@@ -38,10 +36,10 @@ bool InputEvent::isJustUntriggered() {
 }
 
 void InputEvent::process(float delta) {
-    if (SIGNAL_TRIGGERED->connected() && isJustTriggered()) {
-        SIGNAL_TRIGGERED->emit();
+    if (SIGNAL_TRIGGERED.getConnectionCount() > 0 && isJustTriggered()) {
+        SIGNAL_TRIGGERED.emit();
     }
-    else if (SIGNAL_UNTRIGGERED->connected() && isJustUntriggered()) {
-        SIGNAL_UNTRIGGERED->emit();
+    else if (SIGNAL_UNTRIGGERED.getConnectionCount() > 0 && isJustUntriggered()) {
+        SIGNAL_UNTRIGGERED.emit();
     }
 }

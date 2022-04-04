@@ -4,13 +4,16 @@
 #include <vector>
 using namespace std;
 
+#include "engine/src/core/signal.h"
+
 // Forward declarations
 class Macro;
-template<typename A, typename... B>
-class Signal;
 
 class InputEvent {
     public:
+        Signal<> SIGNAL_TRIGGERED;
+        Signal<> SIGNAL_UNTRIGGERED;
+
         InputEvent() { init(); }
         InputEvent(vector<Macro*> input_macros) { macros = input_macros; init(); }
 
@@ -20,9 +23,6 @@ class InputEvent {
 
         virtual void process(float delta);
         vector<Macro*> getMacros() { return macros; }
-
-        Signal<void>* SIGNAL_TRIGGERED;
-        Signal<void>* SIGNAL_UNTRIGGERED;
     private:
         void init();
         vector<Macro*> macros;

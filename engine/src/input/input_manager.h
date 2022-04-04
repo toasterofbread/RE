@@ -1,7 +1,7 @@
 #ifndef INPUT_INCLUDED
 #define INPUT_INCLUDED
 
-#include "raylib-cpp.hpp"
+#include "engine/src/raylib_include.h"
 #include <functional>
 #include <vector>
 #include <iostream>

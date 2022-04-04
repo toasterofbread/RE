@@ -1,6 +1,6 @@
 #include "input_manager.h"
 
-#include <raylib-cpp.hpp>
+#include "engine/src/raylib_include.h"
 #include <vector>
 using namespace std;
 
@@ -25,7 +25,7 @@ InputManager::InputManager() {
     INPUTEVENT_PAD_RIGHT = new InputEvent({Macro::create_kb({ARROW_RIGHT}), Macro::create_kb({KEY_D})});
 
     INPUTEVENT_REBUILD_AND_RUN = new InputEvent({Macro::create_kb({F5})});
-    INPUTEVENT_REBUILD_AND_RUN->SIGNAL_TRIGGERED->connect<Engine>(&Engine::rebuildAndRun, Engine::getSingleton());
+    INPUTEVENT_REBUILD_AND_RUN->SIGNAL_TRIGGERED.connect(&Engine::rebuildAndRun, Engine::getSingleton());
 }
 
 InputManager* InputManager::getSingleton() {

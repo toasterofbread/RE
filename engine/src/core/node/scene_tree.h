@@ -15,6 +15,7 @@ using namespace std;
 class Engine;
 class Node;
 class Node2D;
+class Timer;
 
 class SceneTree {
     public:
@@ -35,6 +36,8 @@ class SceneTree {
         void onNodeAddedToTree(Node* node);
         void onNodeRemovedFromTree(Node* node);
 
+        Timer* createTimer(float duration, bool free_on_timeout = true);
+
         static const int MIN_DRAW_LAYER = -2048;
         static const int MAX_DRAW_LAYER = 2048;
 
@@ -46,7 +49,7 @@ class SceneTree {
         STATE current_state = STATE::PREINIT;
         vector<Node*> kill_queue;
 
-        void onDrawableNodeLayerChanged(Node2D* node, int old_draw_layer);
+        void onDrawableNodeLayerChanged(int old_draw_layer, int new_draw_layer, Node2D* node);
 };
 
 #endif

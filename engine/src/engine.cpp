@@ -1,6 +1,6 @@
 #include "engine.h"
 
-#include <raylib-cpp.hpp>
+#include "engine/src/raylib_include.h"
 #include <memory>
 
 #include "engine/src/utils.h"
@@ -22,16 +22,16 @@ Engine::Engine() {
     assert(singleton == NULL);
     singleton = this;
     
-    system("clear");
+    // system("clear");
 
     getTree()->init();
     new InputManager();
     new PhysicsServer();
 
-    Node::registerNodeProperties<Node>(Node::getTypeName());
-    Node2D::registerNodeProperties<Node2D>(Node2D::getTypeName());
-    Sprite::registerNodeProperties<Sprite>(Sprite::getTypeName());
-    AnimatedSprite::registerNodeProperties<AnimatedSprite>(AnimatedSprite::getTypeName());
+    Node::registerNodeProperties<Node>(Node::getTypeNameStatic());
+    Node2D::registerNodeProperties<Node2D>(Node2D::getTypeNameStatic());
+    Sprite::registerNodeProperties<Sprite>(Sprite::getTypeNameStatic());
+    AnimatedSprite::registerNodeProperties<AnimatedSprite>(AnimatedSprite::getTypeNameStatic());
 
 }
 
@@ -86,7 +86,7 @@ shared_ptr<EngineTexture> Engine::loadTexture(string file_path) {
     }
     else {
         ret = make_shared<EngineTexture>(LoadTexture(file_path.c_str()), file_path);
-        ret->SIGNAL_DELETED->connect(&Engine::onTextureContainerDeleted, this);
+        ret->SIGNAL_DELETED.connect(&Engine::onTextureContainerDeleted, this);
         loaded_textures[file_path] = ret;
     }
 
@@ -105,7 +105,7 @@ void Engine::onTextureContainerDeleted(string file_path, Texture2D texture) {
 // - Resource management -
 void Engine::resourceCreated(Resource* resource) {
     all_resources.push_back(resource);
-    resource->SIGNAL_DELETED->connect(&Engine::resourceDeleted, this);
+    resource->SIGNAL_DELETED.connect(&Engine::resourceDeleted, this, resource);
 }
 void Engine::resourceDeleted(Resource* resource) {
     vectorRemoveValue(&all_resources, resource);

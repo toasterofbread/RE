@@ -7,6 +7,7 @@
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/node/node_types/node_2d.h"
 #include "engine/src/engine.h"
+#include "engine/src/core/node/node_types/timer.h"
 
 // Debug
 #include "icecream.hpp"
@@ -51,6 +52,7 @@ void SceneTree::process(float delta) {
 }
 
 void SceneTree::addNode(Node* node) {
+    assert(!node->isInsideTree());
     root_node->addChild(node);
 }
 
@@ -65,19 +67,32 @@ void SceneTree::queueNodeKill(Node* node) {
 
 void SceneTree::onNodeAddedToTree(Node* node) {
     if (Node2D* node_2d = dynamic_cast<Node2D*>(node)) {
-        drawable_nodes[node_2d->getDrawLayer(true) - MIN_DRAW_LAYER].push_back(node_2d);
-        node_2d->SIGNAL_DRAW_LAYER_CHANGED.connect(&SceneTree::onDrawableNodeLayerChanged, this, "SceneTree");
+        drawable_nodes[node_2d->getGlobalDrawLayer() - MIN_DRAW_LAYER].push_back(node_2d);
+        node_2d->SIGNAL_DRAW_LAYER_CHANGED.connect(&SceneTree::onDrawableNodeLayerChanged, this, node_2d);
     }
 }
 
 void SceneTree::onNodeRemovedFromTree(Node* node) {
     if (Node2D* node_2d = dynamic_cast<Node2D*>(node)) {
-        vectorRemoveValue(&drawable_nodes[node_2d->getDrawLayer(true) - MIN_DRAW_LAYER], node_2d);
-        node_2d->SIGNAL_DRAW_LAYER_CHANGED.disconnect("SceneTree");
+        vectorRemoveValue(&drawable_nodes[node_2d->getGlobalDrawLayer() - MIN_DRAW_LAYER], node_2d);
+        node_2d->SIGNAL_DRAW_LAYER_CHANGED.disconnect(this);
     }
 }
 
-void SceneTree::onDrawableNodeLayerChanged(Node2D* node, int old_draw_layer) {
+Timer* SceneTree::createTimer(float duration, bool free_on_timeout) {
+    Timer* timer = new Timer;
+    root_node->addChild(timer);
+
+    if (free_on_timeout) {
+        timer->SIGNAL_TIMEOUT.connect<Node>(&Timer::queueKill, timer);
+        timer->notify_when_killed = true;
+    }
+
+    timer->start(duration);
+    return timer;
+}
+
+void SceneTree::onDrawableNodeLayerChanged(int old_draw_layer, int new_draw_layer, Node2D* node) {
     vectorRemoveValue(&drawable_nodes[old_draw_layer - MIN_DRAW_LAYER], node);
-    drawable_nodes[node->getDrawLayer(true) - MIN_DRAW_LAYER].push_back(node);
+    drawable_nodes[new_draw_layer - MIN_DRAW_LAYER].push_back(node);
 }

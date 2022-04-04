@@ -1,7 +1,7 @@
 #ifndef INCLUDED_NODE
 #define INCLUDED_NODE
 
-#include <raylib-cpp.hpp>
+#include "engine/src/raylib_include.h"
 #include <iostream>
 #include <functional>
 #include <string>
@@ -9,44 +9,57 @@
 using namespace std;
 
 #include "engine/src/engine.h"
-
-#include <icecream.hpp> // Debug
+#include "engine/src/core/signal.h"
 
 // Forward declarations
 class SceneTree;
-template<typename A, typename... B>
-class Signal;
 template<typename ObjectType>
 class ObjectConstructor;
+
+#define REGISTER_NODE_WITH_CONSTRUCTOR(name, constructor_code) \
+static string getTypeNameStatic() {      \
+    return #name;                        \
+}                                        \
+string getTypeName() {                   \
+    return #name;                        \
+}                                        \
+name() {                                 \
+    setName(getTypeName());              \
+    constructor_code;                    \
+}
+
+#define REGISTER_NODE(name) REGISTER_NODE_WITH_CONSTRUCTOR(name, {})
 
 class Node {
     private:
         vector<Node*> children{};
         unordered_map<string, Node*> registered_scene_nodes;
         int id = -1;
+        bool ready_called = false;
 
         Node* parent = NULL;
         bool is_root = false;
         SceneTree* tree = NULL;
 
     protected:
-    
         virtual void addedToNode(Node* parent_node);
         virtual void removedFromNode(Node* former_parent_node);
         string name;
+
     public:
+        // DEBUG
+        bool notify_when_killed = false;
+
         Node();
-        virtual ~Node() {
-            delete SIGNAL_KILLED;
-        }
 
         template<typename NodeType>
         static ObjectConstructor<NodeType>* registerNodeProperties(string node_type_name);
-        static string getTypeName() { return "Node"; }
+        static string getTypeNameStatic() { return "Node"; }
+        virtual string getTypeName() { return "Node"; }
 
         // - Signals -
-        Signal<void, Node*>* SIGNAL_READY;
-        Signal<void, Node*>* SIGNAL_KILLED;
+        Signal<> SIGNAL_READY;
+        Signal<> SIGNAL_KILLED;
 
         // - Core -
         virtual void ready();
@@ -56,11 +69,11 @@ class Node {
         void makeRoot(SceneTree* of_tree);
 
         // - Children-
-        void addChild(Node* child);
+        virtual void addChild(Node* child);
 
         void removeChild(int child_idx);
         void removeChild(string child_name);
-        void removeChild(Node* child);
+        virtual void removeChild(Node* child);
 
         Node* getChild(int child_idx);
         Node* getChild(string child_name);
@@ -90,7 +103,9 @@ class Node {
         int getIndex(); // Index of this within parent's children
         int getId(); // Unique ID of this node
         void kill();
-        void queue_kill();
+        void queueKill();
+
+        bool isReady() { return ready_called; }
 
         // - Values -
         void setName(string value);

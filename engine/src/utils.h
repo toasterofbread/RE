@@ -8,7 +8,7 @@
 #include <vector>
 #include <thread>
 #include <functional>
-#include <raylib-cpp.hpp>
+#include "engine/src/raylib_include.h"
 using namespace std;
 
 #include "include/prettyprint.hpp"
@@ -18,7 +18,7 @@ using namespace std;
 // Forward declaration
 class Node;
 
-void markPosition(Vector2 position, string text, Color colour = RED, float radius = 10.0f, float width = 1.0f);
+void markPosition(Vector2 position, string text, Colour colour = RED, float radius = 10.0f, float width = 1.0f);
 
 template <typename Any>
 float sign(Any value) {
@@ -72,7 +72,6 @@ void vectorRemoveValue(vector<Any>* vector, Any value) {
     vector->erase(remove(vector->begin(), vector->end(), value), vector->end());
 }
 
-void printNode(Node* value);
 template <typename Any>
 void print(Any msg) {
     cout << msg << endl; 
@@ -80,6 +79,8 @@ void print(Any msg) {
 void print(Vector2 value);
 void print(b2Vec2 value);
 void print(bool value);
+void print(Colour value);
+void print(Node* value);
 void print_stacktrace(int additional_skip = 0);
 
 void warn(string message, bool throw_error = false);
@@ -116,5 +117,8 @@ struct Functor {
 
 Vector2 convertVector2(b2Vec2 value);
 b2Vec2 convertVector2(Vector2 value);
+
+Colour combineColours(Colour a, Colour b);
+Colour normaliseColour(Colour colour);
 
 #endif

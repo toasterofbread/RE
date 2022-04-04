@@ -16,7 +16,8 @@ INCLUDE_LIBRARIES = [
     "dw", 
     "yaml-cpp",
     "pthread",
-    "box2d"
+    "box2d",
+    "boost_unit_test_framework"
 ]
 
 OUTPUT_DIR = "build/"
@@ -24,10 +25,12 @@ OBJ_DIR = "build/obj/"
 LIB_DIR = "build/lib/"
 
 ENGINE_SRC = "engine/src/"
+ENGINE_TESTS = "engine/tests/"
 PROJECT_SRC = "project/src/"
 
 ENGINE_BINARY_NAME = "engine"
 PROJECT_BINARY_NAME = "Project.bin"
+TEST_BINARY_NAME = "Test.bin"
 
 # Colours
 PROGRESS_PERCENT_COLOUR = {"colour": "magenta", "attrs": ["bold"]}
@@ -48,11 +51,15 @@ def GetGitHash():
     return subprocess.check_output(["git", "describe", "--always"]).strip().decode()
 
 def RunProjectBinary():
-    os.system(OUTPUT_DIR + PROJECT_BINARY_NAME)
+    if not GetOption("run_tests"):
+        os.system(OUTPUT_DIR + PROJECT_BINARY_NAME)
+    else:
+        os.system(OUTPUT_DIR + TEST_BINARY_NAME + " && " + OUTPUT_DIR + PROJECT_BINARY_NAME)
 
 AddOption("--print-binary-path", dest="print_binary_path", action="store_true", default=False)
 AddOption("--run", dest="run_after_build", action="store_true", default=False)
 AddOption("--clear-console", dest="clear_before_build", action="store_true", default=False)
+AddOption("--test", dest="run_tests", action="store_true", default=False)
 
 if GetOption("print_binary_path"):
     print(OUTPUT_DIR + PROJECT_BINARY_NAME)
@@ -69,10 +76,8 @@ engine_env = Environment(
     CXX = "g++",
 )
 
-engine_env["CXXCOMSTR"]    = "Compiling $SOURCE"
-engine_env["LINKCOMSTR"]   = "Linking $TARGET"
-
-project_env = engine_env.Clone(LIBS = INCLUDE_LIBRARIES + [ENGINE_BINARY_NAME])
+engine_env["CXXCOMSTR"]  = "Compiling $SOURCE"
+engine_env["LINKCOMSTR"] = "Linking $TARGET"
 
 engine_objs = []
 for file in RecursiveGlob(ENGINE_SRC, "cpp"):
@@ -86,9 +91,10 @@ engine_binary = engine_env.Library(LIB_DIR + ENGINE_BINARY_NAME, engine_objs)
 Depends(engine_binary, engine_objs)
 
 project_objs = []
+project_env = engine_env.Clone(LIBS = INCLUDE_LIBRARIES + [ENGINE_BINARY_NAME])
+
 for file in RecursiveGlob(PROJECT_SRC, "cpp"):
     object_path = str(file).replace(PROJECT_SRC, OBJ_DIR + "project/").replace(".cpp", ".o")
-    # object_path = OBJ_DIR + "project/" + str(file).split("/")[-1].replace(".cpp", ".o")
     project_env.Object(target = object_path, source=file)
     BUILD_TARGETS.append(object_path)
     project_objs.append(object_path)
@@ -100,6 +106,27 @@ project_binary = project_env.Program(
 
 Depends(project_binary, engine_binary)
 Depends(project_binary, project_objs)
+
+node_total = len(engine_objs) + len(project_objs) + 1
+
+if GetOption("run_tests"):
+    test_objs = []
+    project_env = engine_env.Clone(LIBS = INCLUDE_LIBRARIES + [ENGINE_BINARY_NAME])
+    for file in RecursiveGlob(ENGINE_TESTS, "cpp"):
+        object_path = str(file).replace(ENGINE_TESTS, OBJ_DIR + "test/").replace(".cpp", ".o")
+        project_env.Object(target = object_path, source=file)
+        BUILD_TARGETS.append(object_path)
+        test_objs.append(object_path)
+
+    test_binary = project_env.Program(
+        target=OUTPUT_DIR + TEST_BINARY_NAME,
+        source=test_objs
+    )
+
+    Depends(test_binary, engine_binary)
+    Depends(test_binary, test_objs)
+
+    node_total += len(test_objs)
 
 # ---------------------------------------------------
 
@@ -119,7 +146,7 @@ def progress_function(node):
     if lines[-2] != previous_line:
         previous_line = lines[-2]
 
-        progress = int((node_count / (len(project_objs) + len(engine_objs) + 1)) * 100.0)
+        progress = int((node_count / (node_total)) * 100.0)
         out.write(f"{convert_scons_line(previous_line, progress)}\n")
         out.flush()
 
@@ -164,4 +191,8 @@ progress_finish_command = Command('progress_finish', [], progress_finish)
 
 Depends(progress_finish_command, BUILD_TARGETS)
 Depends(progress_finish_command, project_binary)
+
+if GetOption("run_tests"):
+    Depends(progress_finish_command, test_binary)
+
 BUILD_TARGETS.append('progress_finish')

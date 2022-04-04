@@ -1,7 +1,7 @@
 #ifndef INCLUDED_ENGINE
 #define INCLUDED_ENGINE
 
-#include <raylib-cpp.hpp>
+#include "engine/src/raylib_include.h"
 
 #include "engine/src/debug_options.h"
 #include "project/src/debug_options.h"
@@ -29,8 +29,6 @@ class Engine {
         void process(float delta);
 
         static Engine* getSingleton();
-
-        Signal<void, string, bool>* SIGNAL_OBJECT_TYPE_REGISTERED = new Signal<void, string, bool>();
 
         SceneTree* getTree() { return scene_tree_singleton; }
         YAMLDataConverter* getYAMLDataConverter() { return yaml_data_converter_singleton; }
@@ -83,8 +81,6 @@ class Engine {
             ObjectConstructor<ObjectType>* constructor = new ObjectConstructor<ObjectType>(getYAMLDataConverter());
             constructor->template init<ConstructorArgs...>();
             registered_object_constructors[object_type_name] = constructor;
-            
-            SIGNAL_OBJECT_TYPE_REGISTERED->emit(object_type_name, constructor->template inheritsType<Node>());
             // onObjectRegisteredAsConstructor();
 
             return constructor;
