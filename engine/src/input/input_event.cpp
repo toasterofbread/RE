@@ -18,6 +18,7 @@ bool InputEvent::isTriggered() {
     }
     return false;
 }
+
 bool InputEvent::isJustTriggered() {
     for (auto i = macros.begin(); i != macros.end(); ++i) {
         if ((*i)->isJustPressed()) {
@@ -26,6 +27,7 @@ bool InputEvent::isJustTriggered() {
     }
     return false;
 }
+
 bool InputEvent::isJustUntriggered() {
     for (auto i = macros.begin(); i != macros.end(); ++i) {
         if ((*i)->isJustReleased()) {

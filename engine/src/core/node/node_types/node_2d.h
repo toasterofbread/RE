@@ -85,6 +85,15 @@ class Node2D: public Node {
     protected:
         void addedToNode(Node* parent_node);
         void removedFromNode(Node* former_parent_node);
+
+        void addGizmoText(string text, bool unique_line = false) {
+            if (unique_line) {
+                additional_gizmos_unique.push_back(text);
+            }
+            else {
+                additional_gizmos.push_back(text);
+            }
+        }
         
         virtual void onParentGlobalPositionChanged(Vector2 old_global_position);
         virtual void onParentGlobalRotationChanged(float old_global_rotation);
@@ -95,12 +104,14 @@ class Node2D: public Node {
 
         int draw_layer = 0;
         bool relative_draw_layer = true;
-
         bool show_gizmos = false;
         Vector2 position = Vector2{0, 0};
         Vector2 scale = Vector2{1, 1};
         float rotation = 0.0f; // Must be in radians
         bool visible = true;
+
+        vector<string> additional_gizmos;
+        vector<string> additional_gizmos_unique;
 
         bool position_relative_to_parent = true;
         bool rotation_relative_to_parent = true;

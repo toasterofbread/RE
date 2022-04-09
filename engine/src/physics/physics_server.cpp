@@ -7,7 +7,7 @@
 #include "engine/src/utils.h"
 
 PhysicsServer* PhysicsServer::singleton = NULL;
-const float PhysicsServer::world_scale = 15.0f;
+const float PhysicsServer::world_scale = 12.0f;
 
 class FooDraw : public b2Draw {
     public:

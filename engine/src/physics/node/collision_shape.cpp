@@ -43,24 +43,23 @@ void CollisionShape::draw() {
 void CollisionShape::onParentGlobalScaleChanged(Vector2 old_global_scale) {
     Node2D::onParentGlobalScaleChanged(old_global_scale);
 
-    if (!getUseRelativeScale()) {
+    if (!getUseRelativeScale() || attached_fixture == NULL) {
         return;
     }
 
     Vector2 multiplier = getGlobalScale() / (old_global_scale * getScale());
 
-    if (attached_fixture) {
-        switch (attached_fixture->GetShape()->GetType()) {
-            case b2Shape::Type::e_polygon: {
+    switch (attached_fixture->GetShape()->GetType()) {
+        case b2Shape::Type::e_polygon: {
 
-                b2PolygonShape* shape = (b2PolygonShape*)collision_shape;
-                for (int i = 0; i < shape->m_count; i++) {
-                    shape->m_vertices[i].x *= multiplier.x; 
-                    shape->m_vertices[i].y *= multiplier.y; 
-                }
-
-                SIGNAL_POLYGON_CHANGED.emit();
+            b2PolygonShape* shape = (b2PolygonShape*)collision_shape;
+            for (int i = 0; i < shape->m_count; i++) {
+                shape->m_vertices[i].x *= multiplier.x; 
+                shape->m_vertices[i].y *= multiplier.y; 
             }
+
+            SIGNAL_POLYGON_CHANGED.emit();
+
         }
     }
 }

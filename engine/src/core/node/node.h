@@ -111,6 +111,11 @@ class Node {
         void setName(string value);
         string getName() { return name; }
 
+        // - Conversion -
+        operator string() {
+            return "Node type: " + getTypeName() + " | ID: " + int2char(getId()) + " | Name: " + getName();
+        }
+
 };
 
 #endif

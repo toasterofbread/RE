@@ -14,6 +14,45 @@ void PhysicsBody::physicsProcess(float delta) {
     setGlobalPosition(PhysicsServer::phys2World(body->GetPosition()));
     setGlobalRotation(body->GetAngle());
 
+    vector<PhysicsBody*> collisions;
+
+    int count = 0;
+    string collisions_text = "Colliding with: ";
+    for (b2ContactEdge* ce = body->GetContactList(); ce; ce = ce->next) {
+        // b2Contact* c = ce->contact;
+        count++;
+
+        PhysicsBody* other = reinterpret_cast<PhysicsBody*>(ce->other->GetUserData().pointer);
+        collisions.push_back(other);
+
+        bool was_colliding = false;
+        for (auto i = previous_collisions.begin(); i != previous_collisions.end(); ++i) {
+            if (*i == other) {
+                was_colliding = true;
+                previous_collisions.erase(i);
+                --i;
+                break;
+            }
+        }
+        
+        if (!was_colliding) {
+            SIGNAL_COLLIDED.emit(other);
+        }
+
+        SIGNAL_COLLIDING.emit(other);
+
+        collisions_text += other->operator string() + " | ";
+    }
+
+    for (PhysicsBody* body : previous_collisions) {
+        SIGNAL_COLLISION_ENDED.emit(body);
+    }
+    previous_collisions = collisions;
+
+
+    addGizmoText("Collisions: " + int2str(count), true);
+    addGizmoText(collisions_text, true);
+
     updating_position = false;
 }
 

@@ -12,10 +12,24 @@ void Node2D::draw() {
         
         text += " | " + (string)int2char(getId());
 
-        Vector2 global_position = getGlobalPosition();
-        text += " | " + vector2str(global_position, 0);
-        markPosition(global_position, text, BLACK);
+        Vector2 position = getGlobalPosition();
+        text += " | " + vector2str(position, 0);
+
+        for (string suffix : additional_gizmos) {
+            text += " | ";
+            text += suffix;
+        }
+
+        markPosition(position, text, BLACK);
+
+        for (string line : additional_gizmos_unique) {
+            position.y -= 15;
+            DrawText(line.c_str(), position.x + 5, position.y - 15, 10, BLACK);
+        }
+
     }
+    additional_gizmos.clear();
+    additional_gizmos_unique.clear();
 }
 
 Colour Node2D::getModulate() {

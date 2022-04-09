@@ -271,7 +271,7 @@ string int2str(int value) {
 }
 
 void print(Node* value) {
-    print("Node type: " + value->getTypeName() + " | ID: " + int2char(value->getId()) + " | Name: " + value->getName());
+    print(value->operator string());
 }
 void print(Vector2 value) {
     cout << vector2str(value) << endl;

@@ -13,10 +13,16 @@ class CollisionShape;
 class PhysicsBody: public Node2D {
 
     public:
-        REGISTER_NODE(PhysicsBody);
+        REGISTER_NODE_WITH_CONSTRUCTOR(PhysicsBody, {
+            definition.userData.pointer = reinterpret_cast<uintptr_t>(this);
+        });
 
         Signal<CollisionShape*> SIGNAL_SHAPE_ADDED;
         Signal<CollisionShape*> SIGNAL_SHAPE_REMOVED;
+
+        Signal<PhysicsBody*> SIGNAL_COLLIDED; // Emitted on the first frame of collision
+        Signal<PhysicsBody*> SIGNAL_COLLIDING; // Emitted on every frame of collision (including the first)
+        Signal<PhysicsBody*> SIGNAL_COLLISION_ENDED; // Emitted on the first frame after collision ends
 
         void physicsProcess(float delta);
 
@@ -36,8 +42,11 @@ class PhysicsBody: public Node2D {
         void setLinearVelocity(Vector2 value);
         b2Vec2 getLinearVelocity();
 
-        b2Body* body = NULL;
+        b2Body* getBody() { return body; }
+
     private:
+        b2Body* body = NULL;
+
         void addShape(CollisionShape* shape);
         void removeShape(CollisionShape* shape);
 
@@ -54,6 +63,7 @@ class PhysicsBody: public Node2D {
         
         b2BodyDef definition;
         bool updating_position = false;
+        vector<PhysicsBody*> previous_collisions;
 };
 
 #endif
