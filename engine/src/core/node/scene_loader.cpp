@@ -1,7 +1,7 @@
 #include "scene_loader.h"
 
 #include "engine/src/engine.h"
-#include "engine/src/utils.h"
+#include "common/utils.h"
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/object_constructor.h"
 #include "engine/src/core/node/node_types/animated_sprite.h"

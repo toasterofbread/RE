@@ -4,14 +4,11 @@
 using json = nlohmann::json;
 
 #include "engine/src/core/node/node.h"
-#include "engine/src/utils.h"
+#include "common/utils.h"
 #include "engine/src/engine.h"
 #include "engine/src/engine_texture.h"
 #include "engine/src/core/node/scene_tree.h"
 #include "engine/src/core/signal.h"
-
-// Debug
-#include <icecream.hpp>
 
 SpriteAnimation::SpriteAnimation(string animation_name, json animation_data, json file_data, string load_directory): Resource() {
     name = animation_name;

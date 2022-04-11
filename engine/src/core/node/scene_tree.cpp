@@ -2,15 +2,12 @@
 
 #include <vector>
 
-#include "engine/src/utils.h"
+#include "common/utils.h"
 #include "engine/src/core/signal.h"
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/node/node_types/node_2d.h"
 #include "engine/src/engine.h"
 #include "engine/src/core/node/node_types/timer.h"
-
-// Debug
-#include "icecream.hpp"
 
 const int SceneTree::MIN_DRAW_LAYER;
 const int SceneTree::MAX_DRAW_LAYER;

@@ -1,6 +1,8 @@
 #ifndef INCLUDED_RAYLIB
 #define INCLUDED_RAYLIB
 
+#include "common/vector2.h"
+
 #include <raylib-cpp.hpp>
 
 #include <iostream>

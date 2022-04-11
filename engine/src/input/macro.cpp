@@ -1,7 +1,7 @@
 #include "macro.h"
 
 #include "engine/src/input/input_manager.h"
-#include "engine/src/utils.h"
+#include "common/utils.h"
 
 Macro::Macro(vector<InputManager::KEYBOARD_BUTTON> _keyboard_buttons) {
     type = MACRO_TYPE_KEYBOARD;

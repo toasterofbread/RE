@@ -1,6 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include <include/catch.hpp>
-#include "engine/src/utils.h"
+#include "common/utils.h"
 
 #include "engine/src/raylib_include.h"
 #include "engine/src/core/signal.h"

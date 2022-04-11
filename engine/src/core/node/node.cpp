@@ -2,12 +2,10 @@
 #include <vector>
 #include <yaml-cpp/yaml.h>
 
-#include "engine/src/utils.h"
+#include "common/utils.h"
 #include "engine/src/engine.h"
 #include "engine/src/core/signal.h"
 #include "engine/src/core/node/node_types/node_2d.h"
-
-#include <icecream.hpp> // Debug
 
 const int INDICATOR_RADIUS = 10;
 

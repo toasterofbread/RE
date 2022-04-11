@@ -1,7 +1,8 @@
 #ifndef INCLUDED_SIGNAL
 #define INCLUDED_SIGNAL
 
-#include "engine/src/raylib_include.h"
+#include "core/os.h"
+
 #include <functional>
 #include <iostream>
 #include <unordered_map>
@@ -171,7 +172,7 @@ class Signal {
         };
 
     private:
-        void onEmission() { last_emission_time = GetTime(); }
+        void onEmission() { last_emission_time = OS::time(); }
 
         double last_emission_time = -1;
 

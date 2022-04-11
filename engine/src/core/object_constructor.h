@@ -8,9 +8,7 @@
 #include <type_traits>
 using namespace std;
 
-#include "icecream.hpp" // Debug
-
-#include "engine/src/utils.h"
+#include "common/utils.h"
 #include "engine/src/core/yaml_data_converter.h"
 
 // Forward declarations

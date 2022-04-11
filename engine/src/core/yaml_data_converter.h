@@ -8,9 +8,7 @@
 #include "engine/src/raylib_include.h"
 using namespace std;
 
-#include "engine/src/utils.h"
-
-#include <icecream.hpp> // Debug
+#include "common/utils.h"
 
 // Forward declarations
 class SceneTree;

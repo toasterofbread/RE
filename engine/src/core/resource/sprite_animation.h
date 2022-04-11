@@ -6,8 +6,6 @@ using json = nlohmann::json;
 #include "engine/src/engine.h"
 #include "engine/src/core/resource/resource.h"
 
-#include <icecream.hpp> // Debug
-
 class SpriteAnimation: public Resource {
     private:
         string name = "Unnamed SpriteAnimation";

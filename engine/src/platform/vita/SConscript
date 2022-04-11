@@ -1,0 +1,92 @@
+from spectre7 import utils
+import os
+import sys
+
+Import("env")
+
+if GetOption("run_tests"):
+    print(f"Tests cannot be run when building for platform '{env.PLATFORM_NAME}'")
+    exit()
+
+if not "VITASDK" in os.environ:
+    print("Please define VITASDK to point to your SDK path!")
+    exit()
+VITASDK = os.environ["VITASDK"]
+if not VITASDK.endswith("/"):
+    VITASDK += "/"
+
+VITA_PLATFORM_PREFIX = "arm-vita-eabi"
+VITA_TITLEID = "RE_TEST_1"
+
+env.Replace(
+    ENV = {"PATH": sys.path + [VITASDK + "bin"]},
+    LINKFLAGS = ["-Wl,-q"],#, "-Wall", "-fno-lto"],
+    CXX = VITA_PLATFORM_PREFIX + "-g++",
+    # LINK = VITA_PLATFORM_PREFIX + "-ld",
+    AR = VITA_PLATFORM_PREFIX + "-ar",
+    RANLIB = VITA_PLATFORM_PREFIX + "-ranlib",
+)
+env.Append(
+    LIBPATH = VITASDK + VITA_PLATFORM_PREFIX + "/lib",
+    CPPPATH = [VITASDK + VITA_PLATFORM_PREFIX + "/include", "include/raylib", "include/raylib-cpp"],
+    CCFLAGS = ["-Wno-psabi"],
+    LIBS = [
+        "raylib",
+        "liblibScePiglet_stub",
+        "SceSysmodule_stub",
+        "SceNetCtl_stub",
+        "stdc++",
+        "pib",
+        "SceShaccCg_stub",
+        "taihen_stub",
+        "SceAppMgr_stub",
+        "SceLibKernel_stub",
+        "SceIofilemgr_stub",
+        "SceNet_stub",
+        "SceGxm_stub",
+        "SceDisplay_stub",
+        "SceCtrl_stub",
+        "SceTouch_stub",
+        "pthread",
+        "m",
+
+        #SceThreadmgr_stub,
+        #SceModulemgr_stub,
+    ]
+)
+
+# env.Append(
+#     CPPPATH = ["include/raylib", "include/raylib-cpp"],
+#     LIBS = ["raylib"]
+# )
+
+original_converter = env.convertSconsLine
+def convertSconsLine(self, line: str, progress: float):
+    if line.startswith("vita-mksfoex"):
+        line = "Generating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[4], env.COLOURS["compile"]["attrs"])
+    elif line.startswith("vita-elf-create"):
+        line = "Creating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[2], env.COLOURS["compile"]["attrs"])
+    elif line.startswith("vita-make-fself"):
+        line = "Creating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[3], env.COLOURS["compile"]["attrs"])
+    elif line.startswith("vita-pack-vpk"):
+        line = "Packing " + utils.format_colour(env.COLOURS["link"]["colour"], line.split(" ")[5], env.COLOURS["link"]["attrs"])
+    return original_converter(line, progress)
+env.AddMethod(convertSconsLine)
+
+lib_dir = env.DIRECTORY + env.LIB_DIR
+
+if GetOption("build_project"):
+    vita_velf = env.Command(lib_dir + env.PLATFORM_NAME + "/" + env.PROJECT_NAME + ".velf", env.project_binary[0], "vita-elf-create $SOURCE $TARGET")
+    Depends(vita_velf, env.project_binary)
+
+    vita_eboot = env.Command(lib_dir + "eboot.bin", vita_velf[0], "vita-make-fself -s $SOURCE $TARGET")
+    Depends(vita_eboot, vita_velf)
+
+    vita_params = env.Command(lib_dir + "param.sfo", None, f"vita-mksfoex -s TITLE_ID={VITA_TITLEID} \"{env.PROJECT_NAME}\" $TARGET")
+
+    def packVpk(target, source, env):
+        os.system(f"vita-pack-vpk -s {source[0]} -b {source[1]} {target[0]}")
+    vita_vpk = env.Command(env.DIRECTORY + env.OUTPUT_DIR + env.PROJECT_NAME + ".vpk", [vita_params[0], vita_eboot[0]], packVpk)
+
+    Depends(vita_vpk, vita_params)
+    Depends(env.FINISH_COMMAND, vita_vpk)

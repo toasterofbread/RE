@@ -1,0 +1,13 @@
+#ifndef INCLUDED_COMPILER_SETTINGS
+#define INCLUDED_COMPILER_SETTINGS
+
+#define LOCK_SETTINGS true
+
+#define PLATFORM_RAYLIB 0
+#define PLATFORM_VITA 1
+
+// #define PLATFORM 0
+
+#define DEBUG_ENABLED false
+
+#endif

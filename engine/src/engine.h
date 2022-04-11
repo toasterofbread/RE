@@ -1,10 +1,8 @@
 #ifndef INCLUDED_ENGINE
 #define INCLUDED_ENGINE
 
+#include "engine/compiler_settings.h"
 #include "engine/src/raylib_include.h"
-
-#include "engine/src/debug_options.h"
-#include "project/src/debug_options.h"
 
 #include <thread>
 #include <unordered_map>

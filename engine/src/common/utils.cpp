@@ -1,12 +1,15 @@
 #include <string.h>
 #include "cstring"
 #include <stdio.h>
-#include <execinfo.h>
 #include <box2d/box2d.h>
 
-#include "engine/src/utils.h"
+#include "common/utils.h"
 #include "engine/src/core/node/node.h"
+
+#if DEBUG_ENABLED
+#include <execinfo.h>
 #include "include/backward.hpp"
+#endif
 
 using namespace std;
 
@@ -287,6 +290,7 @@ void print(Colour value) {
 }
 
 void print_trace(void) {
+    #if DEBUG_ENABLED
     char **strings;
     size_t i, size;
     enum Constexpr { MAX_SIZE = 1024 };
@@ -297,9 +301,11 @@ void print_trace(void) {
         printf("%s\n", strings[i]);
     puts("");
     free(strings);
+    #endif
 }
 
 void print_stacktrace(int additional_skip) {
+    #if DEBUG_ENABLED
     using namespace backward;
     StackTrace st;
 
@@ -311,6 +317,7 @@ void print_stacktrace(int additional_skip) {
     p.object = true;
     p.address = true;
     p.print(st, stderr);
+    #endif
 }
 
 void warn(string message, bool throw_error) {

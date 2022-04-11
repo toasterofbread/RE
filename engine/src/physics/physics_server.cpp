@@ -4,7 +4,8 @@
 #include <box2d/box2d.h>
 #include <stdlib.h>
 
-#include "engine/src/utils.h"
+#include "common/utils.h"
+#include "common/draw.h"
 
 PhysicsServer* PhysicsServer::singleton = NULL;
 const float PhysicsServer::world_scale = 12.0f;
@@ -16,7 +17,7 @@ class FooDraw : public b2Draw {
             for (int i = 0; i < vertexCount; i += 1) {
                 Vector2 start_vertex = PhysicsServer::phys2World(vertices[i]);
                 Vector2 end_vertex = PhysicsServer::phys2World(vertices[i + 1 == vertexCount ? 0 : i + 1]);
-                DrawLine(start_vertex.x, start_vertex.y, end_vertex.x, end_vertex.y, GREEN);
+                Draw::drawLine(start_vertex.x, start_vertex.y, end_vertex.x, end_vertex.y, GREEN);
             }
         }
         void DrawCircle(const b2Vec2& center, float radius, const b2Color& color) {}

@@ -1,0 +1,78 @@
+import fnmatch
+import os
+from spectre7 import utils
+
+Import("env")
+
+AddOption("--platform", dest="platform", type=str)
+
+def getPlatformList() -> dict:
+    ret = {}
+    for file in env.recursiveGlob("engine/src/platform/", None, "SConscript"):
+        file = str(file)
+        if file == "SConscript":
+            continue
+        ret[os.path.dirname(file)] = file
+    return ret
+
+env.PLATFORM_LIST = getPlatformList()
+if not GetOption("platform") in env.PLATFORM_LIST:
+
+    if GetOption("platform"):
+        print(f"'{GetOption('platform')}' is not a valid platform. Available platforms:")
+    else:
+        print("A valid platform must be specified. Available platforms:")
+
+    for platform in env.PLATFORM_LIST:
+        print(" ", platform)
+    exit()
+env.PLATFORM_NAME = GetOption("platform")
+
+env.Replace(
+    CPPPATH = [".", "engine/src/"],
+    CCFLAGS = ["-std=c++17", "-g", "-fpermissive", "-fdiagnostics-color=always", f"-DGIT_COMMIT_HASH='\"{env.getGitHash()}\"'", f"-DPLATFORM={list(env.PLATFORM_LIST.keys()).index(env.PLATFORM_NAME)}"],#, "-Linclude/lib/vita", "-Wl,-rpath include/lib/vita", "-lbox2d"],
+    LIBPATH = [env.LIB_DIR],
+    LIBS = [
+        "yaml-cpp",
+        "pthread",
+        "box2d",
+    ],
+    CXX = "g++",
+)
+
+if GetOption("target") == "debug":
+    env.Append(LIBS = ["dw", "boost_unit_test_framework"])
+
+if os.path.isdir(env.DIRECTORY + "/include/lib/" + env.PLATFORM_NAME):
+    env.Append(LIBPATH = "include/lib/" + env.PLATFORM_NAME)
+
+def convertSconsLine(self, line: str, progress: int):
+
+    line = line.strip()
+
+    if line.endswith(" is up to date."):
+        path = line.split("`")[1].split("'")[0].replace(".o", ".cpp").replace(env.OBJ_DIR + "project/", env.PROJECT_SRC).replace(env.OBJ_DIR + "engine/", env.ENGINE_SRC)
+        line = "Compiling " + utils.format_colour(env.COLOURS["skip"]["colour"], path, env.COLOURS["skip"]["attrs"]) + " (skipping)"
+    elif line.startswith("Compiling "):
+        line = "Compiling " + utils.format_colour(env.COLOURS["compile"]["colour"], line[len("Compiling "):], env.COLOURS["compile"]["attrs"])
+    elif line.startswith("ranlib "):
+        line = "Indexing library " + utils.format_colour(env.COLOURS["index"]["colour"], line[len("ranlib "):], env.COLOURS["index"]["attrs"])
+    elif line.startswith("Linking "):
+        line = "Linking program " + utils.format_colour(env.COLOURS["link"]["colour"], line[len("Linking "):], env.COLOURS["link"]["attrs"])
+    elif line == "scons: Building targets ...":
+        return utils.format_colour("magenta", f"\n - - Starting build - - \n", ["reverse"])
+
+    progress = str(progress)
+    for i in range(3 - len(progress)):
+        progress = " " + progress
+    progress = f"[{progress}%]"
+
+    return f"{utils.format_colour(env.COLOURS['progress']['colour'], progress, env.COLOURS['progress']['attrs'])} {line}"
+
+env.AddMethod(convertSconsLine)
+
+if not GetOption("verbose"):
+    env["CXXCOMSTR"]  = "Compiling $SOURCE"
+    env["LINKCOMSTR"] = "Linking $TARGET"
+
+SConscript(env.PLATFORM_LIST[env.PLATFORM_NAME])

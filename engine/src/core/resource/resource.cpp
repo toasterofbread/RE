@@ -1,6 +1,6 @@
 #include "resource.h"
 
-#include "engine/src/utils.h"
+#include "common/utils.h"
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/node/scene_tree.h"
 #include "engine/src/engine.h"

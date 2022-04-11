@@ -8,10 +8,12 @@
 #include <vector>
 #include <thread>
 #include <functional>
-#include "engine/src/raylib_include.h"
 using namespace std;
 
 #include "include/prettyprint.hpp"
+#include "common/colour.h"
+#include "common/vector2.h"
+#include "raylib_include.h"
 
 // !todo Clean this file up
 
@@ -87,7 +89,7 @@ void warn(string message, bool throw_error = false);
 
 #undef assert
 
-#ifdef DEBUG_ENABLED
+#if DEBUG_ENABLED
 #define assert(expr)						                          \
     if (!static_cast<bool>(expr)) {                                  \
         print_stacktrace();                                           \

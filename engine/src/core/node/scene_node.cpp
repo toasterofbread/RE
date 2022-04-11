@@ -3,7 +3,7 @@
 #include <yaml-cpp/yaml.h>
 #include <map>
 
-#include "engine/src/utils.h"
+#include "common/utils.h"
 #include "engine/src/core/node/scene_loader.h"
 
 void SceneNode::init_scenenode(string scene_path, string scene_type) {

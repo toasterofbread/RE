@@ -5,9 +5,8 @@
 #include <string>
 using namespace std;
 
-#include "engine/src/utils.h"
+#include "common/utils.h"
 
-#include "icecream.hpp" // Debug
 #include <vector>
 using namespace std;
 
