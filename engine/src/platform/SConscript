@@ -1,11 +1,11 @@
-import fnmatch
-import os
+from os import path
+from os.path import join
 from spectre7 import utils
 
 Import("env")
 
 env.Replace(
-    CPPPATH = [".", "engine/src/", "engine/src/platform/" + env.PLATFORM_NAME + "/"],
+    CPPPATH = [".", env.ENGINE_SRC, join(env.ENGINE_SRC, "platform", env.PLATFORM_NAME)],
     CCFLAGS = ["-std=c++17", "-g", "-fpermissive", "-fdiagnostics-color=always", f"-DGIT_COMMIT_HASH='\"{env.getGitHash()}\"'", "-Linclude/lib/vita", "-Wl,-rpath include/lib/vita", "-lbox2d"],
     LINKFLAGS = ["-g"],
     LIBPATH = [env.LIB_DIR],
@@ -19,7 +19,7 @@ env.Replace(
 if GetOption("target") == "debug":
     env.Append(LIBS = ["dw", "boost_unit_test_framework"])
 
-if os.path.isdir(env.DIRECTORY + "/include/lib/" + env.PLATFORM_NAME):
+if path.isdir(env.DIRECTORY + "/include/lib/" + env.PLATFORM_NAME):
     env.Append(LIBPATH = "include/lib/" + env.PLATFORM_NAME)
 
 def convertSconsLine(self, line: str, progress: int):
@@ -36,7 +36,7 @@ def convertSconsLine(self, line: str, progress: int):
     elif line.startswith("Linking "):
         line = "Linking program " + utils.format_colour(env.COLOURS["link"]["colour"], line[len("Linking "):], env.COLOURS["link"]["attrs"])
     elif line == "scons: Building targets ...":
-        return utils.format_colour("magenta", f"\n - - Starting build - - \n", ["reverse"])
+        return utils.format_colour("magenta", f"\n - - Starting build ({env.PLATFORM_NAME}) - - \n", ["reverse"])
 
     progress = str(progress)
     for i in range(3 - len(progress)):

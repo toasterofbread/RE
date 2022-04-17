@@ -1,11 +1,23 @@
 import fnmatch
 import io
 import os
+from os.path import join
 import subprocess
 import sys
 from datetime import datetime
 from spectre7 import utils
 
+AddOption("--target", dest="target", type=str, default="debug")
+AddOption("--print-binary-path", dest="print_binary_path", action="store_true", default=False)
+AddOption("--run", dest="run_after_build", action="store_true", default=False)
+AddOption("--clear-console", dest="clear_before_build", action="store_true", default=False)
+AddOption("--test", dest="run_tests", action="store_true", default=False)
+AddOption("--verbose", dest="verbose", action="store_true", default=False)
+AddOption("--no-engine", dest="build_engine", action="store_false", default=True)
+AddOption("--no-project", dest="build_project", action="store_false", default=True)
+
+if GetOption("clear_before_build"):
+    os.system("clear")
 
 env = Environment()
 Export("env")
@@ -13,9 +25,9 @@ env.DIRECTORY = os.getcwd() + "/"
 
 env.PROJECT_NAME = "RE"
 
-env.OUTPUT_DIR = "build/"
-env.OBJ_DIR = "build/obj/"
-env.LIB_DIR = "build/lib/"
+env.BUILD_DIR = "build/"
+env.OBJ_SUBDIR = "obj/"
+env.LIB_SUBDIR = "lib/"
 
 env.ENGINE_SRC = "engine/src/"
 env.ENGINE_TESTS = "engine/tests/"
@@ -108,15 +120,6 @@ def onBuildFinished(target, source, env):
 
     ENV.runProjectBinary(source[0])
 
-AddOption("--target", dest="target", type=str, default="debug")
-AddOption("--print-binary-path", dest="print_binary_path", action="store_true", default=False)
-AddOption("--run", dest="run_after_build", action="store_true", default=False)
-AddOption("--clear-console", dest="clear_before_build", action="store_true", default=False)
-AddOption("--test", dest="run_tests", action="store_true", default=False)
-AddOption("--verbose", dest="verbose", action="store_true", default=False)
-AddOption("--no-engine", dest="build_engine", action="store_false", default=True)
-AddOption("--no-project", dest="build_project", action="store_false", default=True)
-
 env.RUN_AFTER_BUILD = GetOption("run_after_build")
 SConscript("GenerateCompilerOptions.py")
 
@@ -125,11 +128,8 @@ if not GetOption("build_engine") and not GetOption("build_project"):
     exit()
 
 if GetOption("print_binary_path"):
-    print(OUTPUT_DIR + PROJECT_BINARY_NAME)
+    print(BUILD_DIR + PROJECT_BINARY_NAME)
     exit()
-
-if GetOption("clear_before_build"):
-    os.system("clear")
 
 engine_objs = []
 
@@ -140,7 +140,7 @@ if GetOption("build_engine"):
         BUILD_TARGETS.append(object_path)
         engine_objs.append(object_path)
 
-    env.engine_binary = env.Library(env.LIB_DIR + env.ENGINE_BINARY_NAME + env["LIBSUFFIX"], engine_objs, LIBS=["box2d"])
+    env.engine_binary = env.Library(join(env.LIB_DIR, env.ENGINE_BINARY_NAME + env["LIBSUFFIX"]), engine_objs, LIBS=["box2d"])
     Depends(env.engine_binary, engine_objs)
 
 project_objs = []
@@ -154,7 +154,7 @@ if GetOption("build_project"):
         project_objs.append(object_path)
 
     env.project_binary = project_env.Program(
-        target=env.OUTPUT_DIR + env.PROJECT_NAME + ".elf",# + env["PROGSUFFIX"],
+        target=join(env.BUILD_DIR, env.PROJECT_NAME + ".elf"),# + env["PROGSUFFIX"],
         source=project_objs
     )
 
@@ -181,7 +181,7 @@ if GetOption("run_tests"):
         test_objs.append(object_path)
 
     test_binary = project_env.Program(
-        target=env.OUTPUT_DIR + env.TEST_BINARY_NAME + env["PROGSUFFIX"],
+        target=env.BUILD_DIR + env.TEST_BINARY_NAME + env["PROGSUFFIX"],
         source=test_objs
     )
 

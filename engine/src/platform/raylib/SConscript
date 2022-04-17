@@ -16,5 +16,5 @@ def runProjectBinary(file):
     if not GetOption("run_tests"):
         os.system(path)
     else:
-        os.system(env.OUTPUT_DIR + env.TEST_BINARY_NAME + " && " + path)
+        os.system(env.BUILD_DIR + env.TEST_BINARY_NAME + " && " + path)
 env.runProjectBinary = runProjectBinary

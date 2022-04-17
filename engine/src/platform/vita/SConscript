@@ -1,13 +1,14 @@
+from logging import exception
 import time
-from regex import E
 from spectre7 import utils
 import os
+from os.path import join
 import sys
 import zipfile, json
 from PIL import Image
-import numpy as np
 import io
 from ftplib import FTP, error_perm
+from multiprocessing import Process
 
 RESOURCE_DIR = "resources/"
 RESOURCE_TYPES = ("json", "png")
@@ -29,15 +30,24 @@ if not VITASDK.endswith("/"):
 
 VITA_PLATFORM_PREFIX = "arm-vita-eabi"
 VITA_TITLEID = "RETEST001" # Doesn't like underscores
-VITA_IP = "192.168.10.103"
+VITA_IP = "192.168.10.105"
 USB_DEVICE_DIR = "/run/media/" + os.environ["USER"] + "/"
+
+def vitaCommand(cmd: str):
+    os.system(f"echo {cmd} | nc {VITA_IP} 1338")
+
+def ftpProcess(ftp: FTP, file, filename: str):
+    try:
+        ftp.storbinary("STOR " + os.path.basename(str(filename)), file)
+    # Eboot upload will fail if the program is already running
+    except error_perm as e:
+        vitaCommand("destroy")
+        time.sleep(0.5)
+        ftp.storbinary("STOR " + os.path.basename(str(filename)), file)
 
 def runProjectBinary(path: str):
     if not env.RUN_AFTER_BUILD:
         return
-
-    def command(cmd: str):
-        os.system(f"echo {cmd} | nc {VITA_IP} 1338")
     
     if PACK_VPK:
         filename = env.VITA_VPK[0]
@@ -45,6 +55,8 @@ def runProjectBinary(path: str):
         filename = env.VITA_EBOOT[0]
     
     env.msg(f"Uploading {filename} to Vita")
+
+    cancelled = False
 
     # Attempt FTP upload
     try:
@@ -58,14 +70,11 @@ def runProjectBinary(path: str):
             ftp.cwd("ux0:app/" + VITA_TITLEID)
         
         file = open(str(filename), "rb")
-        try:
-            ftp.storbinary("STOR " + os.path.basename(str(filename)), file)
 
-        # Eboot upload will fail if the program is already running
-        except error_perm as e:
-            command("destroy")
-            time.sleep(0.5)
-            ftp.storbinary("STOR " + os.path.basename(str(filename)), file)
+        # Running in a process allows the upload to be cancelled by a KeyboardInterrupt
+        proc = Process(target=ftpProcess, args=(ftp, file, filename))
+        proc.start()
+        proc.join()
 
         file.close()
         ftp.quit()
@@ -98,11 +107,14 @@ def runProjectBinary(path: str):
         os.system(f"cp {filename} -T {os.path.join(path, os.path.basename(str(filename)))}")
         os.system(f"umount {device_path}")
 
-    command("destroy")
+    if cancelled:
+        return
+
+    vitaCommand("destroy")
     if PACK_VPK:
-        command("launch VITASHELL")
+        vitaCommand("launch VITASHELL")
     else:
-        command("launch " + VITA_TITLEID)
+        vitaCommand("launch " + VITA_TITLEID)
 
 env.runProjectBinary = runProjectBinary
 
@@ -188,7 +200,7 @@ lib_dir = env.DIRECTORY + env.LIB_DIR
 
 if GetOption("build_project"):
 
-    vita_velf = env.Command(lib_dir + env.PLATFORM_NAME + "/" + env.PROJECT_NAME + ".velf", env.project_binary[0], "vita-elf-create $SOURCE $TARGET")
+    vita_velf = env.Command(join(lib_dir, env.PROJECT_NAME + ".velf"), env.project_binary[0], "vita-elf-create $SOURCE $TARGET")
     Depends(vita_velf, env.project_binary)
 
     env.VITA_EBOOT = env.Command(lib_dir + "eboot.bin", vita_velf[0], "vita-make-fself -s $SOURCE $TARGET")
@@ -297,11 +309,11 @@ if GetOption("build_project"):
             if ".vpk." in file:
                 os.remove(os.path.join(env.DIRECTORY, "build/" + file))
     
-    # packVpk([env.DIRECTORY + env.OUTPUT_DIR + env.PROJECT_NAME + ".vpk"], [vita_params[0], vita_eboot[0]], env)
+    # packVpk([env.DIRECTORY + env.BUILD_DIR + env.PROJECT_NAME + ".vpk"], [vita_params[0], vita_eboot[0]], env)
     # exit()
 
     if PACK_VPK:
-        env.VITA_VPK = env.Command(env.DIRECTORY + env.OUTPUT_DIR + env.PROJECT_NAME + ".vpk", [vita_params[0], env.VITA_EBOOT[0]], packVpk)
+        env.VITA_VPK = env.Command(join(env.DIRECTORY + env.BUILD_DIR, env.PROJECT_NAME + ".vpk"), [vita_params[0], env.VITA_EBOOT[0]], packVpk)
 
         Depends(env.VITA_VPK, vita_params)
         Depends(env.FINISH_COMMAND, env.VITA_VPK)

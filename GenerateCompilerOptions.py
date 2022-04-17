@@ -1,4 +1,5 @@
 import os
+from os.path import join
 
 from regex import P
 
@@ -27,6 +28,10 @@ if not GetOption("platform") in env.PLATFORM_LIST:
         print(" ", platform)
     exit()
 env.PLATFORM_NAME = GetOption("platform")
+
+env.BUILD_DIR = join(env.BUILD_DIR, env.PLATFORM_NAME)
+env.OBJ_DIR = join(env.BUILD_DIR, env.OBJ_SUBDIR)
+env.LIB_DIR = join(env.BUILD_DIR, env.LIB_SUBDIR)
 
 file = open("engine/compiler_settings.h", "r")
 
