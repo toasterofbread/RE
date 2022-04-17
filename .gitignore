@@ -2,6 +2,7 @@
 /build
 /project
 /include
+/engine/compiler_settings.h
 
 # VSCode
 /.vscode
