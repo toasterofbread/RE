@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
-#include <yaml-cpp/yaml.h>
+// #include <yaml-cpp/yaml.h>
 #include <type_traits>
 using namespace std;
 
@@ -25,8 +25,8 @@ class ObjectConstructor: public ObjectConstructorBase {
 
     private:
         class SetterBase {
-            public:
-                virtual void set(ObjectType* object, YAML::Node data, YAMLDataConverter* converter) {}
+            // public:
+                // virtual void set(ObjectType* object, YAML::Node data, YAMLDataConverter* converter) {}
         };
 
         // Stores the setter method for this object type
@@ -43,13 +43,13 @@ class ObjectConstructor: public ObjectConstructorBase {
                     (object->*setter_method)(value);
                 }
 
-                void set(ObjectType* object, YAML::Node data, YAMLDataConverter* converter) {
-                    if (!converter->isTypeConverterRegistered<PropertyType>()) {
-                        warn("Cannot set object value, type has no registered YAML data converter", true);
-                        return;
-                    }
-                    (object->*setter_method)(converter->convertData<PropertyType>(data));
-                }
+                // void set(ObjectType* object, YAML::Node data, YAMLDataConverter* converter) {
+                //     if (!converter->isTypeConverterRegistered<PropertyType>()) {
+                //         warn("Cannot set object value, type has no registered YAML data converter", true);
+                //         return;
+                //     }
+                //     (object->*setter_method)(converter->convertData<PropertyType>(data));
+                // }
 
         };
 
@@ -101,13 +101,13 @@ class ObjectConstructor: public ObjectConstructorBase {
             ((Setter<PropertyType>*)setters[property_name])->set(object, value);
         }
 
-        void setProperty(ObjectType* object, string property_name, YAML::Node data) {
-            if (!isPropertyRegistered(property_name)) {
-                warn("Property '" + property_name + "' is not registered", true);
-                return;
-            }
-            setters[property_name]->set(object, data, converter);
-        }
+        // void setProperty(ObjectType* object, string property_name, YAML::Node data) {
+        //     if (!isPropertyRegistered(property_name)) {
+        //         warn("Property '" + property_name + "' is not registered", true);
+        //         return;
+        //     }
+        //     setters[property_name]->set(object, data, converter);
+        // }
 
         bool isPropertyRegistered(string property_name) {
             return setters.count(property_name);

@@ -1,6 +1,6 @@
 #include "node.h"
 #include <vector>
-#include <yaml-cpp/yaml.h>
+// #include <yaml-cpp/yaml.h>
 
 #include "common/utils.h"
 #include "engine/src/engine.h"
@@ -11,6 +11,8 @@ const int INDICATOR_RADIUS = 10;
 
 // - Core -
 Node::Node() {
+    assert(registered());
+
     name = getValidName();
     id = Engine::getSingleton()->getNewNodeId();
 
@@ -140,63 +142,36 @@ void Node::addChild(Node* child) {
 }
 
 void Node::removeChild(int child_idx) {
+    assert(hasChild(child_idx));
+    auto child = children.begin() + child_idx;
+    getChildren()->erase(child);
+    (*child)->removedFromNode(this);
+}
 
-    if (!hasChild(child_idx)) {
-        warn("Child index '" + (string)int2char(child_idx) + "' is out of bounds", true);
-        return;
-    }
-
-    int index = 0;
+void Node::removeChild(string child_name) {
     for (auto i = getChildren()->begin(); i != getChildren()->end(); ++i) {
-        index++;
-        if (index == child_idx) {
+        if ((*i)->getName() == child_name) {
             getChildren()->erase(i);
             (*i)->removedFromNode(this);
             return;
         }
     }
-}
-
-void Node::removeChild(string child_name) {
-    Node* child = NULL;
-    for (auto i = getChildren()->begin(); i != getChildren()->end(); ++i) {
-        if ((*i)->getName() == child_name) {
-            getChildren()->erase(i);
-            child = *i;
-            break;
-        }
-    }
-
-    if (child == NULL) {
-        warn("Parent has no child with name '" + child_name + "'", true);
-        return;
-    }
-
-    child->removedFromNode(this);
+    throw runtime_error("No child with name " + child_name);
 }
 
 void Node::removeChild(Node* child) {
-    bool found_child = false;
     for (auto i = getChildren()->begin(); i != getChildren()->end(); ++i) {
         if (*i == child) {
             getChildren()->erase(i);
-            found_child = true;
-            break;
+            child->removedFromNode(this);
+            return;
         }
     }
-
-    if (!found_child) {
-        warn("Passed child does not belong to node", true);
-        return;
-    }
-
+    throw runtime_error("Child is not a child of this node");
 }
 
 Node* Node::getChild(int child_idx) {
-    if (!hasChild(child_idx)) {
-        warn("Node '" + getName() + "' has no child at index '" + int2str(child_idx) + "'", true);
-        return NULL;
-    }
+    assert(hasChild(child_idx));
     return children[child_idx];
 }
 
@@ -206,8 +181,7 @@ Node* Node::getChild(string child_name) {
             return *i;
         }
     }
-    warn("Node '" + getName() + "' has no child with name '" + child_name + "'", true);
-    return NULL;
+    throw runtime_error("No child with name " + child_name);
 }
 
 Node* Node::getChildAtPath(string child_path) {
@@ -215,13 +189,8 @@ Node* Node::getChildAtPath(string child_path) {
     Node* current_node = this;
 
     for (auto i = path.begin(); i != path.end(); ++i) {
-        if (current_node->hasChild(*i)) {
-            current_node = current_node->getChild(*i);
-        }
-        else {
-            warn("Node has no child at path '" + child_path + "'", true);
-            return NULL;
-        }
+        assert(current_node->hasChild(*i));
+        current_node = current_node->getChild(*i);
     }
 
     return current_node;
@@ -382,7 +351,7 @@ void Node::printTree(int max_depth) {
         out += "  " + message + "\n";
     }
 
-    print(out + "└──────────────────────────────────────────────────────────────────────────────────────┘");
+    OS::print(out + "└──────────────────────────────────────────────────────────────────────────────────────┘");
 }
 
 int Node::getIndex() {
@@ -406,13 +375,7 @@ void Node::kill() {
     }
 
     SIGNAL_KILLED.emit();
-
-    // DEBUG
-    if (notify_when_killed) {
-        print("NODE KILLED:");
-        print(this);
-    }
-
+    
     Engine::getSingleton()->onNodeKilled(this);
     getParent()->removeChild(this);
 

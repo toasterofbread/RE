@@ -1,7 +1,7 @@
 #ifndef INCLUDED_scene_tree
 #define INCLUDED_scene_tree
 
-#include <yaml-cpp/yaml.h>
+// #include <yaml-cpp/yaml.h>
 #include <string>
 using namespace std;
 
@@ -15,6 +15,7 @@ class Engine;
 class Node;
 class Node2D;
 class Timer;
+class Camera;
 
 class SceneTree {
     public:
@@ -37,12 +38,16 @@ class SceneTree {
 
         Timer* createTimer(float duration, bool free_on_timeout = true);
 
+        Camera* getEnabledCamera();
+        void setEnabledCamera(Camera* camera);
+
         static const int MIN_DRAW_LAYER = -2048;
         static const int MAX_DRAW_LAYER = 2048;
 
     private:
         Node* root_node;
-        
+        Camera* enabled_camera = NULL;
+
         vector<Node2D*> drawable_nodes[MAX_DRAW_LAYER - MIN_DRAW_LAYER];
 
         STATE current_state = STATE::PREINIT;

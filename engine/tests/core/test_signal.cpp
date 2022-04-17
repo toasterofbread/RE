@@ -2,7 +2,6 @@
 #include <include/catch.hpp>
 #include "common/utils.h"
 
-#include "engine/src/raylib_include.h"
 #include "engine/src/core/signal.h"
 
 TEST_CASE( "Signal" ) {
@@ -30,7 +29,7 @@ TEST_CASE( "Signal" ) {
     TestClass object;
 
     // Connect signal to object method
-    SIGNAL.connect<TestClass, int&, int>(&TestClass::signalCallback, &object, connection_reference, 2);
+    SIGNAL.connect<TestClass, int&, int>(&TestClass::signalCallback, &object, false, connection_reference, 2);
     REQUIRE(SIGNAL.getConnectionCount() == 1);
 
     // Test signal emission with arguments and binds
@@ -44,10 +43,10 @@ TEST_CASE( "Signal" ) {
     SIGNAL.disconnect(&object);
     REQUIRE(SIGNAL.getConnectionCount() == 0);
     
-    // Connect signal to object method (without arguments)
+    // Connect signal to object method (without arguments), as one-shot
     int value = 0;
     int& reference = value;
-    SIGNAL.connectWithoutArgs<TestClass, int&, int>(&TestClass::signalCallbackNoArgs, &object, reference, 3);
+    SIGNAL.connectWithoutArgs<TestClass, int&, int>(&TestClass::signalCallbackNoArgs, &object, true, reference, 3);
     REQUIRE(SIGNAL.getConnectionCount() == 1);
 
     // Test signal emission with binds, without arguments
@@ -55,7 +54,7 @@ TEST_CASE( "Signal" ) {
     REQUIRE(reference == 3);
 
     // Disconnect signal
-    SIGNAL.disconnect(&object);
     REQUIRE(SIGNAL.getConnectionCount() == 0);
+
 
 }

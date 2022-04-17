@@ -6,8 +6,11 @@
 #include "engine/src/engine.h"
 #include "engine/src/core/signal.h"
 
+Resource::ResourcePool* Resource::resource_pool = NULL;
+
 Resource::Resource() {
     Engine::getSingleton()->resourceCreated(this);
+    assert(registered());
 }
 
 Resource::~Resource() {

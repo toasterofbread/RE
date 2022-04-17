@@ -6,7 +6,7 @@
 
 void Sprite::draw() {
 
-    Node2D::draw();
+    super::draw();
 
     if (!isGlobalVisible() || !hasTexture()) {
         return;
@@ -20,25 +20,7 @@ void Sprite::draw() {
         origin = getRotationOrigin();
     }
 
-    Vector2 global_position = getGlobalPosition() + origin;
-
-    DrawTexturePro(
-        texture->getTexture(),
-        Rectangle{
-            0,
-            0,
-            (float)texture->getWidth() * (flip_x ? -1.0f : 1.0f),
-            (float)texture->getHeight() * (flip_y ? -1.0f : 1.0f)
-        },
-        Rectangle{
-            global_position.x,
-            global_position.y, 
-            (float)texture->getWidth() * getGlobalScale().x,
-            (float)texture->getHeight() * getGlobalScale().y
-        },
-        origin,
-        getGlobalRotation() * RAD2DEG,
-        getGlobalModulate()
-    );
+    // !todo origin
+    Draw::drawTextureRST(texture->getTexture(), getGlobalPosition() + origin, getGlobalRotation(), getGlobalScale(), getGlobalModulate());
 
 }

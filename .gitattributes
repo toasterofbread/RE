@@ -1,0 +1,2 @@
+*.cpp filter=gitignore
+*.h filter=gitignore

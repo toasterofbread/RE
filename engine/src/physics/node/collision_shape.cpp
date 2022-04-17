@@ -1,14 +1,15 @@
 #include "collision_shape.h"
 
+#include "common/draw.h"
 #include "engine/src/physics/physics_server.h"
 #include "engine/src/physics/node/physics_body.h"
 
 void CollisionShape::ready() {
-    Node2D::ready();
+    super::ready();
 }
 
 void CollisionShape::draw() {
-    Node2D::draw();
+    super::draw();
 
     // return;
 
@@ -32,16 +33,16 @@ void CollisionShape::draw() {
             // scale = getGlobalScale();
 
             for (int i = 0; i < shape->m_count; i += 1) {
-                Vector2 start_vertex = (PhysicsServer::phys2World(shape->m_vertices[i]) * scale).Rotate(body->GetAngle()) + body_position;
-                Vector2 end_vertex = (PhysicsServer::phys2World(shape->m_vertices[i + 1 == shape->m_count ? 0 : i + 1]) * scale).Rotate(body->GetAngle()) + body_position;
-                DrawLine(start_vertex.x, start_vertex.y, end_vertex.x, end_vertex.y, RED);
+                Vector2 start_vertex = (PhysicsServer::phys2World(shape->m_vertices[i]) * scale).rotated(body->GetAngle()) + body_position;
+                Vector2 end_vertex = (PhysicsServer::phys2World(shape->m_vertices[i + 1 == shape->m_count ? 0 : i + 1]) * scale).rotated(body->GetAngle()) + body_position;
+                Draw::drawLine(start_vertex, end_vertex, RED);
             }
         }
     }
 }
 
 void CollisionShape::onParentGlobalScaleChanged(Vector2 old_global_scale) {
-    Node2D::onParentGlobalScaleChanged(old_global_scale);
+    super::onParentGlobalScaleChanged(old_global_scale);
 
     if (!getUseRelativeScale() || attached_fixture == NULL) {
         return;

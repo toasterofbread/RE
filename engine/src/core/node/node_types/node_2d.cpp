@@ -1,6 +1,10 @@
 #include "node_2d.h"
 
+#include "common/colour.h"
+#include "common/draw.h"
+
 void Node2D::draw() {
+
     if (show_gizmos) {
         string text = getTypeName();
         if (getName() != text) {
@@ -23,8 +27,8 @@ void Node2D::draw() {
         markPosition(position, text, BLACK);
 
         for (string line : additional_gizmos_unique) {
-            position.y -= 15;
-            DrawText(line.c_str(), position.x + 5, position.y - 15, 10, BLACK);
+            position.y -= 30;
+            Draw::drawText(line, position, BLACK, 1.0f, Draw::DRAW_MODE::WORLD);
         }
 
     }
@@ -310,7 +314,7 @@ void Node2D::onParentDrawLayerChanged(int old_draw_layer, int new_draw_layer) {
 }
 
 void Node2D::addedToNode(Node* parent_node) {
-    Node::addedToNode(parent_node);
+    super::addedToNode(parent_node);
     if (Node2D* parent_2d = dynamic_cast<Node2D*>(parent_node)) {
         parent_2d->SIGNAL_DRAW_LAYER_CHANGED.connect(&Node2D::onParentDrawLayerChanged, this);
 
@@ -321,7 +325,7 @@ void Node2D::addedToNode(Node* parent_node) {
     }
 }
 void Node2D::removedFromNode(Node* former_parent_node) {
-    Node::removedFromNode(former_parent_node);
+    super::removedFromNode(former_parent_node);
     
     if (Node2D* parent_2d = dynamic_cast<Node2D*>(former_parent_node)) {
         parent_2d->SIGNAL_DRAW_LAYER_CHANGED.disconnect(this);

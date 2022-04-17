@@ -5,7 +5,8 @@ class Timer: public Node {
 
     public:
 
-        REGISTER_NODE(Timer);
+        REGISTER_NODE(Timer, Node);
+        
         Signal<> SIGNAL_TIMEOUT;
 
         enum class MODE { ONE_SHOT, LOOP };

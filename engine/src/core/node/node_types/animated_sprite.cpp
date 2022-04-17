@@ -9,7 +9,7 @@ using json = nlohmann::json;
 #include "engine/src/core/resource/sprite_animation.h"
 
 void AnimatedSprite::process(float delta) {
-    Sprite::process(delta);
+    super::process(delta);
 
     if (getPlaying()) frame_timer += delta;
 

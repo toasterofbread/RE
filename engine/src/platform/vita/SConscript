@@ -1,6 +1,18 @@
+import time
+from regex import E
 from spectre7 import utils
 import os
 import sys
+import zipfile, json
+from PIL import Image
+import numpy as np
+import io
+from ftplib import FTP, error_perm
+
+RESOURCE_DIR = "resources/"
+RESOURCE_TYPES = ("json", "png")
+
+PACK_VPK = False
 
 Import("env")
 
@@ -16,39 +28,138 @@ if not VITASDK.endswith("/"):
     VITASDK += "/"
 
 VITA_PLATFORM_PREFIX = "arm-vita-eabi"
-VITA_TITLEID = "RE_TEST_1"
+VITA_TITLEID = "RETEST001" # Doesn't like underscores
+VITA_IP = "192.168.10.103"
+USB_DEVICE_DIR = "/run/media/" + os.environ["USER"] + "/"
+
+def runProjectBinary(path: str):
+    if not env.RUN_AFTER_BUILD:
+        return
+
+    def command(cmd: str):
+        os.system(f"echo {cmd} | nc {VITA_IP} 1338")
+    
+    if PACK_VPK:
+        filename = env.VITA_VPK[0]
+    else:
+        filename = env.VITA_EBOOT[0]
+    
+    env.msg(f"Uploading {filename} to Vita")
+
+    # Attempt FTP upload
+    try:
+        ftp = FTP()
+        ftp.connect(VITA_IP, 1337)
+        ftp.login()
+
+        if PACK_VPK:
+            ftp.cwd("ux0:HB_PROJECTS/" + env.PROJECT_NAME)
+        else:
+            ftp.cwd("ux0:app/" + VITA_TITLEID)
+        
+        file = open(str(filename), "rb")
+        try:
+            ftp.storbinary("STOR " + os.path.basename(str(filename)), file)
+
+        # Eboot upload will fail if the program is already running
+        except error_perm as e:
+            command("destroy")
+            time.sleep(0.5)
+            ftp.storbinary("STOR " + os.path.basename(str(filename)), file)
+
+        file.close()
+        ftp.quit()
+    
+    except OSError as e:
+        if str(e) != "[Errno 113] No route to host":
+            raise e
+        
+        env.msg("FTP upload failed (no route to host), attempting USB upload...")
+
+        # Attempt USB upload
+        path = None
+        device_path = None
+        for device in os.listdir(USB_DEVICE_DIR):
+            if PACK_VPK:
+                path = os.path.join(USB_DEVICE_DIR, device, "HB_PROJECTS", env.PROJECT_NAME)
+            else:
+                path = os.path.join(USB_DEVICE_DIR, device, "app", VITA_TITLEID)
+
+            if os.path.isdir(path):
+                device_path = os.path.join(USB_DEVICE_DIR, device)
+                break
+                
+            path = None
+        
+        if path is None:
+            env.msg("USB upload failed, no valid device found")
+            exit(-1)
+        
+        os.system(f"cp {filename} -T {os.path.join(path, os.path.basename(str(filename)))}")
+        os.system(f"umount {device_path}")
+
+    command("destroy")
+    if PACK_VPK:
+        command("launch VITASHELL")
+    else:
+        command("launch " + VITA_TITLEID)
+
+env.runProjectBinary = runProjectBinary
 
 env.Replace(
     ENV = {"PATH": sys.path + [VITASDK + "bin"]},
-    LINKFLAGS = ["-Wl,-q"],#, "-Wall", "-fno-lto"],
     CXX = VITA_PLATFORM_PREFIX + "-g++",
-    # LINK = VITA_PLATFORM_PREFIX + "-ld",
     AR = VITA_PLATFORM_PREFIX + "-ar",
     RANLIB = VITA_PLATFORM_PREFIX + "-ranlib",
 )
 env.Append(
+    LINKFLAGS = ["-Wl,-q"],
     LIBPATH = VITASDK + VITA_PLATFORM_PREFIX + "/lib",
-    CPPPATH = [VITASDK + VITA_PLATFORM_PREFIX + "/include", "include/raylib", "include/raylib-cpp"],
-    CCFLAGS = ["-Wno-psabi"],
+    CPPPATH = [VITASDK + VITA_PLATFORM_PREFIX + "/include"],
+    CCFLAGS = ["-Wno-psabi", "-fno-plt", "-fno-pic"],
     LIBS = [
-        "raylib",
-        "liblibScePiglet_stub",
-        "SceSysmodule_stub",
-        "SceNetCtl_stub",
-        "stdc++",
-        "pib",
-        "SceShaccCg_stub",
-        "taihen_stub",
-        "SceAppMgr_stub",
-        "SceLibKernel_stub",
-        "SceIofilemgr_stub",
-        "SceNet_stub",
-        "SceGxm_stub",
+        "vita2d",
         "SceDisplay_stub",
+        "SceGxm_stub",
+        "SceSysmodule_stub",
         "SceCtrl_stub",
-        "SceTouch_stub",
-        "pthread",
+        "ScePgf_stub",
+        "ScePvf_stub",
+        "SceCommonDialog_stub",
+        "freetype",
+        "png",
+        "jpeg",
+        "z",
         "m",
+        "c",
+        "SceAppMgr_stub",
+        "SceLibJson_stub",
+
+        # "curl",
+        # "ssl",
+        # "crypto"
+
+        "SceHttp_stub",
+        "SceNetCtl_stub",
+        "SceNet_stub",
+        "SceSsl_stub",
+
+        # "raylib",
+        # "liblibScePiglet_stub",
+        # "SceSysmodule_stub",
+        # "SceNetCtl_stub",
+        # "stdc++",
+        # "pib",
+        # "SceShaccCg_stub",
+        # "taihen_stub",
+        # "SceAppMgr_stub",
+        # "SceLibKernel_stub",
+        # "SceIofilemgr_stub",
+        # "SceNet_stub",
+        # "SceGxm_stub",
+        # "SceDisplay_stub",
+        # "SceCtrl_stub",
+        # "SceTouch_stub",
 
         #SceThreadmgr_stub,
         #SceModulemgr_stub,
@@ -68,25 +179,131 @@ def convertSconsLine(self, line: str, progress: float):
         line = "Creating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[2], env.COLOURS["compile"]["attrs"])
     elif line.startswith("vita-make-fself"):
         line = "Creating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[3], env.COLOURS["compile"]["attrs"])
-    elif line.startswith("vita-pack-vpk"):
-        line = "Packing " + utils.format_colour(env.COLOURS["link"]["colour"], line.split(" ")[5], env.COLOURS["link"]["attrs"])
+    # elif line.startswith("vita-pack-vpk"):
+        # line = "Packing " + utils.format_colour(env.COLOURS["link"]["colour"], line.split(" ")[5], env.COLOURS["link"]["attrs"])
     return original_converter(line, progress)
 env.AddMethod(convertSconsLine)
 
 lib_dir = env.DIRECTORY + env.LIB_DIR
 
 if GetOption("build_project"):
+
     vita_velf = env.Command(lib_dir + env.PLATFORM_NAME + "/" + env.PROJECT_NAME + ".velf", env.project_binary[0], "vita-elf-create $SOURCE $TARGET")
     Depends(vita_velf, env.project_binary)
 
-    vita_eboot = env.Command(lib_dir + "eboot.bin", vita_velf[0], "vita-make-fself -s $SOURCE $TARGET")
-    Depends(vita_eboot, vita_velf)
+    env.VITA_EBOOT = env.Command(lib_dir + "eboot.bin", vita_velf[0], "vita-make-fself -s $SOURCE $TARGET")
+    Depends(env.VITA_EBOOT, vita_velf)
 
     vita_params = env.Command(lib_dir + "param.sfo", None, f"vita-mksfoex -s TITLE_ID={VITA_TITLEID} \"{env.PROJECT_NAME}\" $TARGET")
 
     def packVpk(target, source, env):
-        os.system(f"vita-pack-vpk -s {source[0]} -b {source[1]} {target[0]}")
-    vita_vpk = env.Command(env.DIRECTORY + env.OUTPUT_DIR + env.PROJECT_NAME + ".vpk", [vita_params[0], vita_eboot[0]], packVpk)
 
-    Depends(vita_vpk, vita_params)
-    Depends(env.FINISH_COMMAND, vita_vpk)
+        env.msg("Packing VPK " + utils.format_colour(env.COLOURS["link"]["colour"], str(target[0]), env.COLOURS["link"]["attrs"]))
+        os.system(f"vita-pack-vpk -s {source[0]} -b {source[1]} {target[0]}")
+
+        env.msg("Adding resource files to VPK")
+
+        i = 0
+        package = zipfile.ZipFile(str(target[0]), mode="a")
+        index = {}
+        for root, dirnames, filenames in os.walk(env.DIRECTORY):
+            root = root.removeprefix(env.DIRECTORY)
+            if "/." in root or root.startswith("."):
+                continue
+            
+            if root == "im":
+                continue
+
+            images = {}
+            for file in filenames:
+                ext = file.split(".")[-1]
+                path = os.path.join(root, file)
+                if ext == "json":
+
+                    # Load, parse, and dump file content to remove formatting
+                    f = open(path, "r")
+                    string = json.dumps(json.loads(f.read()))
+                    f.close()
+
+                    package.writestr(os.path.join(RESOURCE_DIR, str(len(index)) + "." + ext), str.encode(string))
+                    index[utils.formatPath(path)] = os.path.join(RESOURCE_DIR, str(len(index)) + "." + ext)
+                elif ext == "png":
+                    images[file.removesuffix("." + ext)] = path
+
+            if len(images) > 0:
+                
+                atlas = None
+
+                for image in images.values():
+
+                    im = Image.open(image)
+
+                    if atlas is None:
+                        pos = 1
+                        atlas = Image.new("RGBA", (im.size[0] + 1, im.size[1]))
+                    else:
+                        pos = atlas.size[0] + 1
+
+                        old = atlas
+                        atlas = Image.new("RGBA", (old.size[0] + im.size[0] + 1, old.size[1]))
+                        atlas.paste(old, (0, 0))
+
+                    atlas.paste(im, (pos, 0))
+                    index[utils.formatPath(image)] = [os.path.join(RESOURCE_DIR, str(i) + "." + ext), [
+                        pos, 0, im.size[0], im.size[1]
+                    ]]
+
+                bytes = io.BytesIO()
+                atlas.save(bytes, format='PNG')
+
+                package.writestr(os.path.join(RESOURCE_DIR, str(i) + "." + ext), bytes.getvalue())
+                i += 1
+
+                # while True:
+                #     atlas = AtlasPacker(side=size, pad=0)
+                #     try:
+                #         atlas.pack(list(images.values()))
+                #     except RuntimeError as e:
+                #         if str(e) != "Failed to pack rectangles. Try again with a larger atlas?":
+                #             raise(e)
+                #         size *= 2
+                #     else:
+                #         im = Image.fromarray(np.array(atlas.atlas))
+                #         out = im.transpose(Image.FLIP_TOP_BOTTOM)
+                        
+                #         bytes = io.BytesIO()
+                #         out.save(bytes, format='PNG')
+                #         bytes = bytes.getvalue()
+
+                #         package.writestr(os.path.join(RESOURCE_DIR, str(i) + "." + ext), bytes)
+
+                #         for image in atlas.metadata["images"]:
+                #             corners = list(atlas.metadata["images"][image].values())
+
+                #             corners[0] *= size
+                #             corners[1] *= size
+                #             corners[2] *= size
+                #             corners[3] *= size
+
+                #             index[utils.formatPath(images[image])] = [os.path.join(RESOURCE_DIR, str(i) + "." + ext), corners]
+
+                #         i += 1
+                #         break
+
+        package.writestr("resource_index.json", json.dumps(index, indent=1))
+        package.close()
+
+        for file in os.listdir(os.path.join(env.DIRECTORY, "build")):
+            if ".vpk." in file:
+                os.remove(os.path.join(env.DIRECTORY, "build/" + file))
+    
+    # packVpk([env.DIRECTORY + env.OUTPUT_DIR + env.PROJECT_NAME + ".vpk"], [vita_params[0], vita_eboot[0]], env)
+    # exit()
+
+    if PACK_VPK:
+        env.VITA_VPK = env.Command(env.DIRECTORY + env.OUTPUT_DIR + env.PROJECT_NAME + ".vpk", [vita_params[0], env.VITA_EBOOT[0]], packVpk)
+
+        Depends(env.VITA_VPK, vita_params)
+        Depends(env.FINISH_COMMAND, env.VITA_VPK)
+    else:
+        Depends(env.FINISH_COMMAND, env.VITA_EBOOT)

@@ -1,10 +1,11 @@
 #ifndef INCLUDED_ENGINE_TEXTURE
 #define INCLUDED_ENGINE_TEXTURE
 
-#include "engine/src/raylib_include.h"
 #include <string>
 
 #include "engine/src/core/signal.h"
+#include "common/draw.h"
+#include "common/vector2.h"
 
 class Engine;
 
@@ -12,32 +13,39 @@ class Engine;
 // Stores a Texture2D. One unique instance for each loaded texture.
 class EngineTexture {
     public:
-        Signal<string, Texture2D> SIGNAL_DELETED;
+        Signal<string, TEXTURE_TYPE> SIGNAL_DELETED;
 
-        Texture2D getTexture() { return texture; }
+        TEXTURE_TYPE getTexture() { return texture; }
         string getFilePath() { assert(!generated); return file_path; }
         bool isGenerated() { return generated; }
 
-        EngineTexture(Texture2D _texture, string _file_path) { texture = _texture; file_path = _file_path; }
-        EngineTexture(Texture2D _texture) { texture = _texture; generated = true; }
         ~EngineTexture() {
             SIGNAL_DELETED.emit(file_path, texture);
         }
     
-        int getWidth() { return texture.width; }
-        int getHeight() { return texture.height; }
+        int getWidth() { return OS::getTextureWidth(texture); }
+        int getHeight() { return OS::getTextureHeight(texture); }
         Vector2 getSize() { return Vector2{(float)getWidth(), (float)getHeight()}; }
 
-        // Generator methods
-        static shared_ptr<EngineTexture> generateColour(Colour colour, int width = 1, int height = 1) {
-            return make_shared<EngineTexture>(LoadTextureFromImage(GenImageColor(width, height, colour)));
+        static shared_ptr<EngineTexture> create(TEXTURE_TYPE _texture) {
+            return shared_ptr<EngineTexture>(new EngineTexture(_texture));
+        }
+
+        static shared_ptr<EngineTexture> create(TEXTURE_TYPE _texture, string _file_path) {
+            return shared_ptr<EngineTexture>(new EngineTexture(_texture, _file_path));
+        }
+
+        static shared_ptr<EngineTexture> generate(int width = 1, int height = 1) {
+            return shared_ptr<EngineTexture>(new EngineTexture(OS::generateTexture(width, height)));
         }
 
     private:
-        Texture2D texture;
+        TEXTURE_TYPE texture;
         string file_path = "";
         bool generated = false;
 
+        EngineTexture(TEXTURE_TYPE _texture, string _file_path) { texture = _texture; file_path = _file_path; }
+        EngineTexture(TEXTURE_TYPE _texture) { texture = _texture; generated = true; }
 };
 
 #endif

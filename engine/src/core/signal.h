@@ -7,6 +7,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <any>
+#include <list>
 using namespace std;
 
 // Forward declarations
@@ -26,20 +27,26 @@ class Signal {
         class BaseConnection;
 
         void emit(CallbackArgs... arguments) {
-
             for (BaseConnectionHolder* holder : connections) {
-                for (BaseConnection* connection : holder->connections) {
-                    connection->call(arguments...);
+                auto conn = holder->connections.begin();
+                while (conn != holder->connections.end()) {
+                    (*conn)->call(arguments...);
+                    if ((*conn)->isOneShot()) {
+                        delete *conn;
+                        holder->connections.erase(conn++);
+                    }
+                    else {
+                        conn++;
+                    }
                 }
             }
-
             onEmission();
         }
 
         template<typename ObjectType, typename... BindArguments, typename MethodReturnType = void>
-        void connect(MethodReturnType (ObjectType::*callback)(CallbackArgs..., BindArguments...), ObjectType* object, BindArguments... binds) {
+        void connect(MethodReturnType (ObjectType::*callback)(CallbackArgs..., BindArguments...), ObjectType* object, bool one_shot = false, BindArguments... binds) {
 
-            Connection<ObjectType, MethodReturnType, BindArguments...>* connection = new Connection<ObjectType, MethodReturnType, BindArguments...>(binds...);
+            Connection<ObjectType, MethodReturnType, BindArguments...>* connection = new Connection<ObjectType, MethodReturnType, BindArguments...>(one_shot, binds...);
             connection->setup(callback, object);
 
             ConnectionHolder<ObjectType>* connection_holder = NULL;
@@ -59,9 +66,9 @@ class Signal {
         }
 
         template<typename ObjectType, typename... BindArguments, typename MethodReturnType = void>
-        void connectWithoutArgs(MethodReturnType (ObjectType::*callback)(BindArguments...), ObjectType* object, BindArguments... binds) {
+        void connectWithoutArgs(MethodReturnType (ObjectType::*callback)(BindArguments...), ObjectType* object, bool one_shot = false, BindArguments... binds) {
 
-            Connection<ObjectType, MethodReturnType, BindArguments...>* connection = new Connection<ObjectType, MethodReturnType, BindArguments...>(binds...);
+            Connection<ObjectType, MethodReturnType, BindArguments...>* connection = new Connection<ObjectType, MethodReturnType, BindArguments...>(one_shot, binds...);
             connection->setupWithoutArgs(callback, object);
 
             ConnectionHolder<ObjectType>* connection_holder = NULL;
@@ -82,10 +89,10 @@ class Signal {
 
         template<typename ObjectType>
         void disconnect(ObjectType* object) {
-            for (int i = 0; i < connections.size(); i++) {
-                if (connections[i]->matches(object)) {
-                    delete connections[i];
-                    connections.erase(connections.begin() + i);
+            for (auto holder = connections.begin(); holder != connections.end(); holder++) {
+                if ((*holder)->matches(object)) {
+                    delete *holder;
+                    connections.erase(holder);
                     break;
                 }
             }
@@ -107,6 +114,16 @@ class Signal {
         }
 
         template<typename ObjectType>
+        int getConnectionCount(ObjectType* object) {
+            for (BaseConnectionHolder* holder : connections) {
+                if (holder->matches(object)) {
+                    return holder->connections.size();
+                }
+            }
+            return 0;
+        }
+
+        template<typename ObjectType>
         vector<BaseConnection*>* getConnections(ObjectType* object) {
             for (BaseConnectionHolder* holder : connections) {
                 if (holder->matches(object)) {
@@ -122,7 +139,8 @@ class Signal {
 
         class BaseConnection {
             public:
-                virtual void call(CallbackArgs... args) {}
+                virtual void call(CallbackArgs... args) = 0;
+                virtual bool isOneShot() = 0;
         };
 
         template<typename ObjectType, typename MethodReturnType, typename... BindArguments>
@@ -132,6 +150,7 @@ class Signal {
                 MethodReturnType (ObjectType::*callback)(CallbackArgs..., BindArguments...);
                 MethodReturnType (ObjectType::*callback_noargs)(BindArguments...);
                 tuple<BindArguments...> binds;
+                bool one_shot;
 
                 bool ignore_arguments = false;
 
@@ -146,8 +165,10 @@ class Signal {
                 }
 
             public:
-                Connection(BindArguments... bind_args)
-                    :binds(forward<BindArguments>(bind_args)...) {}
+                Connection(bool one_shot, BindArguments... bind_args)
+                    :binds(forward<BindArguments>(bind_args)...) {
+                        this->one_shot = one_shot;
+                    }
 
                 void setup(MethodReturnType (ObjectType::*callback_function)(CallbackArgs..., BindArguments...), ObjectType* function_object) {
                     object = function_object;
@@ -169,16 +190,20 @@ class Signal {
                 ObjectType* getObject() {
                     return object;
                 }
+
+                bool isOneShot() {
+                    return one_shot;
+                }
         };
 
     private:
-        void onEmission() { last_emission_time = OS::time(); }
+        void onEmission() { last_emission_time = OS::getTime(); }
 
         double last_emission_time = -1;
 
         struct BaseConnectionHolder {
             virtual bool matches(any match_object) = 0;
-            vector<BaseConnection*> connections;
+            list<BaseConnection*> connections;
             ~BaseConnectionHolder() {
                 for (BaseConnection* connection : connections) {
                     delete connection;
@@ -188,6 +213,7 @@ class Signal {
 
         template<typename ObjectType>
         struct ConnectionHolder: BaseConnectionHolder {
+
             ConnectionHolder(ObjectType* _object) {
                 object = _object;
             }

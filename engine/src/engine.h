@@ -1,9 +1,6 @@
 #ifndef INCLUDED_ENGINE
 #define INCLUDED_ENGINE
 
-#include "engine/compiler_settings.h"
-#include "engine/src/raylib_include.h"
-
 #include <thread>
 #include <unordered_map>
 #include <memory>
@@ -23,6 +20,8 @@ class EngineTexture;
 
 class Engine {
     public:
+        Signal<float> SIGNAL_PROCESS;
+
         Engine();
         void process(float delta);
 
@@ -30,6 +29,11 @@ class Engine {
 
         SceneTree* getTree() { return scene_tree_singleton; }
         YAMLDataConverter* getYAMLDataConverter() { return yaml_data_converter_singleton; }
+
+        template<typename ObjectType, typename... Arguments, typename MethodReturnType = void>
+        static void callDeferred(MethodReturnType (ObjectType::*method)(Arguments...), ObjectType* object, Arguments... args) {
+            Engine::getSingleton()->SIGNAL_PROCESS.connectWithoutArgs(method, object, true, args...);
+        }
 
         // - Texture management -
         shared_ptr<EngineTexture> loadTexture(string file_path);
@@ -39,21 +43,9 @@ class Engine {
         void resourceCreated(Resource* resource);
         void resourceDeleted(Resource* resource);
 
-        template<typename ResourcePoolType>
-        Resource::ResourcePool* getResourcePool() {
-            if (resource_pools.count(ResourcePoolType::getName())) {
-                return resource_pools[ResourcePoolType::getName()];
-            }
-            Resource::ResourcePool* ret = new ResourcePoolType();
-            resource_pools[ResourcePoolType::getName()] = ret;
-            return ret;
-        }
-
         // - InputEvent management -
         void inputEventCreated(InputEvent* event);
         void inputEvenDeleted(InputEvent* event);
-
-        static string getResPath(string absolute_path);
 
         // Debug
         void ensureAsync();
@@ -110,6 +102,12 @@ class Engine {
         void onNodeKilled(Node* node);
         int getGlobalNodeCount();
 
+        static string fatal_error;
+        static bool fatal_error_occurred;
+        static bool print_disabled;
+
+        vector<Resource*> all_resources;
+
     private:
         static Engine* singleton;
 
@@ -123,14 +121,12 @@ class Engine {
         thread::id main_thread_id = this_thread::get_id();
         unordered_map<string, ObjectConstructorBase*> registered_object_constructors;
 
+    public:
         // - Texture management -
         unordered_map<string, weak_ptr<EngineTexture>> loaded_textures;
-        void onTextureContainerDeleted(string file_path, Texture2D texture);
+        void onTextureContainerDeleted(string file_path, TEXTURE_TYPE texture);
         // void spriteAnimationSetDeleted(SpriteAnimationSet resource);
 
-        // - Resource pool -
-        vector<Resource*> all_resources;
-        unordered_map<string, Resource::ResourcePool*> resource_pools;
 };
 
 #endif

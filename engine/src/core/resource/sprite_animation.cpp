@@ -1,7 +1,9 @@
 #include "sprite_animation.h"
 
+#include <unordered_map>
 #include <json.hpp>
 using json = nlohmann::json;
+using namespace std;
 
 #include "engine/src/core/node/node.h"
 #include "common/utils.h"
@@ -47,8 +49,10 @@ SpriteAnimation::SpriteAnimation(string animation_name, json animation_data, jso
     }
 
     for (auto item : frames_data ) {
-        if (item.is_null()) { break; }
-        frames.push_back(Engine::getSingleton()->loadTexture(plusFile(load_directory, file_data[int2char(item)])));
+        if (item.is_null()) { 
+            break; 
+        }
+        frames.push_back(Engine::getSingleton()->loadTexture(plusFile(load_directory, file_data[to_string(item)].get<string>())));
     }
 }
 
@@ -68,6 +72,7 @@ bool SpriteAnimation::hasFrame(int frame_idx) {
 }
 
 int SpriteAnimation::getFrameWidth(int frame_idx) { 
+    return 10;
     if (!hasFrame(frame_idx)) {
         warn("Frame index out of bounds", true);
     }
@@ -75,6 +80,7 @@ int SpriteAnimation::getFrameWidth(int frame_idx) {
 }
 
 int SpriteAnimation::getFrameHeight(int frame_idx) { 
+    return 10;
     if (!hasFrame(frame_idx)) {
         warn("Frame index out of bounds", true);
     }
@@ -82,6 +88,7 @@ int SpriteAnimation::getFrameHeight(int frame_idx) {
 }
 
 Vector2 SpriteAnimation::getFrameSize(int frame_idx) { 
+    return Vector2(10, 10);
     if (!hasFrame(frame_idx)) {
         warn("Frame index out of bounds", true);
     }
@@ -103,7 +110,8 @@ void SpriteAnimationSet::loadFile(string _file_path, string base_directory_overr
 
     file_path = _file_path;
     base_directory_override = base_directory_override;
-    data = json::parse(LoadFileText(Engine::getResPath(file_path).c_str()));
+    
+    data = OS::loadJsonFile(file_path);
 
     string base_directory;
     if (base_directory_override != "//") {
@@ -120,8 +128,11 @@ void SpriteAnimationSet::loadFile(string _file_path, string base_directory_overr
         tree_depth = 1;
     }
 
+    json animations = data["animations"];
+    json files = data["files"];
+
     animation_container.reset();
-    animation_container = make_shared<AnimationContainer>(tree_depth, data["animations"], data["files"], base_directory);
+    animation_container = make_shared<AnimationContainer>(tree_depth, animations, files, base_directory);
 
     // for (auto& i : data["animations"].items()) {
     //     string animation_key = i.key();
@@ -140,7 +151,7 @@ bool SpriteAnimationSet::hasAnimation(string animation_key) {
 }
 bool SpriteAnimationSet::hasAnimation(vector<string> animation_keys) {
     if (getTreeDepth() != animation_keys.size()) {
-        // warn("animation_keys size (" + int2str(animation_keys.size()) + ") doesn't match the animation tree depth (" + int2str(getTreeDepth()) + ")", true);
+        // warn("animation_keys size (" + to_string(animation_keys.size()) + ") doesn't match the animation tree depth (" + to_string(getTreeDepth()) + ")", true);
         return false;
     }
     return animation_container->hasKeys(animation_keys);
@@ -177,13 +188,12 @@ shared_ptr<EngineTexture> SpriteAnimationSet::getFrame(vector<string> animation_
 }
 
 bool SpriteAnimationSet::isFileValid(string file_path, string base_directory_override, string* error_container) {
-    file_path = Engine::getResPath(file_path);
-    if (!FileExists(file_path.c_str())) {
+    if (!OS::fileExists(file_path)) {
         if (error_container != NULL) *error_container = "No file exists at path '" + file_path + "'";
         return false;
     }
 
-    json file_data = json::parse(LoadFileText(file_path.c_str()));
+    json file_data = OS::loadJsonFile(file_path);
 
     if (!file_data.count("files")) {
         if (error_container != NULL) *error_container = "Must contain 'files' (dictionary)";
@@ -222,11 +232,32 @@ bool SpriteAnimationSet::isFileValid(string file_path, string base_directory_ove
     }
 
     for (auto i = file_data["files"].begin(); i != file_data["files"].end(); ++i) {
-        if (!FileExists(Engine::getResPath(plusFile(base_directory, *i)).c_str())) {
-            if (error_container != NULL) *error_container = "Texture at path '" + Engine::getResPath(plusFile(base_directory, *i)) + "' does not exist";
+        if (!OS::fileExists(plusFile(base_directory, *i))) {
+            if (error_container != NULL) *error_container = "Texture at path '" + OS::getResPath(plusFile(base_directory, *i)) + "' does not exist";
             return false;
         }
     }
 
     return true;
 };
+
+shared_ptr<SpriteAnimationSet> SpriteAnimationSet::LocalResourcePool::getResource(string file_path, string base_directory_override) {
+    
+    if (pool.count(file_path) && pool[file_path].count(base_directory_override)) {
+        return (shared_ptr<SpriteAnimationSet>)pool[file_path][base_directory_override];
+    }
+
+    // Can't use make_shared as SpriteAnimationSet constructor is private
+    shared_ptr<SpriteAnimationSet> ret = shared_ptr<SpriteAnimationSet>(new SpriteAnimationSet(file_path, base_directory_override));
+
+    ret->SIGNAL_DELETED.connect(&ResourcePool::eraseMapKey, this, false, &pool, file_path);
+
+    if (pool.count(file_path)) {
+        pool[file_path][base_directory_override] = (weak_ptr<SpriteAnimationSet>)ret;
+    }
+    else {
+        pool[file_path] = unordered_map<string, weak_ptr<SpriteAnimationSet>>{{base_directory_override, (weak_ptr<SpriteAnimationSet>)ret}};
+    }
+
+    return ret;
+}

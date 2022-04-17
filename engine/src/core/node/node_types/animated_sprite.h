@@ -1,7 +1,6 @@
 #ifndef INCLUDED_ANIMATED_SPRITE
 #define INCLUDED_ANIMATED_SPRITE
 
-#include "engine/src/raylib_include.h"
 #include <iostream>
 #include <memory>
 
@@ -24,14 +23,15 @@ class AnimatedSprite: public Sprite {
         bool playing = false;
 
         void process(float delta);
+
     public:
-    
-        REGISTER_NODE(AnimatedSprite);
+
+        REGISTER_NODE(AnimatedSprite, Sprite);
                 
+        Signal<bool> SIGNAL_ANIMATION_ENDED;
+
         template<typename NodeType>
         static ObjectConstructor<NodeType>* registerNodeProperties(string node_name);
-
-        Signal<bool> SIGNAL_ANIMATION_ENDED;
 
         void play(string animation_key = "", bool reset_frame = true);
         void play(vector<string> animation_keys, bool reset_frame = true);
@@ -53,6 +53,7 @@ class AnimatedSprite: public Sprite {
 
         void setPlaying(bool value) {playing = value;}
         bool getPlaying() {return playing;}
+    
 };
 
 #endif

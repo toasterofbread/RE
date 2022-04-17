@@ -4,19 +4,17 @@
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/signal.h"
 
-#include "engine/src/raylib_include.h"
-
 class Node2D: public Node {
-
+    
     public:
+
+        REGISTER_NODE(Node2D, Node);
 
         Signal<int, int> SIGNAL_DRAW_LAYER_CHANGED;
 
         Signal<Vector2> SIGNAL_GLOBAL_POSITION_CHANGED;
         Signal<float> SIGNAL_GLOBAL_ROTATION_CHANGED;
         Signal<Vector2> SIGNAL_GLOBAL_SCALE_CHANGED;
-
-        REGISTER_NODE(Node2D);
 
         template<typename NodeType>
         static ObjectConstructor<NodeType>* registerNodeProperties(string node_name);

@@ -16,6 +16,7 @@ class InputEvent {
 
         InputEvent() { init(); }
         InputEvent(vector<Macro*> input_macros) { macros = input_macros; init(); }
+        ~InputEvent();
 
         bool isTriggered();
         bool isJustTriggered();

@@ -1,6 +1,5 @@
 #include "input_manager.h"
 
-#include "engine/src/raylib_include.h"
 #include <vector>
 using namespace std;
 
@@ -10,6 +9,7 @@ using namespace std;
 #include "engine/src/input/macro.h"
 #include "engine/src/core/signal.h"
 #include "engine/src/core/node/scene_tree.h"
+#include "common/input.h"
 
 InputManager* InputManager::singleton = NULL;
 
@@ -19,12 +19,12 @@ InputManager::InputManager() {
 
     Engine* engine = Engine::getSingleton();
 
-    INPUTEVENT_PAD_UP = new InputEvent({Macro::create_kb({ARROW_UP}), Macro::create_kb({KEY_W})});
-    INPUTEVENT_PAD_DOWN = new InputEvent({Macro::create_kb({ARROW_DOWN}), Macro::create_kb({KEY_S})});
-    INPUTEVENT_PAD_LEFT = new InputEvent({Macro::create_kb({ARROW_LEFT}), Macro::create_kb({KEY_A})});
-    INPUTEVENT_PAD_RIGHT = new InputEvent({Macro::create_kb({ARROW_RIGHT}), Macro::create_kb({KEY_D})});
+    INPUTEVENT_PAD_UP = new InputEvent({Macro::create_kb({Input::KEY_ARROW_UP}), Macro::create_kb({Input::KEY_W}), Macro::create_pad({Input::PAD_UP})});
+    INPUTEVENT_PAD_DOWN = new InputEvent({Macro::create_kb({Input::KEY_ARROW_DOWN}), Macro::create_kb({Input::KEY_S}), Macro::create_pad({Input::PAD_DOWN})});
+    INPUTEVENT_PAD_LEFT = new InputEvent({Macro::create_kb({Input::KEY_ARROW_LEFT}), Macro::create_kb({Input::KEY_A}), Macro::create_pad({Input::PAD_LEFT})});
+    INPUTEVENT_PAD_RIGHT = new InputEvent({Macro::create_kb({Input::KEY_ARROW_RIGHT}), Macro::create_kb({Input::KEY_D}), Macro::create_pad({Input::PAD_RIGHT})});
 
-    INPUTEVENT_REBUILD_AND_RUN = new InputEvent({Macro::create_kb({F5})});
+    INPUTEVENT_REBUILD_AND_RUN = new InputEvent({Macro::create_kb({Input::KEY_F5})});
     INPUTEVENT_REBUILD_AND_RUN->SIGNAL_TRIGGERED.connect(&Engine::rebuildAndRun, Engine::getSingleton());
 }
 
@@ -33,57 +33,23 @@ InputManager* InputManager::getSingleton() {
     return singleton;
 }
 
+#if INPUT_HAS_PROCESS
 void InputManager::process(float delta) {
+    Input::process();
 }
-
-// void InputManager::inputProcess(float delta) {
-
-//     auto printMacroInfo = [](string macro_name, bool gamepad) {
-//         if (macro_name.empty()) return;
-//         string msg = (gamepad ? "Gamepad" : "Keyboard") + (string)" macro triggered: " + macro_name;
-//         print(encaseStringInBox(msg));
-//     };
-
-//     // !todo
-// }
+#endif
 
 void InputManager::printPressedKey() {
+    #if PLATFORM == PLATFORM_RAYLIB
     int key = GetKeyPressed();
     if (key != 0) {
-        print("Key pressed: " + (string)int2char(key));
+        OS::print("Key pressed: " + (string)int2char(key));
     }
+    #endif
 }
 
-bool InputManager::isButtonPressed(InputManager::GAMEPAD_BUTTON button) {
-    return IsGamepadButtonDown(0, button);
-}
-bool InputManager::isButtonJustPressed(InputManager::GAMEPAD_BUTTON button){
-    return IsGamepadButtonPressed(0, button);
-}
-bool InputManager::isButtonJustReleased(InputManager::GAMEPAD_BUTTON button){
-    return IsGamepadButtonReleased(0, button);
-}
-
-bool InputManager::isButtonPressed(InputManager::KEYBOARD_BUTTON key) {
-    return IsKeyDown(key);
-}
-bool InputManager::isButtonJustPressed(InputManager::KEYBOARD_BUTTON key) {
-    return IsKeyPressed(key);
-}
-bool InputManager::isButtonJustReleased(InputManager::KEYBOARD_BUTTON key) {
-    return IsKeyReleased(key);
-}
-
-bool InputManager::isKeyModifier(InputManager::KEYBOARD_BUTTON key) {
-    vector modifier_keys = {LCTRL, LALT, LSHIFT};
-    return vectorContainsValue(&modifier_keys, key);
-}
-bool InputManager::isKeyModifier(InputManager::GAMEPAD_BUTTON key) {
-    return false;
-}
-
-Vector2 InputManager::getPadVector(float delta, bool just_pressed) {
-    Vector2 ret = Vector2{0, 0};
+Vector2 InputManager::getPadVector(bool just_pressed) {
+    Vector2 ret = Vector2(0, 0);
 
     if (just_pressed) {
         ret.x -= INPUTEVENT_PAD_LEFT->isJustTriggered();
@@ -98,7 +64,20 @@ Vector2 InputManager::getPadVector(float delta, bool just_pressed) {
         ret.y += INPUTEVENT_PAD_DOWN->isTriggered();
     }
 
-    return ret * delta;
+    return ret;
+}
+
+Vector2 InputManager::getAnalogPadVector(SIDE side, float deadzone) {
+    Vector2 ret;
+    if (side == LEFT) {
+        ret = Vector2(Input::getAxis(Input::LX), Input::getAxis(Input::LY));
+    }
+    else {
+        ret = Vector2(Input::getAxis(Input::RX), Input::getAxis(Input::RY));
+    }
+
+    ret.applyDeadzone(deadzone);
+    return ret;
 }
 
 // void InputManager::addMacro(function<void(void)> func, vector<InputManager::GAMEPAD_BUTTON> gamepad_button_combination, string label, bool display_label) {

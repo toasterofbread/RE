@@ -13,7 +13,6 @@ using namespace std;
 #include "include/prettyprint.hpp"
 #include "common/colour.h"
 #include "common/vector2.h"
-#include "raylib_include.h"
 
 // !todo Clean this file up
 
@@ -28,6 +27,7 @@ float sign(Any value) {
 }
 Vector2 sign(Vector2 value);
 
+string wrapString(string str, int line_chars);
 vector<string> splitString(string str, char splitter);
 const char* plusFile(const char* path, const char* file_to_add);
 string plusFile(string path, string file_to_add);
@@ -42,17 +42,21 @@ const vector<string> long_characters = {
     "└", "┘", "┗", "┛",
     "├", "┤", "┣", "┫"
 };
-int getStringActualLength(string str);
 string equaliseStringLineWidths(string str);
 bool stringBeginsWith(string str, string begins);
 string vector2str(Vector2 value, int max_decimals = 2, bool decorate = false);
 string vector2str(b2Vec2 value, int max_decimals = 2, bool decorate = false);
 const char* int2char(int value);
-string int2str(int value);
 string encaseStringInBox(string str, bool thick = false, int margin = 2);
 string repeatString(string str, int amount);
 string strVector2str(vector<string> vector, string splitter = ", ");
 string concatChars(const char* A, const char* B);
+string stringPadDecimals(string str, int max_decimals);
+
+template<typename MapType, typename KeyType>
+void eraseMapKey(MapType* map, KeyType key) {
+    map->erase(key);
+}
 
 template <typename Any>
 int vectorFindValue(vector<Any>* vector, Any value) {
@@ -74,15 +78,6 @@ void vectorRemoveValue(vector<Any>* vector, Any value) {
     vector->erase(remove(vector->begin(), vector->end(), value), vector->end());
 }
 
-template <typename Any>
-void print(Any msg) {
-    cout << msg << endl; 
-}
-void print(Vector2 value);
-void print(b2Vec2 value);
-void print(bool value);
-void print(Colour value);
-void print(Node* value);
 void print_stacktrace(int additional_skip = 0);
 
 void warn(string message, bool throw_error = false);
@@ -122,5 +117,7 @@ b2Vec2 convertVector2(Vector2 value);
 
 Colour combineColours(Colour a, Colour b);
 Colour normaliseColour(Colour colour);
+
+string formatPath(string& path);
 
 #endif

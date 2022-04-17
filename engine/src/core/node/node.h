@@ -1,7 +1,6 @@
 #ifndef INCLUDED_NODE
 #define INCLUDED_NODE
 
-#include "engine/src/raylib_include.h"
 #include <iostream>
 #include <functional>
 #include <string>
@@ -16,19 +15,25 @@ class SceneTree;
 template<typename ObjectType>
 class ObjectConstructor;
 
-#define REGISTER_NODE_WITH_CONSTRUCTOR(name, constructor_code) \
-static string getTypeNameStatic() {      \
-    return #name;                        \
-}                                        \
-string getTypeName() {                   \
-    return #name;                        \
-}                                        \
-name() {                                 \
-    setName(getTypeName());              \
-    constructor_code;                    \
-}
+#define REGISTER_NODE_WITH_CONSTRUCTOR(name, super_type, constructor_code) \
+private:                                                   \
+typedef super_type super;                                  \
+bool registered() {                                        \
+    return getTypeName() == name::getTypeNameStatic();     \
+}                                                          \
+public:                                                    \
+static string getTypeNameStatic() {                        \
+    return #name;                                          \
+}                                                          \
+string getTypeName() {                                     \
+    return #name;                                          \
+}                                                          \
+name() {                                                   \
+    setName(getTypeName());                                \
+    constructor_code;                                      \
+}                                                          \
 
-#define REGISTER_NODE(name) REGISTER_NODE_WITH_CONSTRUCTOR(name, {})
+#define REGISTER_NODE(name, super_type) REGISTER_NODE_WITH_CONSTRUCTOR(name, super_type, {})
 
 class Node {
     private:
@@ -41,16 +46,18 @@ class Node {
         bool is_root = false;
         SceneTree* tree = NULL;
 
+        virtual bool registered() {
+            return getTypeName() == Node::getTypeNameStatic();
+        }
+
     protected:
         virtual void addedToNode(Node* parent_node);
         virtual void removedFromNode(Node* former_parent_node);
         string name;
 
     public:
-        // DEBUG
-        bool notify_when_killed = false;
-
         Node();
+        virtual ~Node() {} // Doesn't work without this, no idea why
 
         template<typename NodeType>
         static ObjectConstructor<NodeType>* registerNodeProperties(string node_type_name);
@@ -102,7 +109,7 @@ class Node {
         void printTree(int max_depth = -1);
         int getIndex(); // Index of this within parent's children
         int getId(); // Unique ID of this node
-        void kill();
+        virtual void kill();
         void queueKill();
 
         bool isReady() { return ready_called; }

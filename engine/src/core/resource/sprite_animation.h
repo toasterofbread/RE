@@ -1,4 +1,3 @@
-#include "engine/src/raylib_include.h"
 #include <memory>
 #include <json.hpp>
 using json = nlohmann::json;
@@ -33,11 +32,20 @@ class SpriteAnimation: public Resource {
 };
 
 class SpriteAnimationSet: public Resource {
+    private:
+        friend struct LocalResourcePool;
+        struct LocalResourcePool: public ResourcePool {
+            shared_ptr<SpriteAnimationSet> getResource(string file_path, string base_directory_override = "//");
+            private:
+                unordered_map<string, unordered_map<string, weak_ptr<SpriteAnimationSet>>> pool;
+        };
+
     public:
 
+        REGISTER_RESOURCE(SpriteAnimationSet, LocalResourcePool);
+
         static shared_ptr<SpriteAnimationSet> getInstance(string _file_path, string _base_directory_override = "//") {
-            LocalResourcePool* pool = (LocalResourcePool*)Engine::getSingleton()->getResourcePool<LocalResourcePool>();
-            return pool->getResource(_file_path, _base_directory_override);
+            return getPool()->getResource(_file_path, _base_directory_override);
         }
 
         bool hasAnimation(string animation_key);
@@ -71,22 +79,24 @@ class SpriteAnimationSet: public Resource {
             public:
                 bool isFinalLayer() { return is_final_layer; }
 
-                AnimationContainer(int tree_depth, json& data, json& file_data, string base_directory) {
+                AnimationContainer(int tree_depth, json data, json file_data, string base_directory) {
                     is_final_layer = tree_depth == 1;
                     
                     if (is_final_layer) {
                         for (auto i : data.items()) {
                             string animation_key = i.key();
-                            animations[animation_key] = make_shared<SpriteAnimation>(animation_key, data[animation_key], file_data, base_directory);
+                            json animation_data = data[animation_key];
+                            shared_ptr<SpriteAnimation> animation = make_shared<SpriteAnimation>(animation_key, animation_data, file_data, base_directory);
+                            auto pair = make_pair(animation_key, animation);
+                            animations.insert(pair);
                         }
                     }
                     else {
                         for (auto i : data.items()) {
                             string animation_key = i.key();
-                            containers[animation_key] = make_shared<AnimationContainer>(tree_depth - 1, data[animation_key], file_data, base_directory);;
+                            containers.insert(make_pair(animation_key, make_shared<AnimationContainer>(tree_depth - 1, data[animation_key], file_data, base_directory)));
                         }
                     }
-
                 }
 
                 shared_ptr<AnimationContainer> getSubContainer(string key) {
@@ -151,31 +161,5 @@ class SpriteAnimationSet: public Resource {
 
                 unordered_map<string, shared_ptr<AnimationContainer>> containers;
                 unordered_map<string, shared_ptr<SpriteAnimation>> animations;
-        };
-        
-
-        friend class LocalResourcePool;
-        class LocalResourcePool: public ResourcePool {
-            public:
-                static string getName() {
-                    return "SpriteAnimationSet";
-                }
-                shared_ptr<SpriteAnimationSet> getResource(string file_path, string base_directory_override = "//") {
-                    if (pool.count(file_path) && pool[file_path].count(base_directory_override)) {
-                        return (shared_ptr<SpriteAnimationSet>)pool[file_path][base_directory_override];
-                    }
-                    shared_ptr<SpriteAnimationSet> ret = shared_ptr<SpriteAnimationSet>(new SpriteAnimationSet(file_path, base_directory_override));
-
-                    if (pool.count(file_path)) {
-                        pool[file_path][base_directory_override] = (weak_ptr<SpriteAnimationSet>)ret;
-                    }
-                    else {
-                        pool[file_path] = unordered_map<string, weak_ptr<SpriteAnimationSet>>{{base_directory_override, (weak_ptr<SpriteAnimationSet>)ret}};
-                    }
-
-                    return ret;
-                }
-            private:
-                unordered_map<string, unordered_map<string, weak_ptr<SpriteAnimationSet>>> pool;
         };
 };

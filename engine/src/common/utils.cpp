@@ -4,6 +4,7 @@
 #include <box2d/box2d.h>
 
 #include "common/utils.h"
+#include "common/draw.h"
 #include "engine/src/core/node/node.h"
 
 #if DEBUG_ENABLED
@@ -11,16 +12,38 @@
 #include "include/backward.hpp"
 #endif
 
+#if PLATFORM == PLATFORM_RAYLIB
+#include "raylib_include.h"
+#endif
+
 using namespace std;
 
 void markPosition(Vector2 position, string text, Colour colour, float radius, float width) {
-    DrawLineEx(position - Vector2{radius, 0}, position + Vector2{radius, 0}, 1.0f, colour);
-    DrawLineEx(position - Vector2{0, radius}, position + Vector2{0, radius}, 1.0f, colour);
-    DrawText(text.c_str(), position.x + 5, position.y - 15, 10, colour);
+    Draw::drawLine(position - Vector2{radius, 0}, position + Vector2{radius, 0}, colour, Draw::DRAW_MODE::WORLD);
+    Draw::drawLine(position - Vector2{0, radius}, position + Vector2{0, radius}, colour, Draw::DRAW_MODE::WORLD);
+    Draw::drawText(text.c_str(), position.x + 5, position.y - 15, colour, 1.0f, Draw::DRAW_MODE::WORLD);
 }
 
 Vector2 sign(Vector2 value) {
     return Vector2{sign(value.x), sign(value.y)};
+}
+
+string wrapString(string str, int line_chars) {
+
+    string ret = "";
+
+    int current_line = 0;
+    for (int i = 0; i < str.length(); i++) {
+        ret += str[i];
+        current_line++;
+        if (current_line == line_chars) {
+            ret += "\n";
+            current_line = 0;
+        }
+    }
+
+    return ret;
+
 }
 
 vector<string> splitString(string str, char splitter) {
@@ -59,17 +82,15 @@ const char* plusFile(const char* path, const char* file_to_add) {
     return ret;
 }
 string plusFile(string path, string file_to_add) {
-    if (path.back() != '/') {
+    if (path.back() == '/') {
+        if (file_to_add.front() == '/') {
+            path.pop_back();
+        }
+    }
+    else if (file_to_add.front() != '/') {
         path.append("/");
     }
-    if (file_to_add.front() == '/') {
-        path.erase(0);
-    }
     path.append(file_to_add);
-
-    // char* ret = (char*)calloc(path.length() + 1, sizeof(char));
-    // strcpy(ret, path.c_str());
-
     return path;
 }
 
@@ -150,6 +171,14 @@ string concatChars(const char* A, const char* B) {
     return (string(A) + string(B));
 }
 
+string stringPadDecimals(string str, int max_decimals) {
+    int decimal_point = str.find(".");
+    if (decimal_point >= 0) {
+        str.erase(decimal_point + max_decimals + 1, str.size() - decimal_point - max_decimals);
+    }
+    return str;
+}
+
 int getStringWidth(string str) {
     int max_length = 0;
     int current_length = 0;
@@ -177,13 +206,6 @@ int getStringWidth(string str) {
     }
 
     return max_length;
-}
-
-int getStringActualLength(string str) {
-    for (int i = 0; i < long_characters.size(); i++) {
-        print(long_characters[i].size());
-    }
-    return str.length();
 }
 
 string equaliseStringLineWidths(string str) {
@@ -269,25 +291,21 @@ const char* int2char(int value) {
     return ret;
 }
 
-string int2str(int value) {
-    return int2char(value);
-}
-
-void print(Node* value) {
-    print(value->operator string());
-}
-void print(Vector2 value) {
-    cout << vector2str(value) << endl;
-}
-void print(b2Vec2 value) {
-    cout << vector2str(value) << endl;
-}
-void print(bool value) {
-    cout << (value ? "true" : "false") << endl;
-}
-void print(Colour value) {
-    cout << "(" << int2str(value.r) << ", " << int2str(value.g) << ", " << int2str(value.b) << ", " << int2str(value.a) << ")" << endl;
-}
+// void print(Node* value) {
+//     print(value->operator string());
+// }
+// void print(Vector2 value) {
+//     cout << vector2str(value) << endl;
+// }
+// void print(b2Vec2 value) {
+//     cout << vector2str(value) << endl;
+// }
+// void print(bool value) {
+//     cout << (value ? "true" : "false") << endl;
+// }
+// void print(Colour value) {
+//     cout << "(" << to_string(value.r) << ", " << to_string(value.g) << ", " << to_string(value.b) << ", " << to_string(value.a) << ")" << endl;
+// }
 
 void print_trace(void) {
     #if DEBUG_ENABLED
@@ -360,11 +378,17 @@ void warn(string message, bool throw_error) {
     };
 
     if (throw_error) {
-        print_stacktrace(1);
-        throw runtime_error(format_message(message, "ERROR"));
+        if (PLATFORM == PLATFORM_VITA) {
+            Engine::fatal_error_occurred = true;
+            Engine::fatal_error = wrapString(message, 75);
+        }
+        else {
+            print_stacktrace(1);
+            throw runtime_error(format_message(message, "ERROR"));
+        }
     }
     else {
-        print(format_message(message, "WARNING"));
+        OS::print(format_message(message, "WARNING"));
     }
 }
 
@@ -374,4 +398,14 @@ Vector2 convertVector2(b2Vec2 value) {
 
 b2Vec2 convertVector2(Vector2 value) {
     return b2Vec2(value.x, value.y);
+}
+
+string formatPath(string& path) {
+    if (path.back() == '/') {
+        path.erase(path.back());
+    }
+    if (path.front() != '/') {
+        path = "/" + path;
+    }
+    return path;
 }

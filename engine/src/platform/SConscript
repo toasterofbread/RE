@@ -4,37 +4,13 @@ from spectre7 import utils
 
 Import("env")
 
-AddOption("--platform", dest="platform", type=str)
-
-def getPlatformList() -> dict:
-    ret = {}
-    for file in env.recursiveGlob("engine/src/platform/", None, "SConscript"):
-        file = str(file)
-        if file == "SConscript":
-            continue
-        ret[os.path.dirname(file)] = file
-    return ret
-
-env.PLATFORM_LIST = getPlatformList()
-if not GetOption("platform") in env.PLATFORM_LIST:
-
-    if GetOption("platform"):
-        print(f"'{GetOption('platform')}' is not a valid platform. Available platforms:")
-    else:
-        print("A valid platform must be specified. Available platforms:")
-
-    for platform in env.PLATFORM_LIST:
-        print(" ", platform)
-    exit()
-env.PLATFORM_NAME = GetOption("platform")
-
 env.Replace(
-    CPPPATH = [".", "engine/src/"],
-    CCFLAGS = ["-std=c++17", "-g", "-fpermissive", "-fdiagnostics-color=always", f"-DGIT_COMMIT_HASH='\"{env.getGitHash()}\"'", f"-DPLATFORM={list(env.PLATFORM_LIST.keys()).index(env.PLATFORM_NAME)}"],#, "-Linclude/lib/vita", "-Wl,-rpath include/lib/vita", "-lbox2d"],
+    CPPPATH = [".", "engine/src/", "engine/src/platform/" + env.PLATFORM_NAME + "/"],
+    CCFLAGS = ["-std=c++17", "-g", "-fpermissive", "-fdiagnostics-color=always", f"-DGIT_COMMIT_HASH='\"{env.getGitHash()}\"'", "-Linclude/lib/vita", "-Wl,-rpath include/lib/vita", "-lbox2d"],
+    LINKFLAGS = ["-g"],
     LIBPATH = [env.LIB_DIR],
     LIBS = [
-        "yaml-cpp",
-        "pthread",
+        # "yaml-cpp",
         "box2d",
     ],
     CXX = "g++",

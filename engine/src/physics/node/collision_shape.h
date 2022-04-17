@@ -10,7 +10,8 @@ class PhysicsBody;
 class CollisionShape: public Node2D {
 
     public:
-        REGISTER_NODE(CollisionShape);
+    
+        REGISTER_NODE(CollisionShape, Node2D);
         
         Signal<> SIGNAL_POLYGON_CHANGED;
 

@@ -1,9 +1,12 @@
 #include "engine.h"
 
-#include "engine/src/raylib_include.h"
+#include "engine/compiler_settings.h"
+#include "defs.h"
+
 #include <memory>
 
 #include "common/utils.h"
+#include "common/draw.h"
 #include "engine/src/core/resource/resource.h"
 #include "engine/src/core/node/node.h"
 #include "engine/src/core/object_constructor.h"
@@ -17,6 +20,9 @@
 #include "engine/src/physics/physics_server.h"
 
 Engine* Engine::singleton = NULL;
+string Engine::fatal_error = "No message provided";
+bool Engine::fatal_error_occurred = false;
+bool Engine::print_disabled = false;
 
 Engine::Engine() {
     assert(singleton == NULL);
@@ -42,7 +48,12 @@ Engine* Engine::getSingleton() {
 void Engine::process(float delta) {
     
     PhysicsServer::getSingleton()->physicsProcess(delta); // !Temp 
+
+    #if INPUT_HAS_PROCESS
     InputManager::getSingleton()->process(delta);
+    #endif
+
+    SIGNAL_PROCESS.emit(delta);
 
     scene_tree_singleton->process(delta);
 
@@ -53,14 +64,10 @@ void Engine::process(float delta) {
         (*i)->process(delta);
     }
 
-    DrawFPS(GetScreenWidth() - 85, 10);
-    DrawText(("Resource count: " + (string)int2char(all_resources.size())).c_str(), GetScreenWidth() - 125, 35, 12, BLACK);
-    DrawText(("Node count: " + (string)int2char(getGlobalNodeCount())).c_str(), GetScreenWidth() - 125, 50, 12, BLACK);
-    DrawText(("Texture count: " + (string)int2char(loaded_textures.size())).c_str(), GetScreenWidth() - 125, 65, 12, BLACK);
-}
-
-string Engine::getResPath(string absolute_path) {
-    return plusFile("/home/spectre7/Projects/raylib/RE/", absolute_path);
+    Draw::drawText("FPS", Vector2(OS::getScreenWidth() - 85, 10), GREEN);
+    Draw::drawText(("Resource count: " + (string)int2char(all_resources.size())).c_str(), Vector2(OS::getScreenWidth() - 125, 35), BLACK);
+    Draw::drawText(("Node count: " + (string)int2char(getGlobalNodeCount())).c_str(), Vector2(OS::getScreenWidth() - 125, 50), BLACK);
+    Draw::drawText(("Texture count: " + (string)int2char(loaded_textures.size())).c_str(), Vector2(OS::getScreenWidth() - 125, 65), BLACK);
 }
 
 void Engine::ensureAsync() {
@@ -70,42 +77,40 @@ void Engine::ensureAsync() {
 }
 
 void Engine::rebuildAndRun() {
-    system("clear && cd /home/spectre7/Projects/raylib/RE && build build_and_run &");
+    system("cd /home/spectre7/Projects/raylib/RE ; clear ; scons -j8 --run --clear-console --platform=raylib --target=release &");
     exit(0);
 }
 
 // - Texture management -
 
 shared_ptr<EngineTexture> Engine::loadTexture(string file_path) {
-
-    file_path = getResPath(file_path);
+    file_path = OS::getResPath(file_path);
     shared_ptr<EngineTexture> ret;
 
     if (isTextureLoaded(file_path)) {
-        ret = (shared_ptr<EngineTexture>)loaded_textures[file_path];
+        ret = loaded_textures[file_path].lock();
     }
     else {
-        ret = make_shared<EngineTexture>(LoadTexture(file_path.c_str()), file_path);
+        ret = EngineTexture::create(OS::loadTexture(file_path), file_path);
         ret->SIGNAL_DELETED.connect(&Engine::onTextureContainerDeleted, this);
-        loaded_textures[file_path] = ret;
+        loaded_textures.insert(make_pair<string, weak_ptr<EngineTexture>>(string(file_path), ret));
     }
-
     return ret;
 }
 
 bool Engine::isTextureLoaded(string file_path) {
-    return loaded_textures.count(getResPath(file_path));
+    return loaded_textures.count(OS::getResPath(file_path));
 }
 
-void Engine::onTextureContainerDeleted(string file_path, Texture2D texture) {
+void Engine::onTextureContainerDeleted(string file_path, TEXTURE_TYPE texture) {
     loaded_textures.erase(file_path);
-    UnloadTexture(texture);
+    OS::unloadTexture(texture);
 }
 
 // - Resource management -
 void Engine::resourceCreated(Resource* resource) {
     all_resources.push_back(resource);
-    resource->SIGNAL_DELETED.connect(&Engine::resourceDeleted, this, resource);
+    resource->SIGNAL_DELETED.connect(&Engine::resourceDeleted, this, false, resource);
 }
 void Engine::resourceDeleted(Resource* resource) {
     vectorRemoveValue(&all_resources, resource);

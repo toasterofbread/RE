@@ -1,13 +1,11 @@
 #include "physics_body.h"
 
-#include "engine/src/raylib_include.h"
-
 #include "engine/src/physics/physics_server.h"
 #include "engine/src/physics/node/collision_shape.h"
 #include "engine/src/core/node/node_types/timer.h"
 
 void PhysicsBody::physicsProcess(float delta) {
-    Node2D::physicsProcess(delta);
+    super::physicsProcess(delta);
 
     updating_position = true;
 
@@ -50,14 +48,14 @@ void PhysicsBody::physicsProcess(float delta) {
     previous_collisions = collisions;
 
 
-    addGizmoText("Collisions: " + int2str(count), true);
+    addGizmoText("Collisions: " + to_string(count), true);
     addGizmoText(collisions_text, true);
 
     updating_position = false;
 }
 
 void PhysicsBody::setPosition(Vector2 value) {
-    Node2D::setPosition(value);
+    super::setPosition(value);
 
     if (updating_position) {
         return;
@@ -83,7 +81,7 @@ b2Vec2 PhysicsBody::getLinearVelocity() {
 }
 
 void PhysicsBody::addedToNode(Node* parent_node) {
-    Node2D::addedToNode(parent_node);
+    super::addedToNode(parent_node);
 
     b2Vec2 global_position = PhysicsServer::world2Phys(getGlobalPosition());
     definition.position.Set(global_position.x, global_position.y);
@@ -92,19 +90,19 @@ void PhysicsBody::addedToNode(Node* parent_node) {
 }
 
 void PhysicsBody::removedFromNode(Node* former_parent_node) {
-    Node2D::removedFromNode(former_parent_node);
+    super::removedFromNode(former_parent_node);
     destroyBody();
 }
 
 void PhysicsBody::addChild(Node* child) {
-    Node2D::addChild(child);
+    super::addChild(child);
     if (CollisionShape* collision_shape = dynamic_cast<CollisionShape*>(child)) {
         addShape(collision_shape);
     }
 }
 
 void PhysicsBody::removeChild(Node* child) {
-    Node2D::removeChild(child);
+    super::removeChild(child);
     if (CollisionShape* collision_shape = dynamic_cast<CollisionShape*>(child)) {
         removeShape(collision_shape);
     }
@@ -119,7 +117,7 @@ void PhysicsBody::addShape(CollisionShape* shape) {
         createShapeFixture(shape);
     }
 
-    shape->SIGNAL_POLYGON_CHANGED.connect(&PhysicsBody::onShapePolygonChanged, this, shape);
+    shape->SIGNAL_POLYGON_CHANGED.connect(&PhysicsBody::onShapePolygonChanged, this, false, shape);
 
     added_shapes.push_back(shape);
     SIGNAL_SHAPE_ADDED.emit(shape);
@@ -200,7 +198,7 @@ void PhysicsBody::destroyShapeFixture(CollisionShape* shape) {
 }
 
 void PhysicsBody::onParentGlobalPositionChanged(Vector2 old_global_position) {
-    Node2D::onParentGlobalPositionChanged(old_global_position);
+    super::onParentGlobalPositionChanged(old_global_position);
     b2Vec2 global_position = PhysicsServer::world2Phys(getGlobalPosition());
 
     definition.position.Set(global_position.x, global_position.y);

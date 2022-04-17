@@ -1,7 +1,7 @@
 #include "timer.h"
 
 void Timer::addedToNode(Node* parent) {
-    Node::addedToNode(parent);
+    super::addedToNode(parent);
 
     assert(duration >= 0.0f);
 
@@ -12,6 +12,8 @@ void Timer::addedToNode(Node* parent) {
 }
 
 void Timer::process(float delta) {
+    super::process(delta);
+
     if (!running && duration > 0.0f) {
         return;
     }

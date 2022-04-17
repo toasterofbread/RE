@@ -8,10 +8,10 @@ class Engine;
 
 // !todo Remove or rewrite
 class SceneNode: public Node {
+    public:
+        REGISTER_NODE(SceneNode, Node);
     protected:
         virtual void init_scenenode(string scene_path, string scene_type);
-    public:
-        REGISTER_NODE(SceneNode);
 };
 
 #endif

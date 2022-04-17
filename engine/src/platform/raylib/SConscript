@@ -1,6 +1,20 @@
+import os
+
 Import("env")
 
 env.Append(
     CPPPATH = ["include/raylib", "include/raylib-cpp"],
     LIBS = ["raylib"]
 )
+
+def runProjectBinary(file):
+    if not env.RUN_AFTER_BUILD:
+        return
+
+    path = str(file)
+
+    if not GetOption("run_tests"):
+        os.system(path)
+    else:
+        os.system(env.OUTPUT_DIR + env.TEST_BINARY_NAME + " && " + path)
+env.runProjectBinary = runProjectBinary

@@ -10,6 +10,10 @@ void InputEvent::init() {
     Engine::getSingleton()->inputEventCreated(this);
 }
 
+InputEvent::~InputEvent() {
+    Engine::getSingleton()->inputEvenDeleted(this);
+}
+
 bool InputEvent::isTriggered() {
     for (auto i = macros.begin(); i != macros.end(); ++i) {
         if ((*i)->isPressed()) {

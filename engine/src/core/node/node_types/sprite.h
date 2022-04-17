@@ -4,14 +4,14 @@
 #include "engine/src/core/node/node_types/node_2d.h"
 #include "engine/src/engine_texture.h"
 
-#include "engine/src/raylib_include.h"
 #include <memory>
 using namespace std;
 
 class Sprite: public Node2D {
-
+    
     public:
-        REGISTER_NODE(Sprite);
+
+        REGISTER_NODE(Sprite, Node2D);
 
         template<typename NodeType>
         static ObjectConstructor<NodeType>* registerNodeProperties(string node_name);

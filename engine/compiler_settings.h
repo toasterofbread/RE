@@ -1,13 +1,20 @@
-#ifndef INCLUDED_COMPILER_SETTINGS
-#define INCLUDED_COMPILER_SETTINGS
+#ifndef INCLUDED_COMPILER_OPTIONS
+#define INCLUDED_COMPILER_OPTIONS
 
-#define LOCK_SETTINGS true
+/*
+    Automatically generated before compilation
+    Define 'DISABLE_GENERATION' as true to disable generation
+*/
+
+#define DISABLE_GENERATION false
+
+/* Available platforms */
 
 #define PLATFORM_RAYLIB 0
 #define PLATFORM_VITA 1
 
-// #define PLATFORM 0
+/* Platform in use */
 
-#define DEBUG_ENABLED false
+#define PLATFORM PLATFORM_VITA
 
 #endif

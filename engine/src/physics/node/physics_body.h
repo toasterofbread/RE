@@ -13,7 +13,8 @@ class CollisionShape;
 class PhysicsBody: public Node2D {
 
     public:
-        REGISTER_NODE_WITH_CONSTRUCTOR(PhysicsBody, {
+    
+        REGISTER_NODE_WITH_CONSTRUCTOR(PhysicsBody, Node2D, {
             definition.userData.pointer = reinterpret_cast<uintptr_t>(this);
         });
 

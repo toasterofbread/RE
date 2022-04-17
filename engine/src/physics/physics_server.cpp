@@ -1,6 +1,5 @@
 #include "physics_server.h"
 
-#include "engine/src/raylib_include.h"
 #include <box2d/box2d.h>
 #include <stdlib.h>
 
@@ -14,11 +13,11 @@ class FooDraw : public b2Draw {
     public:
         void DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) {}
         void DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) {
-            for (int i = 0; i < vertexCount; i += 1) {
-                Vector2 start_vertex = PhysicsServer::phys2World(vertices[i]);
-                Vector2 end_vertex = PhysicsServer::phys2World(vertices[i + 1 == vertexCount ? 0 : i + 1]);
-                Draw::drawLine(start_vertex.x, start_vertex.y, end_vertex.x, end_vertex.y, GREEN);
-            }
+            // for (int i = 0; i < vertexCount; i += 1) {
+            //     Vector2 start_vertex = PhysicsServer::phys2World(vertices[i]);
+            //     Vector2 end_vertex = PhysicsServer::phys2World(vertices[i + 1 == vertexCount ? 0 : i + 1]);
+            //     Draw::drawLine(start_vertex.x, start_vertex.y, end_vertex.x, end_vertex.y, GREEN);
+            // }
         }
         void DrawCircle(const b2Vec2& center, float radius, const b2Color& color) {}
         void DrawSolidCircle(const b2Vec2& center, float radius, const b2Vec2& axis, const b2Color& color) {}
