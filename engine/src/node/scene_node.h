@@ -1,7 +1,7 @@
 #ifndef INCLUDED_SCENE_NODE
 #define INCLUDED_SCENE_NODE
 
-#include "engine/src/core/node/node.h"
+#include "engine/src/node/node.h"
 
 // Forward declarations
 class Engine;
@@ -9,7 +9,7 @@ class Engine;
 // !todo Remove or rewrite
 class SceneNode: public Node {
     public:
-        REGISTER_NODE(SceneNode, Node);
+        REGISTER_NODE(SceneNode, Node, {});
     protected:
         virtual void init_scenenode(string scene_path, string scene_type);
 };

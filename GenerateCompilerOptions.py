@@ -63,14 +63,15 @@ if generate_settings:
 
     data += "/* Available platforms */\n\n"
 
-    for i, platform in enumerate(env.PLATFORM_LIST):
-        if platform == env.PLATFORM_NAME:
-            using_platform = i
-        
+    i = 2
+    for platform in env.PLATFORM_LIST:
         data += f"#define PLATFORM_{platform.upper()} {i}\n"
+        i += 1
     
     data += "\n/* Platform in use */\n\n"
     data += f"#define PLATFORM PLATFORM_{env.PLATFORM_NAME.upper()}"
+
+    data += f"\n\n/* Enable debug mode */\n\n#define DEBUG_ENABLED {str(GetOption('target') == 'debug').lower()}"
 
     data += "\n\n#endif\n"
 

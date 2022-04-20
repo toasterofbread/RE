@@ -15,12 +15,13 @@ class Engine;
 class Node;
 class Node2D;
 class Timer;
-class Camera;
+class Camera2D;
+class Camera3D;
 
 class SceneTree {
     public:
         enum class STATE {
-            PREINIT, IDLE, PROCESS, POST_PROCESS, DRAW
+            PREINIT, IDLE, PROCESS, KILL_NODES, DRAW
         };
 
         void init();
@@ -38,15 +39,19 @@ class SceneTree {
 
         Timer* createTimer(float duration, bool free_on_timeout = true);
 
-        Camera* getEnabledCamera();
-        void setEnabledCamera(Camera* camera);
+        void setEnabledCamera2D(Camera2D* value);
+        Camera2D* getEnabledCamera2D();
+
+        void setEnabledCamera3D(Camera3D* value);
+        Camera3D* getEnabledCamera3D();
 
         static const int MIN_DRAW_LAYER = -2048;
         static const int MAX_DRAW_LAYER = 2048;
 
     private:
         Node* root_node;
-        Camera* enabled_camera = NULL;
+        Camera2D* enabled_camera_2d = NULL;
+        Camera3D* enabled_camera_3d = NULL;
 
         vector<Node2D*> drawable_nodes[MAX_DRAW_LAYER - MIN_DRAW_LAYER];
 

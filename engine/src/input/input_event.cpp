@@ -4,7 +4,7 @@
 #include "common/utils.h"
 #include "engine/src/input/macro.h"
 #include "engine/src/core/signal.h"
-#include "engine/src/core/node/scene_tree.h"
+#include "engine/src/node/scene_tree.h"
 
 void InputEvent::init() {
     Engine::getSingleton()->inputEventCreated(this);

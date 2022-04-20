@@ -4,18 +4,36 @@
 #include "common/draw.h"
 #include "engine.h"
 #include "defs.h"
+#include "common/raylib.h"
 
 #include <psp2/kernel/processmgr.h>
 #include <psp2/io/fcntl.h> 
 #include <psp2/rtc.h>
-#include <vita2d.h>
 #include <psp2/json.h>
 #include <psp2/sysmodule.h>
 #include <psp2/net/net.h>
 #include <psp2/net/netctl.h>
 #include <psp2/net/http.h>
 #include <psp2/libssl.h>
+#include <pib.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pib.h>
+#include <psp2/kernel/processmgr.h>
+#include <psp2/gxm.h>
+#include <psp2/ctrl.h>
+#include <psp2/system_param.h> 
+
+#ifndef GIT_COMMIT_HASH
+#define GIT_COMMIT_HASH "UNDEFINED"
+#endif
+
+extern uint32_t sceLibcHeapSize = 2194304;
+
+const int WindowX = 960;
+const int WindowY = 544;
 list<string> db_print_stack;
 
 list<string>* OS::getDbPrintStack() {
@@ -55,7 +73,7 @@ VitaTexture* OS::loadTexture(string path) {
     }
 
     VitaResource* resource = VitaResource::index[path];
-    VitaTexture* texture = new VitaTexture(vita2d_load_PNG_file(resource->getPath().c_str()));
+    VitaTexture* texture = new VitaTexture(LoadTexture(resource->getPath().c_str()));
     texture->data = resource->getTextureData();
 
     VitaTexture::index.insert(make_pair(path, texture));
@@ -64,55 +82,42 @@ VitaTexture* OS::loadTexture(string path) {
 }
 
 void OS::unloadTexture(VitaTexture* texture) {
-    // Draw::loadStep("Unloading textures...");
-    // vita2d_free_texture(texture->texture);
-    // VitaTexture::index.erase(texture->data->key_path);
+    Draw::loadStep("Unloading textures...", true);
+    UnloadTexture(texture->texture);
+    VitaTexture::index.erase(texture->data->key_path);
 }
 
 VitaTexture* OS::generateTexture(unsigned int width, unsigned int height) {
-    // !todo
-    // VitaTexture* ret = (VitaTexture*)vita2d_create_empty_texture(width, height);
-    // ret->data = VitaTextureData::createEmpty();
-    return NULL;
+    Image image = GenImageColor(width, height, Colour::WHITE());
+    VitaTexture* ret = new VitaTexture(LoadTextureFromImage(image));
+    UnloadImage(image);
+
+    ret->data = VitaTextureData::createEmpty();
+    ret->data->w = width;
+    ret->data->h = height;
+
+    return ret;
 }
 
 int OS::getTextureWidth(VitaTexture* texture) {
-    return vita2d_texture_get_width(texture->texture);
+    return texture->data->w;
 }
 
 int OS::getTextureHeight(VitaTexture* texture) {
-    return vita2d_texture_get_height(texture->texture);
+    return texture->data->h;
 }
 
 Vector2 OS::getTextureSize(VitaTexture* texture) {
-    return Vector2(vita2d_texture_get_width(texture->texture), vita2d_texture_get_height(texture->texture));
+    return Vector2(texture->texture.width, texture->texture.height);
 }
 
 json loadJsonResource(VitaResource* resource) {
-    assert(resource->getType() == VitaResource::TYPE::JSON);
+    ASSERT(resource->getType() == VitaResource::TYPE::FILE);
 
-    FILE* fd = fopen(resource->getPath().c_str(), "rb");
-    if (!fd) {
-        warn("Could not open JSON resource at path " + resource->getPath(), true);
-        return json::object();
-    }
+    char* data = LoadFileText(resource->getPath().c_str());
+    json ret = json::parse(data);
+    UnloadFileText(data);
 
-    fseek(fd, 0, SEEK_END);
-    int size = ftell(fd);
-    fseek(fd, 0, SEEK_SET);
-
-    char* buf = (char*)malloc(size);
-    fread(buf, size, 1, fd);
-    fclose(fd);
-
-    string data = string(buf);
-    free(buf);
-
-    while (data.length() > size) {
-        data.pop_back();
-    }
-
-    json ret = nlohmann::json::parse(data);
     return ret;
 }
 
@@ -141,6 +146,11 @@ void netInit() {
 }
 
 void netTerm() {
+
+    if (!net_initialised) {
+        return;
+    }
+
     sceNetCtlTerm();
     sceNetTerm();
     
@@ -155,14 +165,17 @@ void netTerm() {
 
 void OS::initialiseApplication() {    
 
-    vita2d_init();
-    vita2d_set_clear_color(RGBA8(0x40, 0x40, 0x40, 0xFF));
+    // SetConfigFlags(FLAG_VSYNC_HINT); // Enable VSync
+    pibInit(PIB_SHACCCG);
+
+    debugNetInit("192.168.10.111", 18194, 3);
+    sleep(1);
+
+    InitWindow(WindowX, WindowY, "raylib [textures] example - texture loading and drawing"); // Create window
 
     sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG_WIDE);
 
-	netInit();
-
-    VitaResource* index_resource = VitaResource::createJSON("resource_index.json", "");
+    VitaResource* index_resource = VitaResource::createFILE("resource_index.json", "");
     json index_data = loadJsonResource(index_resource);
     delete index_resource;
 
@@ -172,10 +185,12 @@ void OS::initialiseApplication() {
 
         VitaResource* resource;
 
+        ASSERT_MSG(value.type() == json::value_t::string || value.type() == json::value_t::array, "Invalid resource index value type " + string(value.type_name()) + " at key " + key);
+
         if (value.type() == json::value_t::string) {
-            resource = VitaResource::createJSON(value.get<string>(), path);
+            resource = VitaResource::createFILE(value.get<string>(), path);
         }
-        else if (value.type() == json::value_t::array) {
+        else {
             json data = value[1];
             int a = data[0].get<int>();
             int b = data[1].get<int>();
@@ -184,33 +199,26 @@ void OS::initialiseApplication() {
 
             resource = VitaResource::createTexture(value[0].get<string>(), path, a, b, c, d);
         }
-        else {
-            warn("Invalid resource index value type " + (string)value.type_name() + " at key " + key, true);
-        }
 
         VitaResource::index.insert(make_pair<string, VitaResource*>((string)path, (VitaResource*)resource));
     }
 
-    sendServerMessage("RE started (commit hash: " + string(GIT_COMMIT_HASH) + ")");
+    OS::print("RE started (commit hash: " + string(GIT_COMMIT_HASH) + ")", 1);
 }
 
 void OS::closeApplication() {
 	netTerm();
-
-    vita2d_fini();
-    sceKernelExitProcess(0);
-
+    CloseWindow();
     app_closed = true;
 }
 
 void OS::beginDrawing() {
-    vita2d_start_drawing();
-    vita2d_clear_screen();
+    BeginDrawing();
+    ClearBackground(Colour{100, 100, 100, 255});
 }
 
 void OS::endDrawing() {
-    vita2d_end_drawing();
-    vita2d_swap_buffers();
+    EndDrawing();
 }
 
 double OS::getTime() {
@@ -219,11 +227,7 @@ double OS::getTime() {
 }
 
 bool OS::fileExists(string path) {
-    return VitaResource::index.count(formatPath(path));
-    // SceUID file = sceIoOpen(getResPath(path).c_str(), SCE_O_RDONLY, 0777);
-    // bool exists = file >= 0;
-    // sceIoClose(file);
-    // return exists;
+    return FileExists(getResPath(path).c_str()) || VitaResource::index.count(formatPath(path));
 }
 
 int OS::getScreenWidth() {
@@ -235,11 +239,19 @@ int OS::getScreenHeight() {
 }
 
 string OS::getResPath(string path) {
-    return path;
+    auto resource = VitaResource::index.find(formatPath(path));
+    if (resource != VitaResource::index.end()) {
+        return resource->second->getPath();
+    }
+    return VITA_PARTITION + path;
 }
 
 json OS::loadJsonFile(string path) {
     return loadJsonResource(VitaResource::index[formatPath(path)]);
+}
+
+char* OS::loadFileText(string path) {
+    return LoadFileText(getResPath(path).c_str());
 }
 
 bool OS::shouldClose() {
@@ -247,7 +259,7 @@ bool OS::shouldClose() {
 }
 
 float OS::getFrameDelta() {
-    return 0.016666667f;
+    return GetFrameTime();
 }
 
 int urlencode(char *dest, const char *src) {
@@ -267,15 +279,16 @@ int urlencode(char *dest, const char *src) {
     return len;
 }
 
-void OS::print(string message) {
-    sendServerMessage(message);
+void OS::print(string message, int type) {
+    json package = json::object();
+
+    package["type"] = type;
+    package["content"] = message;
+
+    debugNetUDPPrintf(package.dump().c_str());
 }
 
 void sendServerMessage(string message, const char* url) {
-
-    if (Engine::print_disabled) {
-        return;
-    }
 
     if (!net_initialised) {
         netInit();
@@ -291,19 +304,6 @@ void sendServerMessage(string message, const char* url) {
     snprintf(post_data, 9 + length, "content=%s", encoded_message);
 
     int request = sceHttpCreateRequestWithURL(conn, SCE_HTTP_METHOD_POST, url, sizeof(post_data));
-    int header = sceHttpAddRequestHeader(request, "Content-Type", "application/x-www-form-urlencoded", SCE_HTTP_HEADER_OVERWRITE);
-    // int handle = sceHttpSendRequest(request, post_data, sizeof(post_data));
+    sceHttpAddRequestHeader(request, "Content-Type", "application/x-www-form-urlencoded", SCE_HTTP_HEADER_OVERWRITE);
     sceHttpSendRequest(request, post_data, sizeof(post_data));
-
-	// string readData = "";
-	// char data[16*1024];
-	// long read = 0;
-
-	// while ((read = sceHttpReadData(request, &data, sizeof(data)-1)) > 0) {
-	// 	data[read] = '\0';
-    //     readData.append(data);
-	// }
-
-    // warn((string)post_data + " | " + readData, true);
-
 }

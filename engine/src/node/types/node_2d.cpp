@@ -3,6 +3,17 @@
 #include "common/colour.h"
 #include "common/draw.h"
 
+Node2D* Node2D::getFirst2DParent(bool only_immediate_parent) {
+    Node* ret = this;
+    do {
+        ret = ret->getParent();
+        if (Node2D* parent_2d = dynamic_cast<Node2D*>(ret)) {
+            return parent_2d;
+        }
+    } while (ret != NULL && !only_immediate_parent && !ret->isRoot());
+    return NULL;
+}
+
 void Node2D::draw() {
 
     if (show_gizmos) {
@@ -14,21 +25,22 @@ void Node2D::draw() {
             text += " (invisible)";
         }
         
-        text += " | " + (string)int2char(getId());
+        text += " | " + (string)to_string(getId());
 
         Vector2 position = getGlobalPosition();
-        text += " | " + vector2str(position, 0);
+        text += " | " + position.toString();
 
         for (string suffix : additional_gizmos) {
             text += " | ";
             text += suffix;
         }
 
-        markPosition(position, text, BLACK);
+        markPosition(position, text, Colour::BLACK());
 
+        position.y -= 15;
         for (string line : additional_gizmos_unique) {
-            position.y -= 30;
-            Draw::drawText(line, position, BLACK, 1.0f, Draw::DRAW_MODE::WORLD);
+            position.y -= 15;
+            Draw::drawText(line, position, Colour::BLACK(), 1.0f, Draw::DRAW_MODE::WORLD);
         }
 
     }
@@ -45,7 +57,7 @@ Colour Node2D::getGlobalModulate() {
         return modulate;
     }
 
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         return parent_2d->getGlobalModulate() * modulate;
     }
 
@@ -65,14 +77,17 @@ void Node2D::setPosition(Vector2 value) {
         return;
     }
 
-    Vector2 original_global_position = position;
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
-        original_global_position += parent_2d->getGlobalPosition();
+    if (isInsideTree()) {
+        Vector2 original_global_position = position;
+        if (Node2D* parent_2d = getFirst2DParent()) {
+            original_global_position += parent_2d->getGlobalPosition();
+        }
+        position = value;
+        SIGNAL_GLOBAL_POSITION_CHANGED.emit(original_global_position);
     }
-
-    position = value;
-
-    SIGNAL_GLOBAL_POSITION_CHANGED.emit(original_global_position);
+    else {
+        position = value;
+    }
 }
 
 Vector2 Node2D::getGlobalPosition() {
@@ -81,14 +96,15 @@ Vector2 Node2D::getGlobalPosition() {
         return getPosition();
     }
 
-    assert(isInsideTree());
+    ASSERT_MSG(isInsideTree(), "Node must be inside tree to acquire global position");
     
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         return parent_2d->getGlobalPosition() + getPosition();
     }
     
     return getPosition();
 }
+
 void Node2D::setGlobalPosition(Vector2 value) {
 
     if (!position_relative_to_parent) {
@@ -96,9 +112,9 @@ void Node2D::setGlobalPosition(Vector2 value) {
         return;
     }
 
-    assert(isInsideTree());
+    ASSERT(isInsideTree());
 
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         setPosition(value - parent_2d->getGlobalPosition());
     }
     else {
@@ -120,7 +136,7 @@ void Node2D::setScale(Vector2 value) {
     }
 
     Vector2 original_global_scale = scale;
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         original_global_scale *= parent_2d->getGlobalScale();
     }
 
@@ -135,7 +151,7 @@ Vector2 Node2D::getGlobalScale() {
         return getScale();
     }
 
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         return parent_2d->getGlobalScale() * getScale();
     }
 
@@ -148,7 +164,7 @@ void Node2D::setGlobalScale(Vector2 value) {
         return;
     }
 
-    assert(isInsideTree());
+    ASSERT(isInsideTree());
     setScale(value / getGlobalScale());
 }
 
@@ -167,7 +183,7 @@ void Node2D::setRotation(float value) {
     }
 
     float original_global_rotation = rotation;
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         original_global_rotation += parent_2d->getGlobalRotation();
     }
 
@@ -182,23 +198,23 @@ float Node2D::getGlobalRotation() {
         return getRotation();
     }
 
-    assert(isInsideTree());
+    ASSERT(isInsideTree());
     
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         return parent_2d->getGlobalRotation() + getRotation();
     }
 
     return getRotation();
 }
 void Node2D::setGlobalRotation(float value) {
-    assert(isInsideTree());
+    ASSERT(isInsideTree());
 
     if (!rotation_relative_to_parent) {
         setRotation(value);
         return;
     }
 
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         setRotation(value - parent_2d->getGlobalRotation());
         return;
     }
@@ -224,7 +240,7 @@ void Node2D::setGlobalVisible(bool value) {
     visible = true;
 
     if (!getParent()->isRoot()) {
-        if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+        if (Node2D* parent_2d = getFirst2DParent()) {
             parent_2d->setGlobalVisible(true);
         }
     }
@@ -244,7 +260,7 @@ bool Node2D::isGlobalVisible() {
         return visible;
     }
 
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         return parent_2d->isGlobalVisible();
     }
 
@@ -257,7 +273,7 @@ void Node2D::setDrawLayer(int value) {
     }
 
     int parent_draw_layer = 0;
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         parent_draw_layer = parent_2d->getGlobalDrawLayer();
     }
 
@@ -273,7 +289,7 @@ void Node2D::setGlobalDrawLayer(int value) {
     }
 
     int parent_draw_layer = 0;
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         parent_draw_layer = parent_2d->getGlobalDrawLayer();
 
         int original_draw_layer = parent_draw_layer + draw_layer;
@@ -302,7 +318,7 @@ int Node2D::getGlobalDrawLayer() {
         return draw_layer;
     }
 
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(getParent())) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         return clamp(parent_2d->getGlobalDrawLayer() + draw_layer, SceneTree::MIN_DRAW_LAYER, SceneTree::MAX_DRAW_LAYER);
     }
 
@@ -313,21 +329,20 @@ void Node2D::onParentDrawLayerChanged(int old_draw_layer, int new_draw_layer) {
     SIGNAL_DRAW_LAYER_CHANGED.emit(old_draw_layer + draw_layer, new_draw_layer + draw_layer);
 }
 
-void Node2D::addedToNode(Node* parent_node) {
-    super::addedToNode(parent_node);
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(parent_node)) {
+void Node2D::addedToNode() {
+    super::addedToNode();
+    if (Node2D* parent_2d = getFirst2DParent()) {
         parent_2d->SIGNAL_DRAW_LAYER_CHANGED.connect(&Node2D::onParentDrawLayerChanged, this);
 
         parent_2d->SIGNAL_GLOBAL_POSITION_CHANGED.connect(&Node2D::onParentGlobalPositionChanged, this);
         parent_2d->SIGNAL_GLOBAL_ROTATION_CHANGED.connect(&Node2D::onParentGlobalRotationChanged, this);
         parent_2d->SIGNAL_GLOBAL_SCALE_CHANGED.connect(&Node2D::onParentGlobalScaleChanged, this);
-
     }
 }
 void Node2D::removedFromNode(Node* former_parent_node) {
     super::removedFromNode(former_parent_node);
     
-    if (Node2D* parent_2d = dynamic_cast<Node2D*>(former_parent_node)) {
+    if (Node2D* parent_2d = getFirst2DParent()) {
         parent_2d->SIGNAL_DRAW_LAYER_CHANGED.disconnect(this);
 
         parent_2d->SIGNAL_GLOBAL_POSITION_CHANGED.disconnect(this);

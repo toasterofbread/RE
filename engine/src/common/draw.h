@@ -3,13 +3,13 @@
 
 #include "common/vector2.h"
 #include "common/colour.h"
-#include "core/node/node_types/camera.h"
+#include "node/types/camera_2d.h"
 
 #include <string>
 using namespace std;
 
 // Forward declarations
-class Camera;
+class Camera2D;
 
 namespace Draw {
 
@@ -19,9 +19,9 @@ namespace Draw {
 
     void init();
 
-    Vector2 getDrawOffset(DRAW_MODE mode);
+    void beginDrawMode(DRAW_MODE mode);
 
-    void loadStep(string message);
+    void loadStep(string message, bool reverse = false);
 
     // - Draw methods -
 

@@ -15,7 +15,7 @@ class SceneTree;
 template<typename ObjectType>
 class ObjectConstructor;
 
-#define REGISTER_NODE_WITH_CONSTRUCTOR(name, super_type, constructor_code) \
+#define REGISTER_NODE_WITH_CONSTRUCTOR(name, super_type, registration_code, constructor_code) \
 private:                                                   \
 typedef super_type super;                                  \
 bool registered() {                                        \
@@ -32,8 +32,14 @@ name() {                                                   \
     setName(getTypeName());                                \
     constructor_code;                                      \
 }                                                          \
+template<typename NodeType = name> \
+static ObjectConstructor<NodeType>* registerNodeProperties(string node_type_name = name::getTypeNameStatic()) { \
+    ObjectConstructor<NodeType>* c = super_type::registerNodeProperties<NodeType>(node_type_name); \
+    registration_code; \
+    return c; \
+}
 
-#define REGISTER_NODE(name, super_type) REGISTER_NODE_WITH_CONSTRUCTOR(name, super_type, {})
+#define REGISTER_NODE(name, super_type, registration_code) REGISTER_NODE_WITH_CONSTRUCTOR(name, super_type, registration_code, {})
 
 class Node {
     private:
@@ -51,7 +57,8 @@ class Node {
         }
 
     protected:
-        virtual void addedToNode(Node* parent_node);
+        virtual void enteredTree();
+        virtual void addedToNode();
         virtual void removedFromNode(Node* former_parent_node);
         string name;
 
@@ -59,8 +66,22 @@ class Node {
         Node();
         virtual ~Node() {} // Doesn't work without this, no idea why
 
-        template<typename NodeType>
-        static ObjectConstructor<NodeType>* registerNodeProperties(string node_type_name);
+        template<typename NodeType = Node>
+        static ObjectConstructor<NodeType>* registerNodeProperties(string node_type_name = Node::getTypeNameStatic()) {
+
+            ObjectConstructor<NodeType>* constructor;
+            if (!Engine::getSingleton()->isObjectTypeRegistered(node_type_name)) {
+                constructor = Engine::getSingleton()->registerObjectType<NodeType>(node_type_name);
+            }
+            else {
+                constructor = Engine::getSingleton()->getObjectConstructor<NodeType>(node_type_name);
+                ASSERT(constructor->inheritsNode());
+            }
+
+            return constructor
+                ->template registerProperty<string>("name", &NodeType::setName)
+                ;
+        }
         static string getTypeNameStatic() { return "Node"; }
         virtual string getTypeName() { return "Node"; }
 
@@ -120,7 +141,7 @@ class Node {
 
         // - Conversion -
         operator string() {
-            return "Node type: " + getTypeName() + " | ID: " + int2char(getId()) + " | Name: " + getName();
+            return "Node type: " + getTypeName() + " | ID: " + to_string(getId()) + " | Name: " + getName();
         }
 
 };

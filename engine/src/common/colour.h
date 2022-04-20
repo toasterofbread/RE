@@ -3,10 +3,7 @@
 
 #include <box2d/box2d.h>
 #include "engine/compiler_settings.h"
-
-#if PLATFORM == PLATFORM_RAYLIB
-#include "raylib_include.h"
-#endif
+#include "common/raylib.h"
 
 struct Colour: public b2Color {
 
@@ -38,31 +35,34 @@ struct Colour: public b2Color {
         a /= colour.a;
     }
 
-    #if PLATFORM == PLATFORM_RAYLIB
+    static Colour RED() {
+        return Colour(1, 0, 0);
+    }
+    static Colour GREEN() {
+        return Colour(0, 1, 0);
+    }
+    static Colour BLUE() {
+        return Colour(0, 0, 1);
+    }
+    static Colour BLACK() {
+        return Colour(0, 0, 0);
+    }
+    static Colour WHITE() {
+        return Colour(1, 1, 1);
+    }
+    static Colour TRANSPARENT() {
+        return Colour(1, 1, 1, 0);
+    }
+
     operator Color() {
-        raylib::Color ret;
+        Color ret;
         ret.r = r * 255;
         ret.g = g * 255;
         ret.b = b * 255;
         ret.a = a * 255;
         return ret;
     }
-    #endif
 
 };
 
 #endif
-
-#undef RED
-#undef GREEN
-#undef BLUE
-#undef BLACK
-#undef WHITE
-#undef TRANSPARENT
-
-#define RED Colour(1, 0, 0)
-#define GREEN Colour(0, 1, 0)
-#define BLUE Colour(0, 0, 1)
-#define BLACK Colour(0, 0, 0)
-#define WHITE Colour(1, 1, 1)
-#define TRANSPARENT Colour(1, 1, 1, 0)

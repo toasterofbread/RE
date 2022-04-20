@@ -10,11 +10,15 @@
 
 /* Available platforms */
 
-#define PLATFORM_RAYLIB 0
-#define PLATFORM_VITA 1
+#define PLATFORM_RAYLIB 2
+#define PLATFORM_VITA 3
 
 /* Platform in use */
 
-#define PLATFORM PLATFORM_VITA
+#define PLATFORM PLATFORM_RAYLIB
+
+/* Enable debug mode */
+
+#define DEBUG_ENABLED true
 
 #endif

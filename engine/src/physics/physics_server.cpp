@@ -7,7 +7,7 @@
 #include "common/draw.h"
 
 PhysicsServer* PhysicsServer::singleton = NULL;
-const float PhysicsServer::world_scale = 12.0f;
+const float PhysicsServer::world_scale = 13.0f;
 
 class FooDraw : public b2Draw {
     public:
@@ -27,11 +27,10 @@ class FooDraw : public b2Draw {
 };
 
 PhysicsServer::PhysicsServer() {
-    assert(singleton == NULL);
+    ASSERT(singleton == NULL);
     singleton = this;
     
-    setGravity(b2Vec2(0.0F, 100.0F));
-    world.SetGravity(gravity);
+    setGravity(Vector2(0.0f, 100.0f));
 
     FooDraw* instance = new FooDraw;
     world.SetDebugDraw(instance);
@@ -42,13 +41,13 @@ PhysicsServer::PhysicsServer() {
     position_iterations = 3;
 }
 
-b2Vec2 PhysicsServer::world2Phys(Vector2 world_position) {
-    return b2Vec2(world2Phys(world_position.x), world2Phys(world_position.y));
+Vector2 PhysicsServer::world2Phys(Vector2 world_position) {
+    return Vector2(world2Phys(world_position.x), world2Phys(world_position.y));
 }
 float PhysicsServer::world2Phys(float world_position) {
     return world_position / world_scale;
 }
-Vector2 PhysicsServer::phys2World(b2Vec2 physics_position) {
+Vector2 PhysicsServer::phys2World(Vector2 physics_position) {
     return Vector2(phys2World(physics_position.x), phys2World(physics_position.y));
 }
 float PhysicsServer::phys2World(float physics_position) {
@@ -56,7 +55,7 @@ float PhysicsServer::phys2World(float physics_position) {
 }
 
 PhysicsServer* PhysicsServer::getSingleton() {
-    assert(singleton);
+    ASSERT(singleton);
     return singleton;
 }
 
@@ -69,15 +68,8 @@ void PhysicsServer::setGravity(Vector2 value) {
     gravity.Set(value.x, value.y);
     world.SetGravity(gravity);
 }
-void PhysicsServer::setGravity(b2Vec2 value) {
-    gravity.Set(value.x, value.y);
-    world.SetGravity(gravity);
-}
 Vector2 PhysicsServer::getGravity() {
-    Vector2 ret;
-    ret.x = gravity.x;
-    ret.y = gravity.y * -1;
-    return ret;
+    return gravity;
 }
 
 b2Body* PhysicsServer::createBody(const b2BodyDef* definition) {

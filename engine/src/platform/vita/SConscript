@@ -11,7 +11,7 @@ from ftplib import FTP, error_perm
 from multiprocessing import Process
 
 RESOURCE_DIR = "resources/"
-RESOURCE_TYPES = ("json", "png")
+RESOURCE_TYPES = ("json", "png", "rescn")
 
 PACK_VPK = False
 
@@ -128,53 +128,32 @@ env.Append(
     LINKFLAGS = ["-Wl,-q"],
     LIBPATH = VITASDK + VITA_PLATFORM_PREFIX + "/lib",
     CPPPATH = [VITASDK + VITA_PLATFORM_PREFIX + "/include"],
-    CCFLAGS = ["-Wno-psabi", "-fno-plt", "-fno-pic"],
-    LIBS = [
-        "vita2d",
-        "SceDisplay_stub",
-        "SceGxm_stub",
-        "SceSysmodule_stub",
-        "SceCtrl_stub",
-        "ScePgf_stub",
-        "ScePvf_stub",
-        "SceCommonDialog_stub",
-        "freetype",
-        "png",
-        "jpeg",
-        "z",
-        "m",
-        "c",
-        "SceAppMgr_stub",
-        "SceLibJson_stub",
 
-        # "curl",
-        # "ssl",
-        # "crypto"
+    CCFLAGS = ["-DVITA", "-Wno-psabi", "-fno-lto", "-fno-pic", "-fno-plt", "-DRLGL_IMPLEMENTATION", "-DGRAPHICS_API_OPENGL_ES2", "-DSUPPORT_MESH_GENERATION"],
+    LIBS = [
 
         "SceHttp_stub",
-        "SceNetCtl_stub",
-        "SceNet_stub",
         "SceSsl_stub",
 
-        # "raylib",
-        # "liblibScePiglet_stub",
-        # "SceSysmodule_stub",
-        # "SceNetCtl_stub",
-        # "stdc++",
-        # "pib",
-        # "SceShaccCg_stub",
-        # "taihen_stub",
-        # "SceAppMgr_stub",
-        # "SceLibKernel_stub",
-        # "SceIofilemgr_stub",
-        # "SceNet_stub",
-        # "SceGxm_stub",
-        # "SceDisplay_stub",
-        # "SceCtrl_stub",
-        # "SceTouch_stub",
+        # "liblibGLESv2_stub",
+        # "liblibIMGEGL_stub",
 
-        #SceThreadmgr_stub,
-        #SceModulemgr_stub,
+        "pib",
+        "liblibScePiglet_stub",
+        "SceShaccCg_stub",
+        "taihen_stub",
+        "SceAppMgr_stub",
+        "SceLibKernel_stub",
+        "SceSysmodule_stub",
+        "SceIofilemgr_stub",
+        "SceNetCtl_stub",
+        "SceNet_stub",
+        "SceGxm_stub",
+        "SceDisplay_stub",
+        "SceCtrl_stub",
+        "SceTouch_stub",
+        "pthread",
+        "m",
     ]
 )
 
@@ -190,7 +169,7 @@ def convertSconsLine(self, line: str, progress: float):
     elif line.startswith("vita-elf-create"):
         line = "Creating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[2], env.COLOURS["compile"]["attrs"])
     elif line.startswith("vita-make-fself"):
-        line = "Creating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[3], env.COLOURS["compile"]["attrs"])
+        line = "Creating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[2], env.COLOURS["compile"]["attrs"])
     # elif line.startswith("vita-pack-vpk"):
         # line = "Packing " + utils.format_colour(env.COLOURS["link"]["colour"], line.split(" ")[5], env.COLOURS["link"]["attrs"])
     return original_converter(line, progress)
@@ -203,7 +182,7 @@ if GetOption("build_project"):
     vita_velf = env.Command(join(lib_dir, env.PROJECT_NAME + ".velf"), env.project_binary[0], "vita-elf-create $SOURCE $TARGET")
     Depends(vita_velf, env.project_binary)
 
-    env.VITA_EBOOT = env.Command(lib_dir + "eboot.bin", vita_velf[0], "vita-make-fself -s $SOURCE $TARGET")
+    env.VITA_EBOOT = env.Command(lib_dir + "eboot.bin", vita_velf[0], "vita-make-fself $SOURCE $TARGET")
     Depends(env.VITA_EBOOT, vita_velf)
 
     vita_params = env.Command(lib_dir + "param.sfo", None, f"vita-mksfoex -s TITLE_ID={VITA_TITLEID} \"{env.PROJECT_NAME}\" $TARGET")
@@ -241,6 +220,9 @@ if GetOption("build_project"):
                     index[utils.formatPath(path)] = os.path.join(RESOURCE_DIR, str(len(index)) + "." + ext)
                 elif ext == "png":
                     images[file.removesuffix("." + ext)] = path
+                elif ext in RESOURCE_TYPES:
+                    package.write(path, os.path.join(RESOURCE_DIR, str(len(index)) + "." + ext))
+                    index[utils.formatPath(path)] = os.path.join(RESOURCE_DIR, str(len(index)) + "." + ext)
 
             if len(images) > 0:
                 
@@ -270,37 +252,6 @@ if GetOption("build_project"):
 
                 package.writestr(os.path.join(RESOURCE_DIR, str(i) + "." + ext), bytes.getvalue())
                 i += 1
-
-                # while True:
-                #     atlas = AtlasPacker(side=size, pad=0)
-                #     try:
-                #         atlas.pack(list(images.values()))
-                #     except RuntimeError as e:
-                #         if str(e) != "Failed to pack rectangles. Try again with a larger atlas?":
-                #             raise(e)
-                #         size *= 2
-                #     else:
-                #         im = Image.fromarray(np.array(atlas.atlas))
-                #         out = im.transpose(Image.FLIP_TOP_BOTTOM)
-                        
-                #         bytes = io.BytesIO()
-                #         out.save(bytes, format='PNG')
-                #         bytes = bytes.getvalue()
-
-                #         package.writestr(os.path.join(RESOURCE_DIR, str(i) + "." + ext), bytes)
-
-                #         for image in atlas.metadata["images"]:
-                #             corners = list(atlas.metadata["images"][image].values())
-
-                #             corners[0] *= size
-                #             corners[1] *= size
-                #             corners[2] *= size
-                #             corners[3] *= size
-
-                #             index[utils.formatPath(images[image])] = [os.path.join(RESOURCE_DIR, str(i) + "." + ext), corners]
-
-                #         i += 1
-                #         break
 
         package.writestr("resource_index.json", json.dumps(index, indent=1))
         package.close()

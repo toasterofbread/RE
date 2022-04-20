@@ -1,6 +1,6 @@
 #ifndef INCLUDED_PLATFORM_DEFS
 #define INCLUDED_PLATFORM_DEFS
-#include "raylib_include.h"
+#include "common/raylib.h"
 #endif
 
 #define TEXTURE_TYPE Texture2D

@@ -8,16 +8,17 @@
 #include "common/utils.h"
 #include "common/draw.h"
 #include "engine/src/core/resource/resource.h"
-#include "engine/src/core/node/node.h"
+#include "engine/src/node/node.h"
 #include "engine/src/core/object_constructor.h"
-#include "engine/src/core/node/scene_tree.h"
+#include "engine/src/node/scene_tree.h"
 #include "engine/src/input/input_manager.h"
 #include "engine/src/input/input_event.h"
-#include "engine/src/core/node/node_types/animated_sprite.h"
+#include "engine/src/node/types/animated_sprite.h"
 #include "engine/src/engine_texture.h"
-#include "engine/src/core/node/registration.cpp"
 #include "engine/src/core/resource/sprite_animation.h"
 #include "engine/src/physics/physics_server.h"
+#include "engine/src/physics/node/physics_body.h"
+#include "engine/src/physics/node/collision_shape.h"
 
 Engine* Engine::singleton = NULL;
 string Engine::fatal_error = "No message provided";
@@ -25,7 +26,7 @@ bool Engine::fatal_error_occurred = false;
 bool Engine::print_disabled = false;
 
 Engine::Engine() {
-    assert(singleton == NULL);
+    ASSERT(singleton == NULL);
     singleton = this;
     
     // system("clear");
@@ -34,11 +35,12 @@ Engine::Engine() {
     new InputManager();
     new PhysicsServer();
 
-    Node::registerNodeProperties<Node>(Node::getTypeNameStatic());
-    Node2D::registerNodeProperties<Node2D>(Node2D::getTypeNameStatic());
-    Sprite::registerNodeProperties<Sprite>(Sprite::getTypeNameStatic());
-    AnimatedSprite::registerNodeProperties<AnimatedSprite>(AnimatedSprite::getTypeNameStatic());
-
+    Node::registerNodeProperties();
+    Node2D::registerNodeProperties();
+    Sprite::registerNodeProperties();
+    AnimatedSprite::registerNodeProperties();
+    PhysicsBody::registerNodeProperties();
+    CollisionShape::registerNodeProperties();
 }
 
 Engine* Engine::getSingleton() {
@@ -64,16 +66,10 @@ void Engine::process(float delta) {
         (*i)->process(delta);
     }
 
-    Draw::drawText("FPS", Vector2(OS::getScreenWidth() - 85, 10), GREEN);
-    Draw::drawText(("Resource count: " + (string)int2char(all_resources.size())).c_str(), Vector2(OS::getScreenWidth() - 125, 35), BLACK);
-    Draw::drawText(("Node count: " + (string)int2char(getGlobalNodeCount())).c_str(), Vector2(OS::getScreenWidth() - 125, 50), BLACK);
-    Draw::drawText(("Texture count: " + (string)int2char(loaded_textures.size())).c_str(), Vector2(OS::getScreenWidth() - 125, 65), BLACK);
-}
-
-void Engine::ensureAsync() {
-    if (this_thread::get_id() == main_thread_id) {
-        warn("Thread is not asynchronous", true);
-    }
+    Draw::drawText("FPS", Vector2(OS::getScreenWidth() - 85, 10), Colour::GREEN());
+    Draw::drawText(("Resource count: " + (string)to_string(all_resources.size())).c_str(), Vector2(OS::getScreenWidth() - 125, 35), Colour::BLACK());
+    Draw::drawText(("Node count: " + (string)to_string(getGlobalNodeCount())).c_str(), Vector2(OS::getScreenWidth() - 125, 50), Colour::BLACK());
+    Draw::drawText(("Texture count: " + (string)to_string(loaded_textures.size())).c_str(), Vector2(OS::getScreenWidth() - 125, 65), Colour::BLACK());
 }
 
 void Engine::rebuildAndRun() {
@@ -84,7 +80,7 @@ void Engine::rebuildAndRun() {
 // - Texture management -
 
 shared_ptr<EngineTexture> Engine::loadTexture(string file_path) {
-    file_path = OS::getResPath(file_path);
+    file_path = formatPath(file_path);
     shared_ptr<EngineTexture> ret;
 
     if (isTextureLoaded(file_path)) {
@@ -99,7 +95,7 @@ shared_ptr<EngineTexture> Engine::loadTexture(string file_path) {
 }
 
 bool Engine::isTextureLoaded(string file_path) {
-    return loaded_textures.count(OS::getResPath(file_path));
+    return loaded_textures.count(formatPath(file_path));
 }
 
 void Engine::onTextureContainerDeleted(string file_path, TEXTURE_TYPE texture) {

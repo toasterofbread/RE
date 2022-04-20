@@ -59,6 +59,10 @@ def recursiveGlob(self, path: str, extension: str, name: str = None, exclude_dir
 
     matches = []
     for root, dirnames, filenames in os.walk(os.path.join(env.DIRECTORY, path)):
+        
+        if root.startswith(".") or "/." in root:
+            continue
+         
         excluded = False
         for dir in exclude_dirs:
             if root.startswith(os.path.join(os.getcwd(), dir).removesuffix("/")):
@@ -68,6 +72,8 @@ def recursiveGlob(self, path: str, extension: str, name: str = None, exclude_dir
             continue
             
         for filename in fnmatch.filter(filenames, match):
+            if filename.startswith("."):
+                continue
             matches.append(File(os.path.join(root, filename)))
 
     return matches

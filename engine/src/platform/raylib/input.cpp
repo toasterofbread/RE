@@ -1,6 +1,6 @@
 #include "common/input.h"
 
-#include "raylib_include.h"
+#include "common/raylib.h"
 
 bool Input::isButtonPressed(GamepadButton button) {
     return IsGamepadButtonDown(0, button);

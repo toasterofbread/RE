@@ -8,7 +8,7 @@ using namespace std;
 
 #include "engine/src/core/signal.h"
 #include "engine/src/core/object_constructor.h"
-#include "engine/src/core/node/scene_tree.h"
+#include "engine/src/node/scene_tree.h"
 #include "engine/src/input/input_manager.h"
 #include "engine/src/core/yaml_data_converter.h"
 #include "engine/src/core/resource/resource.h"
@@ -48,25 +48,18 @@ class Engine {
         void inputEvenDeleted(InputEvent* event);
 
         // Debug
-        void ensureAsync();
         void rebuildAndRun();
 
         // - ObjectConstructor -
         template<typename ObjectType>
         ObjectConstructor<ObjectType>* getObjectConstructor(string object_type_name) {
-            if (!isObjectTypeRegistered(object_type_name)) {
-                warn("Object '" + object_type_name + "' must be registeded in order to create a constructor for it", true);
-                return NULL;
-            }
+            ASSERT(isObjectTypeRegistered(object_type_name));
             return (ObjectConstructor<ObjectType>*)registered_object_constructors[object_type_name];
         }
 
         template<typename ObjectType, typename... ConstructorArgs>
         ObjectConstructor<ObjectType>* registerObjectType(string object_type_name) {
-            if (isObjectTypeRegistered(object_type_name)) {
-                warn("Object '" + object_type_name + "' is already registered", true);
-                return NULL;
-            }
+            ASSERT(!isObjectTypeRegistered(object_type_name));
 
             ObjectConstructor<ObjectType>* constructor = new ObjectConstructor<ObjectType>(getYAMLDataConverter());
             constructor->template init<ConstructorArgs...>();
@@ -82,11 +75,8 @@ class Engine {
 
         template<typename InheritedType>
         bool doesRegisteredObjectInheritType(string object_type_name) {
-            if (!isObjectTypeRegistered(object_type_name)) {
-                warn("Object '" + object_type_name + "' is not registered", true);
-                return false;
-            }
-            return (registered_object_constructors[object_type_name])->inheritsType<InheritedType>();
+            ASSERT(isObjectTypeRegistered(object_type_name));
+            return (registered_object_constructors[object_type_name])->inheritsNode();
         }
 
         // void onObjectRegisteredAsConstructor(string object_type_name, bool is_node) {

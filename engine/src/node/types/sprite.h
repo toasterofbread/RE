@@ -1,7 +1,7 @@
 #ifndef INCLUDED_SPRITE
 #define INCLUDED_SPRITE
 
-#include "engine/src/core/node/node_types/node_2d.h"
+#include "engine/src/node/types/node_2d.h"
 #include "engine/src/engine_texture.h"
 
 #include <memory>
@@ -11,10 +11,12 @@ class Sprite: public Node2D {
     
     public:
 
-        REGISTER_NODE(Sprite, Node2D);
-
-        template<typename NodeType>
-        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name);
+        REGISTER_NODE(Sprite, Node2D, {
+            c->template registerProperty<bool>("flip_x", &NodeType::setFlipX)
+            ->template registerProperty<bool>("flip_y", &NodeType::setFlipY)
+            ->template registerProperty<Vector2>("rotation_origin", &NodeType::setRotationOrigin)
+            ->template registerProperty<bool>("rotate_around_center", &NodeType::setRotateAroundCetner);
+        });
 
         // void process(float delta);
         void draw();

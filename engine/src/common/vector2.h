@@ -3,17 +3,36 @@
 
 #include "engine/compiler_settings.h"
 
+#include <json.hpp>
+#include "common/raylib.h"
 #include <box2d/box2d.h>
 #include <string>
 using namespace std;
+using json = nlohmann::json;
 
-#if PLATFORM == PLATFORM_RAYLIB
-#include "raylib_include.h"
-#endif
+#undef Vector2
 
 struct InternalVector2: public b2Vec2 {
     InternalVector2(): b2Vec2(0.0f, 0.0f) {}
     InternalVector2(float x, float y): b2Vec2(x, y) {}
+    InternalVector2(int x, int y): b2Vec2(x, y) {}
+    InternalVector2(int x, float y): b2Vec2(x, y) {}
+    InternalVector2(float x, int y): b2Vec2(x, y) {}
+    InternalVector2(b2Vec2 vector): b2Vec2(vector.x, vector.y) {}
+    InternalVector2(Vector2 vector): b2Vec2(vector.x, vector.y) {}
+    InternalVector2(json data);
+
+    static InternalVector2 from(float value) {
+        return InternalVector2(value, value);
+    }
+
+    bool compare(float cx, float cy) {
+        return x == cx && y == cy;
+    }
+
+    float dot(InternalVector2 with) {
+        return b2Dot(*this, with);
+    }
 
     string toString() {
         return "{ " + to_string(x) + ", " + to_string(y) + " }";
@@ -27,9 +46,23 @@ struct InternalVector2: public b2Vec2 {
         y = _x*sinf(angle) + _y*cosf(angle);
     }
 
+    void rotateAround(float angle, InternalVector2 origin) {
+        float _x = x;
+        float _y = y;
+
+        x = cos(angle) * (_x - origin.x) - sin(angle) * (_y - origin.y) + origin.x;
+        y = sin(angle) * (_x - origin.x) + cos(angle) * (_y - origin.y) + origin.y;
+    }
+
     InternalVector2 rotated(float angle) {
         InternalVector2 ret = InternalVector2(x, y);
         ret.rotate(angle);
+        return ret;
+    }
+
+    InternalVector2 rotatedAround(float angle, InternalVector2 origin) {
+        InternalVector2 ret = InternalVector2(x, y);
+        ret.rotateAround(angle, origin);
         return ret;
     }
 
@@ -119,17 +152,23 @@ struct InternalVector2: public b2Vec2 {
         return *this;
     }
     
-    #if PLATFORM == PLATFORM_RAYLIB
-    operator raylib::Vector2() {
-        return raylib::Vector2{x, y};
+    static InternalVector2 ZERO() {
+        return InternalVector2(0.0f, 0.0f);
     }
-    #endif
+
+    static InternalVector2 ONE() {
+        return InternalVector2(1.0f, 1.0f);
+    }
+
+    operator Vector2() {
+        return Vector2{x, y};
+    }
 
 };
 
+#ifdef Vector2
+#undef Vector2
+#endif
 #define Vector2 InternalVector2
-
-#define VECTOR2ZERO Vector2(0.0f, 0.0f)
-#define VECTOR2ONE Vector2(1.0f, 1.0f)
 
 #endif

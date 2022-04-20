@@ -4,7 +4,7 @@
 #include <iostream>
 #include <memory>
 
-#include "engine/src/core/node/node_types/sprite.h"
+#include "engine/src/node/types/sprite.h"
 
 // Forward declarations
 class AnimatedSprite;
@@ -26,12 +26,14 @@ class AnimatedSprite: public Sprite {
 
     public:
 
-        REGISTER_NODE(AnimatedSprite, Sprite);
+        REGISTER_NODE(AnimatedSprite, Sprite, {
+            c->template registerProperty<shared_ptr<SpriteAnimationSet>>("animation_set", &NodeType::setAnimationSet)
+            ->template registerProperty<string>("current_animation_key", &NodeType::setCurrentAnimationKey)
+            ->template registerProperty<int>("current_frame", &NodeType::setCurrentFrame)
+            ->template registerProperty<bool>("playing", &NodeType::setPlaying);
+        });
                 
         Signal<bool> SIGNAL_ANIMATION_ENDED;
-
-        template<typename NodeType>
-        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name);
 
         void play(string animation_key = "", bool reset_frame = true);
         void play(vector<string> animation_keys, bool reset_frame = true);

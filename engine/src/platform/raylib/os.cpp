@@ -5,7 +5,7 @@
 #include "defs.h"
 
 #include <iostream>
-#include "raylib_include.h"
+#include "common/raylib.h"
 using namespace std;
 
 #ifndef GIT_COMMIT_HASH
@@ -23,21 +23,12 @@ void OS::resetDbPrint() {
     db_print_stack.clear();
 }
 
-Camera2D camera = Camera2D();
-
 void OS::initialiseApplication() {    
-
     SetTraceLogLevel(LOG_WARNING); // Disable info logs
     SetConfigFlags(FLAG_VSYNC_HINT); // Enable VSync
-    InitWindow(WindowX, WindowY, concatChars("RaylibEngine Pre-Alpha Build #", GIT_COMMIT_HASH).c_str()); // Create window
+    InitWindow(WindowX, WindowY, ("RE Pre-Alpha Build #" + string(GIT_COMMIT_HASH)).c_str()); // Create window
     SetWindowPosition(1920 + WindowX/2, WindowY/2); // Move window to center of second monitor
     SetWindowState(FLAG_WINDOW_RESIZABLE); // Make window resizable
-    
-    camera.offset = Vector2(0, 0); 
-    camera.target = Vector2(0, 0);
-    camera.rotation = 0.0f;
-    camera.zoom = 1.0f;
-
 }
 
 void OS::closeApplication() {
@@ -45,7 +36,7 @@ void OS::closeApplication() {
 }
 
 TEXTURE_TYPE OS::loadTexture(string path) {
-    return LoadTexture(path.c_str());
+    return LoadTexture(OS::getResPath(path).c_str());
 }
 
 void OS::unloadTexture(TEXTURE_TYPE texture) {
@@ -53,7 +44,10 @@ void OS::unloadTexture(TEXTURE_TYPE texture) {
 }
 
 TEXTURE_TYPE OS::generateTexture(unsigned int width, unsigned int height) {
-    return LoadTextureFromImage(GenImageColor(width, height, WHITE));
+    Image image = GenImageColor(width, height, Colour::WHITE());
+    Texture2D ret = LoadTextureFromImage(image);
+    UnloadImage(image);
+    return ret;
 }
 
 int OS::getTextureWidth(TEXTURE_TYPE texture) {
@@ -75,7 +69,6 @@ void OS::sleep(float seconds) {
 void OS::beginDrawing() {
     BeginDrawing();
     ClearBackground(Colour{100, 100, 100, 255});
-    BeginMode2D(camera);
 }
 
 void OS::endDrawing() {
@@ -117,6 +110,19 @@ float OS::getFrameDelta() {
     return GetFrameTime();
 }
 
-void OS::print(string message) {
-    cout<<message<<endl;
+void OS::print(string message, int type) {
+    switch (type) {
+        case 0: // Standard message
+            cout << message << endl;
+            break;
+        case 1: // Important info
+            cout << "\033[0;36;49m" << message << "\033[0m" << endl;
+            break;
+        case 2: // Warning
+            cout << "\033[0;33;49m" << message << "\033[0m" << endl;
+            break;
+        case 3: // Error
+            cout << "\033[0;30;41m" << message << "\033[0m" << endl;
+            break;
+    }
 }

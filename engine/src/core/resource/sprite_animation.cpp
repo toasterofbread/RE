@@ -5,11 +5,11 @@
 using json = nlohmann::json;
 using namespace std;
 
-#include "engine/src/core/node/node.h"
+#include "engine/src/node/node.h"
 #include "common/utils.h"
 #include "engine/src/engine.h"
 #include "engine/src/engine_texture.h"
-#include "engine/src/core/node/scene_tree.h"
+#include "engine/src/node/scene_tree.h"
 #include "engine/src/core/signal.h"
 
 SpriteAnimation::SpriteAnimation(string animation_name, json animation_data, json file_data, string load_directory): Resource() {
@@ -25,27 +25,24 @@ SpriteAnimation::SpriteAnimation(string animation_name, json animation_data, jso
         loop = false;
     }
 
-    if (animation_data.count("speed")) {
-        framerate = animation_data["speed"];
-    }
-    else if (animation_data.count("s")) {
+    ASSERT_MSG(animation_data.count("s") || animation_data.count("speed"), "SpriteAnimation with name '" + animation_name + "' has no speed/framerate value");
+    if (animation_data.count("s")) {
         framerate = animation_data["s"];
     }
     else {
-        warn("SpriteAnimation with name '" + animation_name + "' has no speed/framerate value", true);
+        framerate = animation_data["speed"];
     }
 
     frames.clear();
 
     json frames_data;
-    if (animation_data.count("frames")) {
-        frames_data = animation_data["frames"];
-    }
-    else if (animation_data.count("f")) {
+    
+    ASSERT_MSG(animation_data.count("f") || animation_data.count("frames"), "SpriteAnimation with name '" + animation_name + "' has no frames value");
+    if (animation_data.count("f")) {
         frames_data = animation_data["f"];
     }
     else {
-        warn("SpriteAnimation with name '" + animation_name + "' has no frames value", true);
+        frames_data = animation_data["frames"];
     }
 
     for (auto item : frames_data ) {
@@ -57,9 +54,7 @@ SpriteAnimation::SpriteAnimation(string animation_name, json animation_data, jso
 }
 
 shared_ptr<EngineTexture> SpriteAnimation::getFrame(int frame_idx) {
-    if (!hasFrame(frame_idx)) {
-        warn("Frame index out of bounds", true);
-    }
+    ASSERT_MSG(hasFrame(frame_idx), "Frame index " + to_string(frame_idx) + " is out of bounds");
     return frames[frame_idx];
 }
 
@@ -72,26 +67,17 @@ bool SpriteAnimation::hasFrame(int frame_idx) {
 }
 
 int SpriteAnimation::getFrameWidth(int frame_idx) { 
-    return 10;
-    if (!hasFrame(frame_idx)) {
-        warn("Frame index out of bounds", true);
-    }
+    ASSERT_MSG(hasFrame(frame_idx), "Frame index " + to_string(frame_idx) + " is out of bounds");
     return frames[frame_idx]->getWidth(); 
 }
 
 int SpriteAnimation::getFrameHeight(int frame_idx) { 
-    return 10;
-    if (!hasFrame(frame_idx)) {
-        warn("Frame index out of bounds", true);
-    }
+    ASSERT_MSG(hasFrame(frame_idx), "Frame index " + to_string(frame_idx) + " is out of bounds");
     return frames[frame_idx]->getHeight(); 
 }
 
 Vector2 SpriteAnimation::getFrameSize(int frame_idx) { 
-    return Vector2(10, 10);
-    if (!hasFrame(frame_idx)) {
-        warn("Frame index out of bounds", true);
-    }
+    ASSERT_MSG(hasFrame(frame_idx), "Frame index " + to_string(frame_idx) + " is out of bounds");
     return frames[frame_idx]->getSize(); 
 }
 
@@ -103,10 +89,7 @@ SpriteAnimationSet::SpriteAnimationSet(string _file_path, string _base_directory
 
 void SpriteAnimationSet::loadFile(string _file_path, string base_directory_override) {
     
-    if (!isFileValid(_file_path)) {
-        warn("SpriteAnimationSet file is not valid");
-        return;
-    }
+    ASSERT_MSG(isFileValid(_file_path), "SpriteAnimationSet file is not valid");
 
     file_path = _file_path;
     base_directory_override = base_directory_override;
@@ -151,43 +134,33 @@ bool SpriteAnimationSet::hasAnimation(string animation_key) {
 }
 bool SpriteAnimationSet::hasAnimation(vector<string> animation_keys) {
     if (getTreeDepth() != animation_keys.size()) {
-        // warn("animation_keys size (" + to_string(animation_keys.size()) + ") doesn't match the animation tree depth (" + to_string(getTreeDepth()) + ")", true);
         return false;
     }
     return animation_container->hasKeys(animation_keys);
 }
 
 shared_ptr<SpriteAnimation> SpriteAnimationSet::getAnimation(string animation_key) {
-    if (!hasAnimation(animation_key)) {
-        warn("SpriteAnimationSet does not contain the animation key '" + animation_key + "'");
-        return NULL;
-    }
+    ASSERT_MSG(hasAnimation(animation_key), "SpriteAnimationSet does not contain the animation key '" + animation_key + "'");
     return animation_container->getSubAnimation(animation_key);
 }
 
 shared_ptr<SpriteAnimation> SpriteAnimationSet::getAnimation(vector<string> animation_keys) {
-    if (!hasAnimation(animation_keys)) {
-        warn("SpriteAnimationSet does not contain the animation key set [" + strVector2str(animation_keys) + "]");
-        return NULL;
-    }
+    ASSERT_MSG(hasAnimation(animation_keys), "SpriteAnimationSet does not contain the animation key set [" + strVector2str(animation_keys) + "]");
     return animation_container->getKeys(animation_keys);
 }
 
 shared_ptr<EngineTexture> SpriteAnimationSet::getFrame(string animation_key, int frame_idx) {
-    if (!hasAnimation(animation_key)) {
-        warn("SpriteAnimationSet does not contain the animation key: " + animation_key, true);
-    }
+    ASSERT_MSG(hasAnimation(animation_key), "SpriteAnimationSet does not contain the animation key '" + animation_key + "'");
     return getAnimation(animation_key)->getFrame(frame_idx);
 }
 
 shared_ptr<EngineTexture> SpriteAnimationSet::getFrame(vector<string> animation_keys, int frame_idx) {
-    if (!hasAnimation(animation_keys)) {
-        warn("SpriteAnimationSet does not contain the animation key set [" + strVector2str(animation_keys) + "]");
-    }
+    ASSERT_MSG(hasAnimation(animation_keys), "SpriteAnimationSet does not contain the animation key set [" + strVector2str(animation_keys) + "]");
     return getAnimation(animation_keys)->getFrame(frame_idx);
 }
 
 bool SpriteAnimationSet::isFileValid(string file_path, string base_directory_override, string* error_container) {
+    
     if (!OS::fileExists(file_path)) {
         if (error_container != NULL) *error_container = "No file exists at path '" + file_path + "'";
         return false;
@@ -233,7 +206,7 @@ bool SpriteAnimationSet::isFileValid(string file_path, string base_directory_ove
 
     for (auto i = file_data["files"].begin(); i != file_data["files"].end(); ++i) {
         if (!OS::fileExists(plusFile(base_directory, *i))) {
-            if (error_container != NULL) *error_container = "Texture at path '" + OS::getResPath(plusFile(base_directory, *i)) + "' does not exist";
+            if (error_container != NULL) *error_container = "Texture at path '" + plusFile(base_directory, *i) + "' does not exist";
             return false;
         }
     }

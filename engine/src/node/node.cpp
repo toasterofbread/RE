@@ -5,13 +5,13 @@
 #include "common/utils.h"
 #include "engine/src/engine.h"
 #include "engine/src/core/signal.h"
-#include "engine/src/core/node/node_types/node_2d.h"
+#include "engine/src/node/types/node_2d.h"
 
 const int INDICATOR_RADIUS = 10;
 
 // - Core -
 Node::Node() {
-    assert(registered());
+    ASSERT(registered());
 
     name = getValidName();
     id = Engine::getSingleton()->getNewNodeId();
@@ -19,23 +19,31 @@ Node::Node() {
     Engine::getSingleton()->onNodeCreated(this);
 }
 
-void Node::addedToNode(Node* parent_node) {
-    assert(tree == NULL);
-    assert(parent == NULL);
+void Node::enteredTree() {
+    if (!isReady()) {
+        ready();
+    }
+}
+
+void Node::addedToNode() {
+    ASSERT(tree == NULL);
+    ASSERT(parent != NULL);
     
-    parent = parent_node;
     name = getValidName();
-    tree = parent->getTree();
+    tree = getParent()->getTree();
     
     if (tree) {
         tree->onNodeAddedToTree(this);
+        enteredTree();
 
         for (auto child : getChildrenRecursive()) {
             child.first->tree = tree;
             tree->onNodeAddedToTree(child.first);
+            child.first->enteredTree();
         }
     }
 }
+
 void Node::removedFromNode(Node* former_parent_node) {
     parent = NULL;
 
@@ -68,7 +76,7 @@ void Node::physicsProcess(float delta) {
 }
 
 void Node::ready() {
-    assert(!ready_called);
+    ASSERT(!ready_called);
     SIGNAL_READY.emit();
     ready_called = true;
 }
@@ -94,7 +102,7 @@ string Node::getValidName(string base_name) {
         if (append > 1) {
             string ret = name;
             ret.append("_");
-            ret.append(int2char(append));
+            ret.append(to_string(append));
             return ret;
         }
         else {
@@ -122,9 +130,9 @@ string Node::getValidName(string base_name) {
 }
 
 void Node::makeRoot(SceneTree* of_tree) {
-    assert(!is_root);
-    assert(tree == NULL);
-    assert(of_tree->getRoot() == this);
+    ASSERT(!is_root);
+    ASSERT(tree == NULL);
+    ASSERT(of_tree->getRoot() == this);
 
     is_root = true;
     tree = of_tree;
@@ -132,17 +140,14 @@ void Node::makeRoot(SceneTree* of_tree) {
 
 // - Children -
 void Node::addChild(Node* child) {
-    assert(!child->isInsideTree());
+    ASSERT(!child->isInsideTree());
     children.push_back(child);
-    child->addedToNode(this);
-
-    if (!child->isReady()) {
-        child->ready();
-    }
+    child->parent = this;
+    child->addedToNode();
 }
 
 void Node::removeChild(int child_idx) {
-    assert(hasChild(child_idx));
+    ASSERT(hasChild(child_idx));
     auto child = children.begin() + child_idx;
     getChildren()->erase(child);
     (*child)->removedFromNode(this);
@@ -171,7 +176,7 @@ void Node::removeChild(Node* child) {
 }
 
 Node* Node::getChild(int child_idx) {
-    assert(hasChild(child_idx));
+    ASSERT(hasChild(child_idx));
     return children[child_idx];
 }
 
@@ -189,7 +194,7 @@ Node* Node::getChildAtPath(string child_path) {
     Node* current_node = this;
 
     for (auto i = path.begin(); i != path.end(); ++i) {
-        assert(current_node->hasChild(*i));
+        ASSERT(current_node->hasChild(*i));
         current_node = current_node->getChild(*i);
     }
 
@@ -258,8 +263,7 @@ int Node::getChildIndex(Node* child) {
             return index;
         }
     }
-    warn("Child does not belong to node", true);
-    return -1;
+    ASSERT_MSG(false, "Child does not belong to node");
 }
 
 // - Hierarchy -
@@ -303,11 +307,11 @@ void Node::printTree(int max_depth) {
     const string indent_string = "  ";
 
     auto getInfoString = [](Node* node) {
-        string ret = "   │ Name: " + node->getName() + ", ID: " + int2char(node->getId()) + ", Children: " + int2char(node->getChildCount());
+        string ret = "   │ Name: " + node->getName() + ", ID: " + to_string(node->getId()) + ", Children: " + to_string(node->getChildCount());
         
         if (Node2D* node_2d = dynamic_cast<Node2D*>(node)) {
-            ret += ", Scale: " + vector2str(node_2d->getScale());
-            ret += ", Global scale: " + vector2str(node_2d->getGlobalScale());
+            ret += ", Position: " + node_2d->getPosition().toString();
+            ret += ", Global position: " + node_2d->getGlobalPosition().toString();
         }
         
         return ret;
@@ -364,15 +368,8 @@ int Node::getId() {
 
 void Node::kill() {
 
-    if (tree && tree->getCurrentState() == SceneTree::STATE::PROCESS) {
-        warn("Cannot kill node, SceneTree is in process state", true);
-        return;
-    }
-
-    if (isRoot()) {
-        warn("The root node cannot be killed (its power level is over 9000)");
-        return;
-    }
+    ASSERT_MSG(!isInsideTree() || tree->getCurrentState() == SceneTree::STATE::KILL_NODES, "Cannot kill node, SceneTree is in process state");
+    ASSERT_MSG(!isRoot(),"The root node cannot be killed (its power level is over 9000)");
 
     SIGNAL_KILLED.emit();
     
@@ -391,7 +388,7 @@ void Node::kill() {
 }
 
 void Node::queueKill() {
-    assert(tree);
+    ASSERT(tree);
     tree->queueNodeKill(this);
 }
 
@@ -399,11 +396,7 @@ void Node::queueKill() {
 
 void Node::setName(string value) {
 
-    if (value.find("/") != string::npos) {
-        warn("Node name '" + value + "' may not contain '/'", true);
-        return;
-    }
-
+    ASSERT_MSG(value.find("/") == string::npos, "Node name '" + value + "' may not contain '/'");
     name = getValidName(value); 
 }
 

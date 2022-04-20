@@ -1,7 +1,7 @@
 #include "engine/src/core/signal.h"
 
 #include "engine/src/engine.h"
-#include "engine/src/core/node/scene_tree.h"
+#include "engine/src/node/scene_tree.h"
 
 // template<typename CallbackReturnType, typename... CallbackArgs>
 // bool Signal<CallbackReturnType, CallbackArgs...>::connected() {

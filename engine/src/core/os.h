@@ -12,6 +12,9 @@ using namespace std;
 #include <json.hpp>
 using json = nlohmann::json;
 
+// Forward declarations
+class Node;
+
 namespace OS {
 
     // Called once on startup, before the main loop begins
@@ -42,17 +45,22 @@ namespace OS {
 
     int getScreenWidth();
     int getScreenHeight();
+    Vector2 getScreenSize();
 
     string getResPath(string path);
 
     json loadJsonFile(string path);
-    json loadJsonResource(string resource_path); // !temp
+    char* loadFileText(string path);
 
     bool shouldClose();
 
     float getFrameDelta();
 
-    void print(string message);
+    void print(string msg, int type = 0);
+    void print(Vector2 msg, int type = 0);
+    void print(float msg, int type = 0);
+    void print(int msg, int type = 0);
+    void print(Node* msg, int type = 0);
 
     list<string>* getDbPrintStack();
 

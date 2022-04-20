@@ -18,21 +18,14 @@ template<typename... CallbackArgs>
 class Signal {
     public:
 
-        ~Signal() {
-            for (BaseConnectionHolder* holder : connections) {
-                delete holder;
-            }
-        }
-
         class BaseConnection;
 
         void emit(CallbackArgs... arguments) {
-            for (BaseConnectionHolder* holder : connections) {
+            for (shared_ptr<BaseConnectionHolder> holder : connections) {
                 auto conn = holder->connections.begin();
                 while (conn != holder->connections.end()) {
                     (*conn)->call(arguments...);
                     if ((*conn)->isOneShot()) {
-                        delete *conn;
                         holder->connections.erase(conn++);
                     }
                     else {
@@ -46,19 +39,19 @@ class Signal {
         template<typename ObjectType, typename... BindArguments, typename MethodReturnType = void>
         void connect(MethodReturnType (ObjectType::*callback)(CallbackArgs..., BindArguments...), ObjectType* object, bool one_shot = false, BindArguments... binds) {
 
-            Connection<ObjectType, MethodReturnType, BindArguments...>* connection = new Connection<ObjectType, MethodReturnType, BindArguments...>(one_shot, binds...);
+            auto connection = make_shared<Connection<ObjectType, MethodReturnType, BindArguments...>>(one_shot, binds...);
             connection->setup(callback, object);
 
-            ConnectionHolder<ObjectType>* connection_holder = NULL;
-            for (BaseConnectionHolder* holder : connections) {
+            shared_ptr<ConnectionHolder<ObjectType>> connection_holder = NULL;
+            for (shared_ptr<BaseConnectionHolder> holder : connections) {
                 if (holder->matches(object)) {
-                    connection_holder = (ConnectionHolder<ObjectType>*)holder;
+                    connection_holder = reinterpret_pointer_cast<ConnectionHolder<ObjectType>>(holder);
                     break;
                 }
             }
 
             if (connection_holder == NULL) {
-                connection_holder = new ConnectionHolder(object);
+                connection_holder = make_shared<ConnectionHolder<ObjectType>>(object);
                 connections.push_back(connection_holder);
             }
 
@@ -68,19 +61,19 @@ class Signal {
         template<typename ObjectType, typename... BindArguments, typename MethodReturnType = void>
         void connectWithoutArgs(MethodReturnType (ObjectType::*callback)(BindArguments...), ObjectType* object, bool one_shot = false, BindArguments... binds) {
 
-            Connection<ObjectType, MethodReturnType, BindArguments...>* connection = new Connection<ObjectType, MethodReturnType, BindArguments...>(one_shot, binds...);
+            auto connection = make_shared<Connection<ObjectType, MethodReturnType, BindArguments...>>(one_shot, binds...);
             connection->setupWithoutArgs(callback, object);
 
-            ConnectionHolder<ObjectType>* connection_holder = NULL;
-            for (BaseConnectionHolder* holder : connections) {
+            shared_ptr<ConnectionHolder<ObjectType>> connection_holder = NULL;
+            for (shared_ptr<BaseConnectionHolder> holder : connections) {
                 if (holder->matches(object)) {
-                    connection_holder = (ConnectionHolder<ObjectType>*)holder;
+                    connection_holder = reinterpret_pointer_cast<ConnectionHolder<ObjectType>>(holder);
                     break;
                 }
             }
 
             if (connection_holder == NULL) {
-                connection_holder = new ConnectionHolder<ObjectType>(object);
+                connection_holder = make_shared<ConnectionHolder<ObjectType>>(object);
                 connections.push_back(connection_holder);
             }
 
@@ -91,7 +84,6 @@ class Signal {
         void disconnect(ObjectType* object) {
             for (auto holder = connections.begin(); holder != connections.end(); holder++) {
                 if ((*holder)->matches(object)) {
-                    delete *holder;
                     connections.erase(holder);
                     break;
                 }
@@ -99,15 +91,12 @@ class Signal {
         }
 
         void disconnectAll() {
-            for (BaseConnectionHolder* holder : connections) {
-                delete holder;
-            }
             connections.clear();
         }
 
         int getConnectionCount() {
             int total = 0;
-            for (BaseConnectionHolder* holder : connections) {
+            for (shared_ptr<BaseConnectionHolder> holder : connections) {
                 total += holder->connections.size();
             }
             return total;
@@ -115,7 +104,7 @@ class Signal {
 
         template<typename ObjectType>
         int getConnectionCount(ObjectType* object) {
-            for (BaseConnectionHolder* holder : connections) {
+            for (shared_ptr<BaseConnectionHolder> holder : connections) {
                 if (holder->matches(object)) {
                     return holder->connections.size();
                 }
@@ -124,8 +113,8 @@ class Signal {
         }
 
         template<typename ObjectType>
-        vector<BaseConnection*>* getConnections(ObjectType* object) {
-            for (BaseConnectionHolder* holder : connections) {
+        list<shared_ptr<BaseConnection>>* getConnections(ObjectType* object) {
+            for (shared_ptr<BaseConnectionHolder> holder : connections) {
                 if (holder->matches(object)) {
                     return &holder->connections;
                 }
@@ -154,7 +143,7 @@ class Signal {
 
                 bool ignore_arguments = false;
 
-                template<size_t ...I>
+                template<size_t... I>
                 void callWithBinds(CallbackArgs... arguments, index_sequence<I...>) {
                     if (!ignore_arguments) {
                         (object->*callback)(arguments..., get<I>(binds)...);
@@ -183,8 +172,7 @@ class Signal {
                 }
                 
                 void call(CallbackArgs... arguments) {
-                    static constexpr auto size = tuple_size<tuple<BindArguments...>>::value;
-                    callWithBinds(arguments..., make_index_sequence<size>{});
+                    callWithBinds(arguments..., make_index_sequence<sizeof...(BindArguments)>{});
                 }
 
                 ObjectType* getObject() {
@@ -203,12 +191,7 @@ class Signal {
 
         struct BaseConnectionHolder {
             virtual bool matches(any match_object) = 0;
-            list<BaseConnection*> connections;
-            ~BaseConnectionHolder() {
-                for (BaseConnection* connection : connections) {
-                    delete connection;
-                }
-            }
+            list<shared_ptr<BaseConnection>> connections;
         };
 
         template<typename ObjectType>
@@ -227,7 +210,7 @@ class Signal {
                 return any_cast<ObjectType*>(match_object) == object;
             }
         };
-        vector<BaseConnectionHolder*> connections;
+        vector<shared_ptr<BaseConnectionHolder>> connections;
 };
 
 #endif

@@ -1,14 +1,20 @@
 #ifndef INCLUDED_NODE2D
 #define INCLUDED_NODE2D
 
-#include "engine/src/core/node/node.h"
+#include "engine/src/node/node.h"
 #include "engine/src/core/signal.h"
 
 class Node2D: public Node {
     
     public:
 
-        REGISTER_NODE(Node2D, Node);
+        REGISTER_NODE(Node2D, Node, {
+            c->template registerProperty<bool>("show_gizmos", &NodeType::setShowGizmos)
+            ->template registerProperty<Vector2>("position", &NodeType::setPosition)
+            ->template registerProperty<Vector2>("scale", &NodeType::setScale)
+            ->template registerProperty<float>("rotation", &NodeType::setRotation)
+            ->template registerProperty<bool>("visible", &NodeType::setVisible);
+        });
 
         Signal<int, int> SIGNAL_DRAW_LAYER_CHANGED;
 
@@ -16,10 +22,9 @@ class Node2D: public Node {
         Signal<float> SIGNAL_GLOBAL_ROTATION_CHANGED;
         Signal<Vector2> SIGNAL_GLOBAL_SCALE_CHANGED;
 
-        template<typename NodeType>
-        static ObjectConstructor<NodeType>* registerNodeProperties(string node_name);
-
         virtual void draw();
+
+        Node2D* getFirst2DParent(bool only_immediate_parent = false);
 
         void setModulate(Colour value) { modulate = value; }
         void setGlobalModulate(Colour value) {}
@@ -81,7 +86,7 @@ class Node2D: public Node {
         bool getUseRelativeVisibility() { return visible_relative_to_parent; }
 
     protected:
-        void addedToNode(Node* parent_node);
+        void addedToNode();
         void removedFromNode(Node* former_parent_node);
 
         void addGizmoText(string text, bool unique_line = false) {
@@ -98,7 +103,7 @@ class Node2D: public Node {
         virtual void onParentGlobalScaleChanged(Vector2 old_global_scale);
 
     private:
-        Colour modulate = WHITE;
+        Colour modulate = Colour::WHITE();
 
         int draw_layer = 0;
         bool relative_draw_layer = true;

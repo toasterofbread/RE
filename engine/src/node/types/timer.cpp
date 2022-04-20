@@ -1,16 +1,5 @@
 #include "timer.h"
 
-void Timer::addedToNode(Node* parent) {
-    super::addedToNode(parent);
-
-    assert(duration >= 0.0f);
-
-    if (duration == 0.0f) {
-        timeout();
-        running = false;
-    }
-}
-
 void Timer::process(float delta) {
     super::process(delta);
 

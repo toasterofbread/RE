@@ -16,7 +16,7 @@ class EngineTexture {
         Signal<string, TEXTURE_TYPE> SIGNAL_DELETED;
 
         TEXTURE_TYPE getTexture() { return texture; }
-        string getFilePath() { assert(!generated); return file_path; }
+        string getFilePath() { ASSERT(!generated); return file_path; }
         bool isGenerated() { return generated; }
 
         ~EngineTexture() {

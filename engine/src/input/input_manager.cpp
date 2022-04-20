@@ -8,13 +8,13 @@ using namespace std;
 #include "engine/src/input/input_event.h"
 #include "engine/src/input/macro.h"
 #include "engine/src/core/signal.h"
-#include "engine/src/core/node/scene_tree.h"
+#include "engine/src/node/scene_tree.h"
 #include "common/input.h"
 
 InputManager* InputManager::singleton = NULL;
 
 InputManager::InputManager() {
-    assert(singleton == NULL);
+    ASSERT(singleton == NULL);
     singleton = this;
 
     Engine* engine = Engine::getSingleton();
@@ -29,7 +29,7 @@ InputManager::InputManager() {
 }
 
 InputManager* InputManager::getSingleton() {
-    assert(singleton != NULL);
+    ASSERT(singleton != NULL);
     return singleton;
 }
 
@@ -40,12 +40,10 @@ void InputManager::process(float delta) {
 #endif
 
 void InputManager::printPressedKey() {
-    #if PLATFORM == PLATFORM_RAYLIB
     int key = GetKeyPressed();
     if (key != 0) {
-        OS::print("Key pressed: " + (string)int2char(key));
+        OS::print("Key pressed: " + (string)to_string(key));
     }
-    #endif
 }
 
 Vector2 InputManager::getPadVector(bool just_pressed) {

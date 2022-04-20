@@ -4,11 +4,11 @@
 
 #include "common/utils.h"
 #include "engine/src/core/signal.h"
-#include "engine/src/core/node/node.h"
-#include "engine/src/core/node/node_types/node_2d.h"
+#include "engine/src/node/node.h"
+#include "engine/src/node/types/node_2d.h"
 #include "engine/src/engine.h"
-#include "engine/src/core/node/node_types/timer.h"
-#include "core/node/node_types/camera.h"
+#include "engine/src/node/types/timer.h"
+#include "node/types/camera_2d.h"
 
 const int SceneTree::MIN_DRAW_LAYER;
 const int SceneTree::MAX_DRAW_LAYER;
@@ -38,7 +38,7 @@ void SceneTree::process(float delta) {
         }
     }
 
-    current_state = STATE::POST_PROCESS;
+    current_state = STATE::KILL_NODES;
 
     for (auto i = kill_queue.begin(); i != kill_queue.end(); ++i) {
         Node* node = *i;
@@ -51,7 +51,7 @@ void SceneTree::process(float delta) {
 }
 
 void SceneTree::addNode(Node* node) {
-    assert(!node->isInsideTree());
+    ASSERT(!node->isInsideTree());
     root_node->addChild(node);
 }
 
@@ -90,12 +90,20 @@ Timer* SceneTree::createTimer(float duration, bool free_on_timeout) {
     return timer;
 }
 
-Camera* SceneTree::getEnabledCamera() {
-    return enabled_camera;
+void SceneTree::setEnabledCamera2D(Camera2D* value) {
+    enabled_camera_2d = value;
 }
 
-void SceneTree::setEnabledCamera(Camera* camera) {
-    enabled_camera = camera;
+Camera2D* SceneTree::getEnabledCamera2D() {
+    return enabled_camera_2d;
+}
+
+void SceneTree::setEnabledCamera3D(Camera3D* value) {
+    enabled_camera_3d = value;
+}
+
+Camera3D* SceneTree::getEnabledCamera3D() {
+    return enabled_camera_3d;
 }
 
 void SceneTree::onDrawableNodeLayerChanged(int old_draw_layer, int new_draw_layer, Node2D* node) {

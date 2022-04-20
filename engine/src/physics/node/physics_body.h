@@ -4,7 +4,7 @@
 #include <box2d/box2d.h>
 #include <box2d/b2_math.h>
 
-#include "engine/src/core/node/node_types/node_2d.h"
+#include "engine/src/node/types/node_2d.h"
 #include "engine/src/core/signal.h"
 
 // Forward declarations
@@ -15,6 +15,13 @@ class PhysicsBody: public Node2D {
     public:
     
         REGISTER_NODE_WITH_CONSTRUCTOR(PhysicsBody, Node2D, {
+            c->template registerProperty<b2BodyType>("type", &NodeType::setType)
+            ->template registerProperty<Vector2>("linear_velocity", &NodeType::setLinearVelocity)
+            ->template registerProperty<bool>("fixed_rotation", &NodeType::setFixedRotation)
+            ->template registerProperty<float>("gravity_scale", &NodeType::setGravityScale)
+            ->template registerProperty<bool>("apply_gravity", &NodeType::setApplyGravity)
+            ->template registerProperty<Vector2>("up_direction", &NodeType::setUpDirection);
+        }, {
             definition.userData.pointer = reinterpret_cast<uintptr_t>(this);
         });
 
@@ -27,7 +34,7 @@ class PhysicsBody: public Node2D {
 
         void physicsProcess(float delta);
 
-        void addedToNode(Node* parent_node);
+        void enteredTree();
         void removedFromNode(Node* former_parent_node);
     
         void addChild(Node* child);
@@ -35,13 +42,30 @@ class PhysicsBody: public Node2D {
 
         void setPosition(Vector2 value);
 
+        bool isOnFloor();
+        bool isOnWall();
+        bool isOnCeiling();
+
         // Physics parameters
         void setType(b2BodyType type);
         b2BodyType getType();
 
-        void setLinearVelocity(b2Vec2 value);
         void setLinearVelocity(Vector2 value);
-        b2Vec2 getLinearVelocity();
+        Vector2 getLinearVelocity();
+
+        void setFixedRotation(bool value);
+        bool isFixedRotation();
+
+        void setGravityScale(float value);
+        float getGravityScale();
+
+        void setApplyGravity(bool value);
+        bool isApplyGravity();
+
+        Vector2 getFinalGravity();
+
+        void setUpDirection(Vector2 value);
+        Vector2 getUpDirection();
 
         b2Body* getBody() { return body; }
 
@@ -65,6 +89,16 @@ class PhysicsBody: public Node2D {
         b2BodyDef definition;
         bool updating_position = false;
         vector<PhysicsBody*> previous_collisions;
+
+        // Runtime data
+        bool on_floor = false;
+        bool on_wall = false;
+        bool on_ceiling = false;
+
+        // Physics parameters
+        bool apply_gravity = true;
+        float gravity_scale = 1.0f;
+        Vector2 up_direction = Vector2(0.0f, -1.0f);
 };
 
 #endif

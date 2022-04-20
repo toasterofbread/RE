@@ -100,17 +100,17 @@ class SpriteAnimationSet: public Resource {
                 }
 
                 shared_ptr<AnimationContainer> getSubContainer(string key) {
-                    assert(!is_final_layer);
+                    ASSERT(!is_final_layer);
                     return containers[key];
                 }
 
                 shared_ptr<SpriteAnimation> getSubAnimation(string key) {
-                    assert(is_final_layer);
+                    ASSERT(is_final_layer);
                     return animations[key];
                 }
 
                 shared_ptr<SpriteAnimation> getKeys(vector<string> keys) {
-                    assert(hasKeys(keys));
+                    ASSERT(hasKeys(keys));
                     if (is_final_layer) {
                         return getSubAnimation(keys[0]);
                     }

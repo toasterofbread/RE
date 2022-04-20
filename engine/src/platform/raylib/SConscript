@@ -2,11 +2,6 @@ import os
 
 Import("env")
 
-env.Append(
-    CPPPATH = ["include/raylib", "include/raylib-cpp"],
-    LIBS = ["raylib"]
-)
-
 def runProjectBinary(file):
     if not env.RUN_AFTER_BUILD:
         return
@@ -17,4 +12,10 @@ def runProjectBinary(file):
         os.system(path)
     else:
         os.system(env.BUILD_DIR + env.TEST_BINARY_NAME + " && " + path)
+
+if GetOption("target") == "debug":
+    env.Append(LIBS = ["bfd", "boost_unit_test_framework"])
+
+env.Append(CCFLAGS = "-rdynamic")
+
 env.runProjectBinary = runProjectBinary

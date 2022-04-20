@@ -1,7 +1,7 @@
 #include "core/os.h"
 #include "common/utils.h"
 
-#include <vita2d.h>
+#include "common/raylib.h"
 #include <psp2/ctrl.h>
 #include <string>
 #include <list>
@@ -125,52 +125,24 @@ struct VitaTextureData {
         return ret;
     }
 
-    // bool isTextureLoaded() {
-    //     return texture != NULL;
-    // }
-
-    // TEXTURE_TYPE getTexture() {
-    //     return texture;
-    // }
-
-    // void setTexture(TEXTURE_TYPE texture) {
-    //     this->texture = texture;
-    // }
-
     private:
         VitaTextureData() {};
-        // TEXTURE_TYPE texture = NULL;
-
 };
 
 class VitaResource {
     public:
         enum class TYPE {
-            JSON,
+            FILE,
             TEXTURE
         };
 
         TYPE getType() { return type; }
         string getPath() { return resource_path; }
 
-        VitaTextureData* getTextureData() {
-            assert(type == TYPE::TEXTURE);
-            return texture_data;
-        }
+        VitaTextureData* getTextureData();
 
-        static VitaResource* createJSON(string path, string key_path) {
-            VitaResource* ret = new VitaResource(TYPE::JSON);
-            ret->setPath(path);
-            ret->setKeyPath(key_path);
-            return ret;
-        }
-        static VitaResource* createTexture(string path, string key_path, int a, int b, int c, int d) {
-            VitaResource* ret = new VitaResource(TYPE::TEXTURE);
-            ret->setPath(path);
-            ret->setKeyPath(key_path);
-            ret->texture_data = new VitaTextureData(ret->resource_path, ret->key_path, a, b, c, d);
-            return ret;
-        }
+        static VitaResource* createFILE(string path, string key_path);
+        static VitaResource* createTexture(string path, string key_path, int a, int b, int c, int d);
 
     static unordered_map<string, VitaResource*> index;
     
@@ -180,8 +152,8 @@ class VitaResource {
         TYPE type;
 
         VitaResource(TYPE _type) { type = _type; }
-        void setPath(string path) { resource_path = VITA_PARTITION + path; }
-        void setKeyPath(string _key_path) { key_path = formatPath(_key_path); }
+        void setPath(string path);
+        void setKeyPath(string _key_path);
 
         VitaTextureData* texture_data;
 };
@@ -189,8 +161,8 @@ class VitaResource {
 struct VitaTexture {
     static unordered_map<string, VitaTexture*> index;
     VitaTextureData* data;
-    vita2d_texture* texture;
-    VitaTexture(vita2d_texture* tex) {
+    Texture2D texture;
+    VitaTexture(Texture2D tex) {
         texture = tex;
     }
 };

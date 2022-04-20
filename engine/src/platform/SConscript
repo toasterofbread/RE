@@ -5,19 +5,17 @@ from spectre7 import utils
 Import("env")
 
 env.Replace(
-    CPPPATH = [".", env.ENGINE_SRC, join(env.ENGINE_SRC, "platform", env.PLATFORM_NAME)],
+    CPPPATH = [".", env.ENGINE_SRC, join(env.ENGINE_SRC, "platform", env.PLATFORM_NAME), "include"],
     CCFLAGS = ["-std=c++17", "-g", "-fpermissive", "-fdiagnostics-color=always", f"-DGIT_COMMIT_HASH='\"{env.getGitHash()}\"'", "-Linclude/lib/vita", "-Wl,-rpath include/lib/vita", "-lbox2d"],
     LINKFLAGS = ["-g"],
     LIBPATH = [env.LIB_DIR],
     LIBS = [
-        # "yaml-cpp",
+        "yaml-cpp",
         "box2d",
+        "raylib"
     ],
     CXX = "g++",
 )
-
-if GetOption("target") == "debug":
-    env.Append(LIBS = ["dw", "boost_unit_test_framework"])
 
 if path.isdir(env.DIRECTORY + "/include/lib/" + env.PLATFORM_NAME):
     env.Append(LIBPATH = "include/lib/" + env.PLATFORM_NAME)

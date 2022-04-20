@@ -17,9 +17,7 @@ void AnimatedSprite::process(float delta) {
         return;
     }
     if (!hasAnimation(getCurrentAnimationKeys())) {
-        if (!getCurrentAnimationKeys().empty()) {
-            warn("AnimatedSprite's animation_set has no animation at key [" + strVector2str(getCurrentAnimationKeys()) + "]");
-        }
+        WARN_IF(!getCurrentAnimationKeys().empty(), "AnimatedSprite's animation_set has no animation at key [" + strVector2str(getCurrentAnimationKeys()) + "]");
         return;
     }
 
@@ -81,10 +79,7 @@ bool AnimatedSprite::hasAnimation(vector<string> animation_keys) {
 }
 
 shared_ptr<SpriteAnimation> AnimatedSprite::getCurrentAnimation() {
-    if (getAnimationSet() == NULL) {
-        warn("AnimatedSprite has no animation_set");
-        return NULL;
-    }
+    ASSERT_MSG(getAnimationSet() != NULL, "AnimatedSprite has no animation_set");
     return getAnimationSet()->getAnimation(getCurrentAnimationKeys());
 }
 

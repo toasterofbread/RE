@@ -1,6 +1,6 @@
 #include <box2d/box2d.h>
 
-#include "engine/src/core/node/node_types/node_2d.h"
+#include "engine/src/node/types/node_2d.h"
 #include "engine/src/core/signal.h"
 #include "engine/src/engine_texture.h"
 
@@ -11,7 +11,9 @@ class CollisionShape: public Node2D {
 
     public:
     
-        REGISTER_NODE(CollisionShape, Node2D);
+        REGISTER_NODE(CollisionShape, Node2D, ({
+            c->template registerMethod<Vector2, Vector2, float>("setBoxShape", &NodeType::setBoxShape);
+        }));
         
         Signal<> SIGNAL_POLYGON_CHANGED;
 
@@ -19,7 +21,7 @@ class CollisionShape: public Node2D {
         void draw();
     
         bool hasShape();
-        b2Shape* getShape();
+        shared_ptr<b2Shape> getShape();
 
         b2Shape::Type getType();
 
@@ -29,6 +31,7 @@ class CollisionShape: public Node2D {
     protected:
 
         void onParentGlobalScaleChanged(Vector2 old_global_scale);
+        void enteredTree();
 
     private:
 
@@ -46,6 +49,9 @@ class CollisionShape: public Node2D {
 
         void onScaleChanged(Vector2 old_scale);
 
-        b2Shape* collision_shape = NULL;
+        shared_ptr<b2Shape> collision_shape = NULL;
+        Vector2 base_scale = Vector2::ONE();
         bool disabled = false; // !todo
+
+        void scaleChanged(Vector2 old_scale);
 };
