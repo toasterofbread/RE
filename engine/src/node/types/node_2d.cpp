@@ -40,7 +40,7 @@ void Node2D::draw() {
         position.y -= 15;
         for (string line : additional_gizmos_unique) {
             position.y -= 15;
-            Draw::drawText(line, position, Colour::BLACK(), 1.0f, Draw::DRAW_MODE::WORLD);
+            Draw::drawText(line, position, Colour::BLACK(), 1.0f, false);
         }
 
     }
@@ -65,7 +65,7 @@ Colour Node2D::getGlobalModulate() {
 }
 
 Vector2 Node2D::getPosition() {
-    return position;
+    return Vector2(position);
 }
 void Node2D::setPosition(Vector2 value) {
     if (position == value) {
@@ -123,14 +123,14 @@ void Node2D::setGlobalPosition(Vector2 value) {
 }
 
 Vector2 Node2D::getScale() {
-    return scale;
+    return Vector2(scale);
 }
 void Node2D::setScale(Vector2 value) {
     if (scale == value) {
         return;
     }
 
-    if (!SIGNAL_GLOBAL_SCALE_CHANGED.getConnectionCount() == 0) {
+    if (SIGNAL_GLOBAL_SCALE_CHANGED.getConnectionCount() == 0) {
         scale = value;
         return;
     }
@@ -177,7 +177,7 @@ void Node2D::setRotation(float value) {
         return;
     }
 
-    if (!SIGNAL_GLOBAL_ROTATION_CHANGED.getConnectionCount() == 0) {
+    if (SIGNAL_GLOBAL_ROTATION_CHANGED.getConnectionCount() == 0) {
         rotation = value;
         return;
     }

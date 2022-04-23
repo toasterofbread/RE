@@ -7,14 +7,7 @@
 #include "engine/src/engine.h"
 
 Vector2 YAMLDataConverter::convertToVector2(YAML::Node data, string type_name, string error_prefix) {
-    Vector2 ret = InternalVector2::ZERO();
-
-    #if PLATFORM == PLATFORM_VITA && false
-    
-    ret.x = stof(data[0].as<string>());
-    ret.y = stof(data[1].as<string>());
-
-    #else
+    Vector2 ret = Vector2::ZERO();
 
     // Convert and set X value
     try { ret.x = data[0].as<float>(); }
@@ -28,7 +21,29 @@ Vector2 YAMLDataConverter::convertToVector2(YAML::Node data, string type_name, s
         ASSERT_MSG(false, "Could not convert the second (Y) value to float"); 
     }
 
-    #endif
+    return ret;
+}
+
+Vector3 YAMLDataConverter::convertToVector3(YAML::Node data, string type_name, string error_prefix) {
+    Vector3 ret = Vector3::ZERO();
+
+    // Convert and set X value
+    try { ret.x = data[0].as<float>(); }
+    catch (YAML::TypedBadConversion<float>) { 
+        ASSERT_MSG(false, "Could not convert the first (X) value to float"); 
+    }
+
+    // Convert and set Y value
+    try { ret.y = data[1].as<float>(); }
+    catch (YAML::TypedBadConversion<float>) { 
+        ASSERT_MSG(false, "Could not convert the second (Y) value to float"); 
+    }
+
+    // Convert and set Z value
+    try { ret.z = data[2].as<float>(); }
+    catch (YAML::TypedBadConversion<float>) { 
+        ASSERT_MSG(false, "Could not convert the third (Z) value to float"); 
+    }
 
     return ret;
 }

@@ -5,8 +5,6 @@
 
 #define TEXTURE_TYPE Texture2D
 
-#define INPUT_HAS_PROCESS false
-
 #define INPUT_DEFS \
 enum Axis { \
     LX, \
@@ -82,4 +80,15 @@ enum KeyboardButton { \
     KEY_LSHIFT = 340, \
     KEY_TILDE = 96, \
     KEY_ESC = 256, \
+}; \
+enum MouseButton { \
+    MOUSE_LEFT, \
+    MOUSE_RIGHT, \
+    MOUSE_MIDDLE, \
+    MOUSE_SIDE, \
+    MOUSE_EXTRA, \
+    MOUSE_FORWARD, \
+    MOUSE_BACK, \
+    MOUSE_WHEEL_UP, \
+    MOUSE_WHEEL_DOWN, \
 };

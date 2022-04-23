@@ -212,15 +212,6 @@ void OS::closeApplication() {
     app_closed = true;
 }
 
-void OS::beginDrawing() {
-    BeginDrawing();
-    ClearBackground(Colour{100, 100, 100, 255});
-}
-
-void OS::endDrawing() {
-    EndDrawing();
-}
-
 double OS::getTime() {
     SceUInt64 tick = sceKernelGetProcessTimeWide(); // Microseconds
     return ((double)tick) / 1000000.0;

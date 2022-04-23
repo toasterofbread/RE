@@ -13,23 +13,23 @@ namespace Input {
 
     INPUT_DEFS
 
-    #if INPUT_HAS_PROCESS
-    void process();
-    #endif
-
     float getAxis(Axis axis);
 
     bool isButtonPressed(GamepadButton button);
     bool isButtonPressed(KeyboardButton button);
+    bool isButtonPressed(MouseButton button);
 
     bool isButtonJustPressed(GamepadButton button);
     bool isButtonJustPressed(KeyboardButton button);
+    bool isButtonJustPressed(MouseButton button);
 
     bool isButtonJustReleased(GamepadButton button);
     bool isButtonJustReleased(KeyboardButton button);
+    bool isButtonJustReleased(MouseButton button);
 
     bool isKeyModifier(KeyboardButton key);
     bool isKeyModifier(GamepadButton key);
+    bool isKeyModifier(MouseButton key);
 
 };
 

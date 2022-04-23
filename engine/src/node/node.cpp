@@ -6,6 +6,7 @@
 #include "engine/src/engine.h"
 #include "engine/src/core/signal.h"
 #include "engine/src/node/types/node_2d.h"
+#include "engine/src/node/types/node_3d.h"
 
 const int INDICATOR_RADIUS = 10;
 
@@ -310,6 +311,10 @@ void Node::printTree(int max_depth) {
         string ret = "   │ Name: " + node->getName() + ", ID: " + to_string(node->getId()) + ", Children: " + to_string(node->getChildCount());
         
         if (Node2D* node_2d = dynamic_cast<Node2D*>(node)) {
+            ret += ", Position: " + node_2d->getPosition().toString();
+            ret += ", Global position: " + node_2d->getGlobalPosition().toString();
+        }
+        else if (Node3D* node_2d = dynamic_cast<Node3D*>(node)) {
             ret += ", Position: " + node_2d->getPosition().toString();
             ret += ", Global position: " + node_2d->getGlobalPosition().toString();
         }

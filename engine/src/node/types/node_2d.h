@@ -13,7 +13,8 @@ class Node2D: public Node {
             ->template registerProperty<Vector2>("position", &NodeType::setPosition)
             ->template registerProperty<Vector2>("scale", &NodeType::setScale)
             ->template registerProperty<float>("rotation", &NodeType::setRotation)
-            ->template registerProperty<bool>("visible", &NodeType::setVisible);
+            ->template registerProperty<bool>("visible", &NodeType::setVisible)
+            ->template registerProperty<int>("draw_layer", &NodeType::setDrawLayer);
         });
 
         Signal<int, int> SIGNAL_DRAW_LAYER_CHANGED;

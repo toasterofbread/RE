@@ -3,6 +3,7 @@
 
 #include "common/input.h"
 #include "common/vector2.h"
+#include "common/enums.h"
 #include "defs.h"
 
 #include <functional>
@@ -15,11 +16,9 @@ class InputEvent;
 class SceneTree;
 class Engine;
 
-// !todo Remove class?
+// !todo Remove class? Yes
 class InputManager {
     public:
-
-        enum SIDE { LEFT, RIGHT };
 
         InputManager();
         static InputManager* getSingleton();
@@ -30,10 +29,6 @@ class InputManager {
         InputEvent* INPUTEVENT_PAD_RIGHT;
 
         InputEvent* INPUTEVENT_REBUILD_AND_RUN;
-
-        #if INPUT_HAS_PROCESS
-        static void process(float delta);
-        #endif
 
         static void printPressedKey();
 

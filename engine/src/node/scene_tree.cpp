@@ -6,6 +6,7 @@
 #include "engine/src/core/signal.h"
 #include "engine/src/node/node.h"
 #include "engine/src/node/types/node_2d.h"
+#include "engine/src/node/types/node_3d.h"
 #include "engine/src/engine.h"
 #include "engine/src/node/types/timer.h"
 #include "node/types/camera_2d.h"
@@ -33,8 +34,17 @@ void SceneTree::process(float delta) {
     current_state = STATE::DRAW;
 
     for (int i = 0; i < MAX_DRAW_LAYER - MIN_DRAW_LAYER; i++) {
-        for (auto node : drawable_nodes[i]) {
-            node->draw();
+
+        for (auto drawable = drawable_nodes[i].begin(); drawable != drawable_nodes[i].end();) {
+            (*drawable)->draw();
+
+            if ((*drawable)->one_shot) {
+                delete (*drawable);
+                drawable = drawable_nodes[i].erase(drawable);
+            }
+            else {
+                ++drawable;
+            }
         }
     }
 
@@ -65,16 +75,36 @@ void SceneTree::queueNodeKill(Node* node) {
 }
 
 void SceneTree::onNodeAddedToTree(Node* node) {
-    if (Node2D* node_2d = dynamic_cast<Node2D*>(node)) {
-        drawable_nodes[node_2d->getGlobalDrawLayer() - MIN_DRAW_LAYER].push_back(node_2d);
-        node_2d->SIGNAL_DRAW_LAYER_CHANGED.connect(&SceneTree::onDrawableNodeLayerChanged, this, false, node_2d);
+    if (Node2D* converted = dynamic_cast<Node2D*>(node)) {
+        drawable_nodes[converted->getGlobalDrawLayer() - MIN_DRAW_LAYER].push_back(new Drawable(converted));
+        converted->SIGNAL_DRAW_LAYER_CHANGED.connect(&SceneTree::onDrawableNodeLayerChanged, this, false, converted);
+    }
+    else if (Node3D* converted = dynamic_cast<Node3D*>(node)) {
+        drawable_nodes[converted->getGlobalDrawLayer() - MIN_DRAW_LAYER].push_back(new Drawable(converted));
+        converted->SIGNAL_DRAW_LAYER_CHANGED.connect(&SceneTree::onDrawableNodeLayerChanged, this, false, converted);
     }
 }
 
 void SceneTree::onNodeRemovedFromTree(Node* node) {
-    if (Node2D* node_2d = dynamic_cast<Node2D*>(node)) {
-        vectorRemoveValue(&drawable_nodes[node_2d->getGlobalDrawLayer() - MIN_DRAW_LAYER], node_2d);
-        node_2d->SIGNAL_DRAW_LAYER_CHANGED.disconnect(this);
+    if (Node2D* converted = dynamic_cast<Node2D*>(node)) {
+        for (auto drawable = drawable_nodes[converted->getGlobalDrawLayer() - MIN_DRAW_LAYER].begin(); drawable != drawable_nodes[converted->getGlobalDrawLayer() - MIN_DRAW_LAYER].end(); drawable++) {
+            if ((*drawable)->compare(converted)) {
+                delete (*drawable);
+                drawable_nodes[converted->getGlobalDrawLayer() - MIN_DRAW_LAYER].erase(drawable);
+                break;
+            }
+        }
+        converted->SIGNAL_DRAW_LAYER_CHANGED.disconnect(this);
+    }
+    else if (Node3D* converted = dynamic_cast<Node3D*>(node)) {
+        for (auto drawable = drawable_nodes[converted->getGlobalDrawLayer() - MIN_DRAW_LAYER].begin(); drawable != drawable_nodes[converted->getGlobalDrawLayer() - MIN_DRAW_LAYER].end(); drawable++) {
+            if ((*drawable)->compare(converted)) {
+                delete (*drawable);
+                drawable_nodes[converted->getGlobalDrawLayer() - MIN_DRAW_LAYER].erase(drawable);
+                break;
+            }
+        }
+        converted->SIGNAL_DRAW_LAYER_CHANGED.disconnect(this);
     }
 }
 
@@ -107,6 +137,30 @@ Camera3D* SceneTree::getEnabledCamera3D() {
 }
 
 void SceneTree::onDrawableNodeLayerChanged(int old_draw_layer, int new_draw_layer, Node2D* node) {
-    vectorRemoveValue(&drawable_nodes[old_draw_layer - MIN_DRAW_LAYER], node);
-    drawable_nodes[new_draw_layer - MIN_DRAW_LAYER].push_back(node);
+    for (auto drawable = drawable_nodes[old_draw_layer - MIN_DRAW_LAYER].begin(); drawable != drawable_nodes[old_draw_layer - MIN_DRAW_LAYER].end(); drawable++) {
+        if ((*drawable)->compare(node)) {
+            drawable_nodes[old_draw_layer - MIN_DRAW_LAYER].erase(drawable);
+            drawable_nodes[new_draw_layer - MIN_DRAW_LAYER].push_back(*drawable);
+            break;
+        }
+    }
+}
+
+void SceneTree::onDrawableNodeLayerChanged(int old_draw_layer, int new_draw_layer, Node3D* node) {
+    for (auto drawable = drawable_nodes[old_draw_layer - MIN_DRAW_LAYER].begin(); drawable != drawable_nodes[old_draw_layer - MIN_DRAW_LAYER].end(); drawable++) {
+        if ((*drawable)->compare(node)) {
+            drawable_nodes[old_draw_layer - MIN_DRAW_LAYER].erase(drawable);
+            drawable_nodes[new_draw_layer - MIN_DRAW_LAYER].push_back(*drawable);
+            break;
+        }
+    }
+}
+
+void SceneTree::BaseDrawable::callNodeDraw() {
+    if (type == NODE2D) {
+        node_2d->draw();
+    }
+    else {
+        node_3d->draw();
+    }
 }

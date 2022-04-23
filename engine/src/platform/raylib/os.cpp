@@ -66,15 +66,6 @@ void OS::sleep(float seconds) {
     WaitTime(seconds * 1000);
 }
 
-void OS::beginDrawing() {
-    BeginDrawing();
-    ClearBackground(Colour{100, 100, 100, 255});
-}
-
-void OS::endDrawing() {
-    EndDrawing();
-}
-
 string OS::getResPath(string path) {
     return plusFile("/home/spectre7/Projects/raylib/RE/", path);
 }

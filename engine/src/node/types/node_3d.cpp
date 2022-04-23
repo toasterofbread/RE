@@ -2,6 +2,7 @@
 
 #include "common/colour.h"
 #include "common/draw.h"
+#include "node/types/camera_3d.h"
 
 Node3D* Node3D::getFirst3DParent(bool only_immediate_parent) {
     Node* ret = this;
@@ -14,9 +15,13 @@ Node3D* Node3D::getFirst3DParent(bool only_immediate_parent) {
     return NULL;
 }
 
+void Node3D::ready() {
+    super::ready();
+}
+
 void Node3D::draw() {
 
-    if (show_gizmos) {
+    if (show_gizmos && inFrontOfCamera()) {
         string text = getTypeName();
         if (getName() != text) {
             text += " | " + getName();
@@ -28,7 +33,7 @@ void Node3D::draw() {
         text += " | " + (string)to_string(getId());
 
         Vector3 position = getGlobalPosition();
-        Vector2 draw_position = GetWorldToScreen(position, *Engine::getSingleton()->getTree()->getEnabledCamera3D());
+        Vector2 draw_position = GetWorldToScreen(position, *Engine::getSingleton()->getTree()->getEnabledCamera3D()->getCamera());
 
         text += " | " + position.toString();
 
@@ -37,15 +42,20 @@ void Node3D::draw() {
             text += suffix;
         }
 
-        markPosition(draw_position, text, Colour::BLACK());
+        markPosition(100, draw_position, text, Colour::BLACK());
 
         draw_position.y -= 15;
         for (string line : additional_gizmos_unique) {
             draw_position.y -= 15;
-            Draw::drawText(line, draw_position, Colour::BLACK(), 1.0f, Draw::DRAW_MODE::WORLD);
+
+            Draw::drawOnLayer(100, true, Draw::drawText, line, draw_position, Colour::BLACK(), 1.0f, false);
         }
 
+        if (getId() == 3) {
+            Draw::drawCube(getGlobalPosition(), Vector3(1, 1, 1), Colour::BLUE());
+        }
     }
+
     additional_gizmos.clear();
     additional_gizmos_unique.clear();
 }
@@ -67,7 +77,7 @@ Colour Node3D::getGlobalModulate() {
 }
 
 Vector3 Node3D::getPosition() {
-    return position;
+    return Vector3(position);
 }
 void Node3D::setPosition(Vector3 value) {
     if (position == value) {
@@ -125,14 +135,14 @@ void Node3D::setGlobalPosition(Vector3 value) {
 }
 
 Vector3 Node3D::getScale() {
-    return scale;
+    return Vector3(scale);
 }
 void Node3D::setScale(Vector3 value) {
     if (scale == value) {
         return;
     }
 
-    if (!SIGNAL_GLOBAL_SCALE_CHANGED.getConnectionCount() == 0) {
+    if (SIGNAL_GLOBAL_SCALE_CHANGED.getConnectionCount() == 0) {
         scale = value;
         return;
     }
@@ -171,7 +181,7 @@ void Node3D::setGlobalScale(Vector3 value) {
 }
 
 Vector3 Node3D::getRotation() {
-    return rotation;
+    return Vector3(rotation);
 }
 void Node3D::setRotation(Vector3 value) {
 
@@ -179,7 +189,7 @@ void Node3D::setRotation(Vector3 value) {
         return;
     }
 
-    if (!SIGNAL_GLOBAL_ROTATION_CHANGED.getConnectionCount() == 0) {
+    if (SIGNAL_GLOBAL_ROTATION_CHANGED.getConnectionCount() == 0) {
         rotation = value;
         return;
     }
@@ -361,7 +371,18 @@ void Node3D::onParentGlobalRotationChanged(Vector3 old_global_rotation) {
     SIGNAL_GLOBAL_ROTATION_CHANGED.emit(old_global_rotation + getRotation());
 }
 
-
 void Node3D::onParentGlobalScaleChanged(Vector3 old_global_scale) {
     SIGNAL_GLOBAL_SCALE_CHANGED.emit(old_global_scale + getScale());
+}
+
+bool Node3D::inFrontOfCamera() {
+    if (!isInsideTree()) {
+        return false;
+    }
+
+    if (Camera3D* camera = getTree()->getEnabledCamera3D()) {
+        return (getGlobalPosition() - camera->getCamera()->position).dot((Vector3)camera->getCamera()->target - camera->getCamera()->position) > 0;
+    }
+
+    return false;
 }

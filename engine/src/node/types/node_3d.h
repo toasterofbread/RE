@@ -1,3 +1,6 @@
+#ifndef INCLUDED_NODE3D
+#define INCLUDED_NODE3D
+
 #include "engine/src/node/node.h"
 
 #include "common/vector3.h"
@@ -6,13 +9,22 @@ class Node3D: public Node {
 
     public:
 
-        REGISTER_NODE(Node3D, Node, {})
+        REGISTER_NODE(Node3D, Node, {
+            c->template registerProperty<bool>("show_gizmos", &NodeType::setShowGizmos)
+            ->template registerProperty<Vector3>("position", &NodeType::setPosition)
+            ->template registerProperty<Vector3>("scale", &NodeType::setScale)
+            ->template registerProperty<Vector3>("rotation", &NodeType::setRotation)
+            ->template registerProperty<bool>("visible", &NodeType::setVisible)
+            ->template registerProperty<int>("draw_layer", &NodeType::setDrawLayer);
+        })
 
         Signal<int, int> SIGNAL_DRAW_LAYER_CHANGED;
 
         Signal<Vector3> SIGNAL_GLOBAL_POSITION_CHANGED;
         Signal<Vector3> SIGNAL_GLOBAL_ROTATION_CHANGED;
         Signal<Vector3> SIGNAL_GLOBAL_SCALE_CHANGED;
+
+        void ready();
 
         virtual void draw();    
 
@@ -77,6 +89,8 @@ class Node3D: public Node {
         void setUseRelativeVisibility(bool value) { visible_relative_to_parent = value; }
         bool getUseRelativeVisibility() { return visible_relative_to_parent; }
 
+        bool inFrontOfCamera();
+
     protected:
         void addedToNode();
         void removedFromNode(Node* former_parent_node);
@@ -118,3 +132,5 @@ class Node3D: public Node {
         void onParentDrawLayerChanged(int old_draw_layer, int new_draw_layer);
 
 };
+
+#endif

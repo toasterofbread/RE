@@ -1,12 +1,23 @@
 #include "common/input.h"
 
 #include "common/raylib.h"
+#include "common/utils.h"
 
 bool Input::isButtonPressed(GamepadButton button) {
     return IsGamepadButtonDown(0, button);
 }
 bool Input::isButtonPressed(KeyboardButton button) {
     return IsKeyDown(button);
+}
+bool Input::isButtonPressed(MouseButton button) {
+    switch (button) {
+        case MouseButton::MOUSE_WHEEL_UP:
+            return GetMouseWheelMove() == 1.0f;
+        case MouseButton::MOUSE_WHEEL_DOWN:
+            return GetMouseWheelMove() == -1.0f;
+        default:
+            return IsMouseButtonDown(button);
+    }
 }
 
 bool Input::isButtonJustPressed(GamepadButton button) {
@@ -15,12 +26,26 @@ bool Input::isButtonJustPressed(GamepadButton button) {
 bool Input::isButtonJustPressed(KeyboardButton button) {
     return IsKeyPressed(button);
 }
+bool Input::isButtonJustPressed(MouseButton button) {
+    switch (button) {
+        case MouseButton::MOUSE_WHEEL_UP:
+            return GetMouseWheelMove() == 1.0f;
+        case MouseButton::MOUSE_WHEEL_DOWN:
+            return GetMouseWheelMove() == -1.0f;
+        default:
+            return IsMouseButtonPressed(button);
+    }
+}
 
 bool Input::isButtonJustReleased(GamepadButton button) {
     return IsGamepadButtonReleased(0, button);
 }
 bool Input::isButtonJustReleased(KeyboardButton button) {
     return IsKeyReleased(button);
+}
+bool Input::isButtonJustReleased(MouseButton button) {
+    ASSERT(button != MouseButton::MOUSE_WHEEL_UP && button != MouseButton::MOUSE_WHEEL_DOWN);
+    return IsMouseButtonReleased(button);
 }
 
 float Input::getAxis(Axis axis) {

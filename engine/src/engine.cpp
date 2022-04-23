@@ -9,6 +9,7 @@
 #include "common/draw.h"
 #include "engine/src/core/resource/resource.h"
 #include "engine/src/node/node.h"
+#include "engine/src/node/types/node_3d.h"
 #include "engine/src/core/object_constructor.h"
 #include "engine/src/node/scene_tree.h"
 #include "engine/src/input/input_manager.h"
@@ -19,6 +20,8 @@
 #include "engine/src/physics/physics_server.h"
 #include "engine/src/physics/node/physics_body.h"
 #include "engine/src/physics/node/collision_shape.h"
+#include "node/types/camera_2d.h"
+#include "node/types/camera_3d.h"
 
 Engine* Engine::singleton = NULL;
 string Engine::fatal_error = "No message provided";
@@ -29,31 +32,33 @@ Engine::Engine() {
     ASSERT(singleton == NULL);
     singleton = this;
     
-    // system("clear");
-
     getTree()->init();
+
+    // Create singletons
     new InputManager();
     new PhysicsServer();
 
     Node::registerNodeProperties();
     Node2D::registerNodeProperties();
+    Node3D::registerNodeProperties();
     Sprite::registerNodeProperties();
     AnimatedSprite::registerNodeProperties();
     PhysicsBody::registerNodeProperties();
     CollisionShape::registerNodeProperties();
+    Camera2D::registerNodeProperties();
+    Camera3D::registerNodeProperties();
 }
 
 Engine* Engine::getSingleton() {
+    if (singleton == NULL) {
+        new Engine; // Engine constructor assigns itself to singleton
+    }
     return singleton;
 }
 
 void Engine::process(float delta) {
     
     PhysicsServer::getSingleton()->physicsProcess(delta); // !Temp 
-
-    #if INPUT_HAS_PROCESS
-    InputManager::getSingleton()->process(delta);
-    #endif
 
     SIGNAL_PROCESS.emit(delta);
 
@@ -66,10 +71,11 @@ void Engine::process(float delta) {
         (*i)->process(delta);
     }
 
-    Draw::drawText("FPS", Vector2(OS::getScreenWidth() - 85, 10), Colour::GREEN());
-    Draw::drawText(("Resource count: " + (string)to_string(all_resources.size())).c_str(), Vector2(OS::getScreenWidth() - 125, 35), Colour::BLACK());
-    Draw::drawText(("Node count: " + (string)to_string(getGlobalNodeCount())).c_str(), Vector2(OS::getScreenWidth() - 125, 50), Colour::BLACK());
-    Draw::drawText(("Texture count: " + (string)to_string(loaded_textures.size())).c_str(), Vector2(OS::getScreenWidth() - 125, 65), Colour::BLACK());
+    Draw::drawText("FPS " + stringPadDecimals(to_string(1.0f / GetFrameTime()), 1), Vector2(OS::getScreenWidth() - 55, 10), Colour::GREEN());
+    Draw::drawText("TIME " + stringPadDecimals(to_string(OS::getTime()), 1), Vector2(OS::getScreenWidth() - 60, 25), Colour::GREEN());
+    Draw::drawText("Resource count: " + to_string(all_resources.size()), Vector2(OS::getScreenWidth() - 110, 45), Colour::BLACK());
+    Draw::drawText("Node count: " + to_string(getGlobalNodeCount()), Vector2(OS::getScreenWidth() - 110, 60), Colour::BLACK());
+    Draw::drawText("Texture count: " + to_string(loaded_textures.size()), Vector2(OS::getScreenWidth() - 110, 75), Colour::BLACK());
 }
 
 void Engine::rebuildAndRun() {

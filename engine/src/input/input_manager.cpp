@@ -33,12 +33,6 @@ InputManager* InputManager::getSingleton() {
     return singleton;
 }
 
-#if INPUT_HAS_PROCESS
-void InputManager::process(float delta) {
-    Input::process();
-}
-#endif
-
 void InputManager::printPressedKey() {
     int key = GetKeyPressed();
     if (key != 0) {

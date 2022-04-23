@@ -3,6 +3,7 @@
 
 #include "defs.h"
 #include "common/vector2.h"
+#include "common/vector3.h"
 
 #include <string>
 #include <list>
@@ -58,6 +59,8 @@ namespace OS {
 
     void print(string msg, int type = 0);
     void print(Vector2 msg, int type = 0);
+    void print(Vector3 msg, int type = 0);
+    void print(double msg, int type = 0);
     void print(float msg, int type = 0);
     void print(int msg, int type = 0);
     void print(Node* msg, int type = 0);
@@ -71,6 +74,9 @@ namespace OS {
     }
 
     void resetDbPrint();
+
+    void frameStep(string name);
+    void resetFrameStep();
 
     void sleep(float seconds);
 }

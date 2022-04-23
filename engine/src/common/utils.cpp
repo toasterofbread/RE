@@ -16,9 +16,15 @@
 using namespace std;
 
 void markPosition(Vector2 position, string text, Colour colour, float radius, float width) {
-    Draw::drawLine(position - Vector2{radius, 0}, position + Vector2{radius, 0}, colour, Draw::DRAW_MODE::WORLD);
-    Draw::drawLine(position - Vector2{0, radius}, position + Vector2{0, radius}, colour, Draw::DRAW_MODE::WORLD);
-    Draw::drawText(text.c_str(), position.x + 5, position.y - 15, colour, 1.0f, Draw::DRAW_MODE::WORLD);
+    Draw::drawLine(position - Vector2{radius, 0}, position + Vector2{radius, 0}, colour, false);
+    Draw::drawLine(position - Vector2{0, radius}, position + Vector2{0, radius}, colour, false);
+    Draw::drawText(text.c_str(), position.x + 5, position.y - 15, colour, 1.0f, false);
+}
+
+void markPosition(int layer, Vector2 position, string text, Colour colour, float radius, float width) {
+    Draw::drawOnLayer(layer, true, Draw::drawLine, position - Vector2{radius, 0}, position + Vector2{radius, 0}, colour, false);
+    Draw::drawOnLayer(layer, true, Draw::drawLine, position - Vector2{0, radius}, position + Vector2{0, radius}, colour, false);
+    Draw::drawOnLayer(layer, true, Draw::drawText, text, position.x + 5, position.y - 15, colour, 1.0f, false);
 }
 
 Vector2 sign(Vector2 value) {

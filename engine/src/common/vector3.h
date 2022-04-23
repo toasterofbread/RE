@@ -2,6 +2,8 @@
 #define INCLUDED_VECTOR3
 
 #include "engine/compiler_settings.h"
+#include "common/vector2.h"
+#include "raylib/raymath.h"
 
 #include <json.hpp>
 #include "common/raylib.h"
@@ -11,6 +13,8 @@ using namespace std;
 using json = nlohmann::json;
 
 struct InternalVector3: public Vector3 {
+
+
     InternalVector3(): Vector3() {}
     InternalVector3(float _x, float _y, float _z) {x = _x; y = _y; z = _z;}
     InternalVector3(int _x, int _y, int _z) {x = _x; y = _y; z = _z;}
@@ -20,7 +24,8 @@ struct InternalVector3: public Vector3 {
     InternalVector3(int _x, int _y, float _z) {x = _x; y = _y; z = _z;}
     InternalVector3(int _x, float _y, int _z) {x = _x; y = _y; z = _z;}
     InternalVector3(Vector3 vector) {x = vector.x; y = vector.y; z = vector.z;}
-    InternalVector3(json data);
+
+    static InternalVector3 fromJson(json data);
 
     static InternalVector3 from(float value) {
         return InternalVector3(value, value, value);
@@ -30,8 +35,21 @@ struct InternalVector3: public Vector3 {
         return x == cx && y == cy && z == cz;
     }
 
-    string toString() {
-        return "{ " + to_string(x) + ", " + to_string(y) + ", " + to_string(z) + " }";
+    string toString();
+
+    InternalVector3 deg2rad();
+    InternalVector3 rad2deg();
+
+    InternalVector3 ABS() {
+        return InternalVector3(abs(x), abs(y), abs(z));
+    }
+
+    InternalVector3 clampAngle();
+
+    InternalVector3 move(Vector2 direction, InternalVector3 rotation, float delta);
+
+    float dot(InternalVector3 with) {
+        return Vector3DotProduct(*this, with);
     }
 
     // void rotate(float angle) {

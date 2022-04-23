@@ -5,6 +5,12 @@
 void OS::print(Vector2 msg, int type) {
     print(msg.toString(), type);
 }
+void OS::print(Vector3 msg, int type) {
+    print(msg.toString(), type);
+}
+void OS::print(double msg, int type) {
+    print(to_string(msg), type);
+}
 void OS::print(float msg, int type) {
     print(to_string(msg), type);
 }
@@ -17,4 +23,15 @@ void OS::print(Node* msg, int type) {
 
 Vector2 OS::getScreenSize() {
     return Vector2(OS::getScreenWidth(), OS::getScreenHeight());
+}
+
+double last_frame_step = 0.0;
+
+void OS::frameStep(string name) {
+    OS::dbPrint(name + " | " + to_string(OS::getTime() - last_frame_step));
+    last_frame_step = OS::getTime();
+}
+
+void OS::resetFrameStep() {
+
 }

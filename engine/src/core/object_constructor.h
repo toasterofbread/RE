@@ -62,7 +62,7 @@ class ObjectConstructor: public ObjectConstructorBase {
             }
 
             void use(ObjectType* object, YAML::Node data, YAMLDataConverter* converter) {
-                ASSERT(data.IsSequence());
+                ASSERT(data.IsSequence() || (data.IsNull() && TYPE_COUNT(Arguments) == 0));
                 ASSERT(data.size() == TYPE_COUNT(Arguments));
 
                 tuple<Arguments...> args;
@@ -120,6 +120,12 @@ class ObjectConstructor: public ObjectConstructorBase {
         }
 
         unordered_map<string, Operation*> operations;
+
+        template<typename ReturnType, typename... Arguments>
+        ReturnType (ObjectType::*getMethod(string name))(Arguments...) {
+            Method<ReturnType, Arguments...>* method = (Method<ReturnType, Arguments...>*)operations[name];
+            return method->method;
+        }
 
         template<typename PropertyType>
         ObjectConstructor<ObjectType>* registerProperty(string property_name, void (ObjectType::*setter)(PropertyType)) {

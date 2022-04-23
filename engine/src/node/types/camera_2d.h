@@ -19,8 +19,8 @@ class Camera2D: public Node2D {
 
         void kill();
 
-        RayCam2D getCamera() {
-            return camera;
+        RayCam2D* getCamera() {
+            return &camera;
         }
 
         bool isEnabled();

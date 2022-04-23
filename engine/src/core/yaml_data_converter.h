@@ -1,14 +1,16 @@
 #ifndef INCLUDED_YAML_DATA_CONVERTER
 #define INCLUDED_YAML_DATA_CONVERTER
 
+#include "core/os.h"
+#include "common/utils.h"
+#include "common/vector2.h"
+#include "common/vector3.h"
+
 #include <unordered_map>
 #include <functional>
 #include <string>
 #include <yaml-cpp/yaml.h>
 using namespace std;
-
-#include "core/os.h"
-#include "common/utils.h"
 
 // Forward declarations
 class SceneTree;
@@ -28,6 +30,7 @@ class YAMLDataConverter {
             return (ValueType)NULL;
         }
         static Vector2 convertToVector2(YAML::Node data, string type_name, string error_prefix);
+        static Vector3 convertToVector3(YAML::Node data, string type_name, string error_prefix);
         static shared_ptr<SpriteAnimationSet> convertToSpriteAnimationSet(YAML::Node data, string type_name, string error_prefix);
     public:
 
@@ -58,6 +61,7 @@ class YAMLDataConverter {
             registerTypeConverter<float>(convertToGenericType<float>, "float", {DATA_TYPE::VALUE});
 
             registerTypeConverter<Vector2>(convertToVector2, "Vector2", {DATA_TYPE::ARRAY});
+            registerTypeConverter<Vector3>(convertToVector3, "Vector3", {DATA_TYPE::ARRAY});
             registerTypeConverter<shared_ptr<SpriteAnimationSet>>(convertToSpriteAnimationSet, "SpriteAnimationSet", {DATA_TYPE::VALUE, DATA_TYPE::ARRAY});
         }
 

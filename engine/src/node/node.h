@@ -88,6 +88,8 @@ class Node {
         // - Signals -
         Signal<> SIGNAL_READY;
         Signal<> SIGNAL_KILLED;
+    
+    public:
 
         // - Core -
         virtual void ready();

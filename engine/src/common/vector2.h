@@ -20,7 +20,8 @@ struct InternalVector2: public b2Vec2 {
     InternalVector2(float x, int y): b2Vec2(x, y) {}
     InternalVector2(b2Vec2 vector): b2Vec2(vector.x, vector.y) {}
     InternalVector2(Vector2 vector): b2Vec2(vector.x, vector.y) {}
-    InternalVector2(json data);
+    
+    static InternalVector2 fromJson(json data);
 
     static InternalVector2 from(float value) {
         return InternalVector2(value, value);
@@ -34,9 +35,11 @@ struct InternalVector2: public b2Vec2 {
         return b2Dot(*this, with);
     }
 
-    string toString() {
-        return "{ " + to_string(x) + ", " + to_string(y) + " }";
+    InternalVector2 ABS() {
+        return InternalVector2(abs(x), abs(y));
     }
+
+    string toString();
 
     void rotate(float angle) {
         float _x = x;

@@ -33,6 +33,7 @@ class Node;
 #define RAD2DEG(x) ((180.0f/PI) * (x))
 
 void markPosition(Vector2 position, string text, Colour colour = Colour::RED(), float radius = 10.0f, float width = 1.0f);
+void markPosition(int layer, Vector2 position, string text, Colour colour = Colour::RED(), float radius = 10.0f, float width = 1.0f);
 
 template <typename Any>
 int sign(Any value) {
