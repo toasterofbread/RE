@@ -1,6 +1,6 @@
 # Project
 /build
-/project
+/project/.*
 /include
 /engine/src/compiler_settings.h
 
