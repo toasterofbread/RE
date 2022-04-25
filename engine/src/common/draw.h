@@ -15,6 +15,7 @@ class Camera2D;
 
 namespace Draw {
 
+    int getDrawCallCount();
     void beginDrawing();
     void endDrawing();
 
@@ -37,6 +38,8 @@ namespace Draw {
     void drawText(string text, Vector2 position, Colour colour, float size = 1.0f, bool screen_position = true);
 
     // - 3D draw methods -
+
+    void drawLine(Vector3 start, Vector3 end, Colour colour);
 
     void drawCube(Vector3 position, Vector3 size, Colour colour = Colour::WHITE());
     void drawCube(Vector3 position, Vector3 size, TEXTURE_TYPE texture, Colour colour = Colour::WHITE());

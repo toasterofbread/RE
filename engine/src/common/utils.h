@@ -13,6 +13,7 @@ using namespace std;
 #include "include/prettyprint.hpp"
 #include "common/colour.h"
 #include "common/vector2.h"
+#include "common/enums.h"
 #include "core/os.h"
 
 // !todo Clean this file up
@@ -32,8 +33,15 @@ class Node;
 #endif
 #define RAD2DEG(x) ((180.0f/PI) * (x))
 
+#define SQUARE(value) ((value) * (value))
+
 void markPosition(Vector2 position, string text, Colour colour = Colour::RED(), float radius = 10.0f, float width = 1.0f);
 void markPosition(int layer, Vector2 position, string text, Colour colour = Colour::RED(), float radius = 10.0f, float width = 1.0f);
+
+Vector2 dir2vector(DIRECTION direction);
+Vector3 dir2vector(DIRECTION_3 direction);
+
+float constrainAngle(float x);
 
 template <typename Any>
 int sign(Any value) {

@@ -18,19 +18,19 @@ InternalVector3 InternalVector3::fromJson(json data) {
     return ret;
 }
 
-string InternalVector3::toString() {
-    return "{ " + stringPadDecimals(to_string(x), 1) + ", " + stringPadDecimals(to_string(y), 1) + ", " + stringPadDecimals(to_string(z), 1) + " }";
+string InternalVector3::toString(int max_decimals) const {
+    return "{ " + stringPadDecimals(to_string(x), max_decimals) + ", " + stringPadDecimals(to_string(y), max_decimals) + ", " + stringPadDecimals(to_string(z), max_decimals) + " }";
 }
 
-InternalVector3 InternalVector3::deg2rad() {
+InternalVector3 InternalVector3::deg2rad() const {
     return InternalVector3(DEG2RAD(x), DEG2RAD(y), DEG2RAD(z));
 }
 
-InternalVector3 InternalVector3::rad2deg() {
+InternalVector3 InternalVector3::rad2deg() const {
     return InternalVector3(RAD2DEG(x), RAD2DEG(y), RAD2DEG(z));
 }
 
-InternalVector3 InternalVector3::clampAngle() {
+InternalVector3 InternalVector3::clampAngle() const {
     InternalVector3 ret = InternalVector3(x, y, z);
     if(ret.y > DEG2RAD(90.0f))
     {
@@ -43,7 +43,7 @@ InternalVector3 InternalVector3::clampAngle() {
     return ret;
 }
 
-InternalVector3 InternalVector3::move(Vector2 direction, InternalVector3 rotation, float delta) {
+InternalVector3 InternalVector3::move(Vector2 direction, InternalVector3 rotation, float delta) const {
     InternalVector3 ret = InternalVector3(x, y, z);
     
     direction.Normalize();
@@ -64,5 +64,27 @@ InternalVector3 InternalVector3::move(Vector2 direction, InternalVector3 rotatio
                             sinf(rotation.x) * direction.x) *
                         delta) * GetFrameTime();
 
+    return ret;
+}
+
+InternalVector3 InternalVector3::cAngle() const {
+    return InternalVector3(constrainAngle(x), constrainAngle(y), constrainAngle(z));
+}
+
+void InternalVector3::normalise() {
+    float length = sqrtf(x * x + y * y + z * z);
+    if (length == 0.0f) {
+        length = 1.0f;
+    }
+    
+    float ilength = 1.0f / length;
+    x *= ilength;
+    y *= ilength;
+    z *= ilength;
+}
+
+InternalVector3 InternalVector3::normalised() const {
+    InternalVector3 ret = InternalVector3(x, y, z);
+    ret.normalise();
     return ret;
 }

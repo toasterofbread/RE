@@ -20,7 +20,6 @@ TEST_CASE( "Signal" ) {
         void signalCallbackNoArgs(int& reference, int value) {
             reference = value;
         }
-
     };
 
     int connection_value = 0;

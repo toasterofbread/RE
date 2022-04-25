@@ -163,6 +163,22 @@ struct InternalVector2: public b2Vec2 {
         return InternalVector2(1.0f, 1.0f);
     }
 
+    static InternalVector2 UP() {
+        return InternalVector2(0, -1);
+    }
+
+    static InternalVector2 DOWN() {
+        return InternalVector2(0, 1);
+    }
+
+    static InternalVector2 LEFT() {
+        return InternalVector2(-1, 0);
+    }
+
+    static InternalVector2 RIGHT() {
+        return InternalVector2(1, 0);
+    }
+
     operator Vector2() {
         return Vector2{x, y};
     }

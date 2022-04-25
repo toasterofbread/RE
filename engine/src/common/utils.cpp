@@ -24,7 +24,35 @@ void markPosition(Vector2 position, string text, Colour colour, float radius, fl
 void markPosition(int layer, Vector2 position, string text, Colour colour, float radius, float width) {
     Draw::drawOnLayer(layer, true, Draw::drawLine, position - Vector2{radius, 0}, position + Vector2{radius, 0}, colour, false);
     Draw::drawOnLayer(layer, true, Draw::drawLine, position - Vector2{0, radius}, position + Vector2{0, radius}, colour, false);
-    Draw::drawOnLayer(layer, true, Draw::drawText, text, position.x + 5, position.y - 15, colour, 1.0f, false);
+    Draw::drawOnLayer(layer, true, Draw::drawText, text, position.x + 5, position.y - 15, colour, 1.5f, false);
+}
+
+float constrainAngle(float x) {
+    x = fmod(x + DEG2RAD(180), DEG2RAD(360));
+    if (x < 0)
+        x += DEG2RAD(360);
+    return x - DEG2RAD(180);
+}
+
+Vector2 dir2vector(DIRECTION direction) {
+    switch (direction) {
+        case DIRECTION::UP: return Vector2::UP();
+        case DIRECTION::DOWN: return Vector2::DOWN();
+        case DIRECTION::LEFT: return Vector2::LEFT();
+        case DIRECTION::RIGHT: return Vector2::RIGHT();
+    }
+    return Vector2();
+}
+Vector3 dir2vector(DIRECTION_3 direction) {
+    switch (direction) {
+        case DIRECTION_3::UP: return Vector3::UP();
+        case DIRECTION_3::DOWN: return Vector3::DOWN();
+        case DIRECTION_3::LEFT: return Vector3::LEFT();
+        case DIRECTION_3::RIGHT: return Vector3::RIGHT();
+        case DIRECTION_3::FRONT: return Vector3::FRONT();
+        case DIRECTION_3::BACK: return Vector3::BACK();
+    }
+    return Vector3();
 }
 
 Vector2 sign(Vector2 value) {
@@ -108,6 +136,11 @@ string strVector2str(vector<string> vector, string splitter) {
 }
 
 string stringPadDecimals(string str, int max_decimals) {
+
+    if (max_decimals < 0) {
+        return str;
+    }
+
     int decimal_point = str.find(".");
     if (decimal_point >= 0) {
         str.erase(decimal_point + max_decimals + 1, str.size() - decimal_point - max_decimals);

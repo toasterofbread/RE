@@ -15,7 +15,7 @@
 
 /* Platform in use */
 
-#define PLATFORM PLATFORM_VITA
+#define PLATFORM PLATFORM_RAYLIB
 
 /* Enable debug mode */
 

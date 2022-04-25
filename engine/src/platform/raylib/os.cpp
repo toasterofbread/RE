@@ -14,15 +14,6 @@ using namespace std;
 
 constexpr int WindowX = 960, WindowY = 540;
 
-list<string> db_print_stack;
-void OS::dbPrint(string message) {
-    db_print_stack.push_back(message);
-}
-list<string>* OS::getDbPrintStack() { return &db_print_stack; }
-void OS::resetDbPrint() {
-    db_print_stack.clear();
-}
-
 void OS::initialiseApplication() {    
     SetTraceLogLevel(LOG_WARNING); // Disable info logs
     SetConfigFlags(FLAG_VSYNC_HINT); // Enable VSync

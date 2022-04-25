@@ -33,8 +33,8 @@ name() {                                                   \
     constructor_code;                                      \
 }                                                          \
 template<typename NodeType = name> \
-static ObjectConstructor<NodeType>* registerNodeProperties(string node_type_name = name::getTypeNameStatic()) { \
-    ObjectConstructor<NodeType>* c = super_type::registerNodeProperties<NodeType>(node_type_name); \
+static ObjectConstructor<NodeType>* registerPropeties(string node_type_name = name::getTypeNameStatic()) { \
+    ObjectConstructor<NodeType>* c = super_type::registerPropeties<NodeType>(node_type_name); \
     registration_code; \
     return c; \
 }
@@ -67,7 +67,7 @@ class Node {
         virtual ~Node() {} // Doesn't work without this, no idea why
 
         template<typename NodeType = Node>
-        static ObjectConstructor<NodeType>* registerNodeProperties(string node_type_name = Node::getTypeNameStatic()) {
+        static ObjectConstructor<NodeType>* registerPropeties(string node_type_name = Node::getTypeNameStatic()) {
 
             ObjectConstructor<NodeType>* constructor;
             if (!Engine::getSingleton()->isObjectTypeRegistered(node_type_name)) {

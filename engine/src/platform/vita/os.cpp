@@ -34,19 +34,6 @@ extern uint32_t sceLibcHeapSize = 2194304;
 
 const int WindowX = 960;
 const int WindowY = 544;
-list<string> db_print_stack;
-
-list<string>* OS::getDbPrintStack() {
-    return &db_print_stack;
-}
-
-void OS::dbPrint(string message) {
-    db_print_stack.push_back(message);
-}
-
-void OS::resetDbPrint() {
-    db_print_stack.clear();
-}
 
 void OS::sleep(float seconds) {
     sceKernelDelayThread(seconds * 1000000);

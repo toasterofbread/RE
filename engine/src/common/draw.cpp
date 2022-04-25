@@ -4,19 +4,21 @@
 
 #define DRAW_2D(code, screen_position) \
 if (!screen_position && current_draw_mode != DRAW_MODE::TWO) { \
+    if (current_draw_mode == DRAW_MODE::THREE) { \
+        EndMode3D(); \
+        current_draw_mode = DRAW_MODE::NONE; \
+    } \
     if (Camera2D* camera = Engine::getSingleton()->getTree()->getEnabledCamera2D()) { \
-        if (current_draw_mode == DRAW_MODE::THREE) { \
-            EndMode3D(); \
-        } \
         BeginMode2D(*camera->getCamera()); \
         current_draw_mode = DRAW_MODE::TWO; \
     } \
 } \
-else if (screen_position && current_draw_mode == DRAW_MODE::TWO) { \
-    EndMode2D(); \
+else if (screen_position && current_draw_mode != DRAW_MODE::NONE) { \
+    current_draw_mode == DRAW_MODE::TWO ? EndMode2D() : EndMode3D(); \
     current_draw_mode = DRAW_MODE::NONE; \
 } \
-code;
+code; \
+draw_calls++
 
 #define DRAW_3D(code) \
 if (current_draw_mode != DRAW_MODE::THREE) { \
@@ -28,7 +30,8 @@ if (current_draw_mode != DRAW_MODE::THREE) { \
         current_draw_mode = DRAW_MODE::THREE; \
     } \
 } \
-code;
+code; \
+draw_calls++
 
 enum class DRAW_MODE {
     TWO, THREE, NONE
@@ -39,6 +42,7 @@ string load_message = "";
 int load_count = 0;
 const float LOAD_MARGIN = 0.1f;
 const Colour LOAD_COLOUR = Colour::GREEN();
+int draw_calls = 0;
 
 Texture2D getTexture(TEXTURE_TYPE texture) {
     #if PLATFORM == PLATFORM_VITA
@@ -48,9 +52,14 @@ Texture2D getTexture(TEXTURE_TYPE texture) {
     #endif
 }
 
+int Draw::getDrawCallCount() {
+    return draw_calls;
+}
+
 void Draw::beginDrawing() {
     BeginDrawing();
     ClearBackground(Colour{100, 100, 100, 255});
+    draw_calls = 0;
 }
 
 void Draw::endDrawing() {
@@ -121,6 +130,10 @@ void Draw::drawText(string text, float pos_x, float pos_y, Colour colour, float 
 }
 void Draw::drawText(string text, Vector2 position, Colour colour, float size, bool screen_position) {
     DRAW_2D(DrawTextPro(GetFontDefault(), text.c_str(), position, Vector2::ZERO(), 0.0f, size * 10.0f, 1.0f, colour), screen_position);
+}
+
+void Draw::drawLine(Vector3 start, Vector3 end, Colour colour) {
+    DRAW_3D(DrawLine3D(start, end, colour));
 }
 
 void Draw::drawCube(Vector3 position, Vector3 size, Colour colour) {

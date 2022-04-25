@@ -35,18 +35,17 @@ Engine::Engine() {
     getTree()->init();
 
     // Create singletons
-    new InputManager();
     new PhysicsServer();
 
-    Node::registerNodeProperties();
-    Node2D::registerNodeProperties();
-    Node3D::registerNodeProperties();
-    Sprite::registerNodeProperties();
-    AnimatedSprite::registerNodeProperties();
-    PhysicsBody::registerNodeProperties();
-    CollisionShape::registerNodeProperties();
-    Camera2D::registerNodeProperties();
-    Camera3D::registerNodeProperties();
+    Node::registerPropeties();
+    Node2D::registerPropeties();
+    Node3D::registerPropeties();
+    Sprite::registerPropeties();
+    AnimatedSprite::registerPropeties();
+    PhysicsBody::registerPropeties();
+    CollisionShape::registerPropeties();
+    Camera2D::registerPropeties();
+    Camera3D::registerPropeties();
 }
 
 Engine* Engine::getSingleton() {
@@ -71,11 +70,12 @@ void Engine::process(float delta) {
         (*i)->process(delta);
     }
 
-    Draw::drawText("FPS " + stringPadDecimals(to_string(1.0f / GetFrameTime()), 1), Vector2(OS::getScreenWidth() - 55, 10), Colour::GREEN());
-    Draw::drawText("TIME " + stringPadDecimals(to_string(OS::getTime()), 1), Vector2(OS::getScreenWidth() - 60, 25), Colour::GREEN());
-    Draw::drawText("Resource count: " + to_string(all_resources.size()), Vector2(OS::getScreenWidth() - 110, 45), Colour::BLACK());
-    Draw::drawText("Node count: " + to_string(getGlobalNodeCount()), Vector2(OS::getScreenWidth() - 110, 60), Colour::BLACK());
-    Draw::drawText("Texture count: " + to_string(loaded_textures.size()), Vector2(OS::getScreenWidth() - 110, 75), Colour::BLACK());
+    const int x_basis = OS::getScreenWidth();
+    Draw::drawText("FPS " + stringPadDecimals(to_string(1.0f / GetFrameTime()), 1), Vector2(x_basis - 55, 10), Colour::GREEN());
+    Draw::drawText("TIME " + stringPadDecimals(to_string(OS::getTime()), 1), Vector2(x_basis - 60, 25), Colour::GREEN());
+    Draw::drawText("Resource count: " + to_string(all_resources.size()), Vector2(x_basis - 110, 45), Colour::BLACK());
+    Draw::drawText("Node count: " + to_string(getGlobalNodeCount()), Vector2(x_basis - 110, 60), Colour::BLACK());
+    Draw::drawText("Texture count: " + to_string(loaded_textures.size()), Vector2(x_basis - 110, 75), Colour::BLACK());
 }
 
 void Engine::rebuildAndRun() {

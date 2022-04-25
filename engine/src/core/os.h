@@ -47,6 +47,7 @@ namespace OS {
     int getScreenWidth();
     int getScreenHeight();
     Vector2 getScreenSize();
+    float getAspectRatio();
 
     string getResPath(string path);
 
@@ -65,13 +66,9 @@ namespace OS {
     void print(int msg, int type = 0);
     void print(Node* msg, int type = 0);
 
-    list<string>* getDbPrintStack();
-
+    list<any>* getDbPrintStack();
+    void dbPrintAny(any message);
     void dbPrint(string message);
-    template<typename T>
-    void dbPrint(T message) {
-        dbPrint(to_string(message));
-    }
 
     void resetDbPrint();
 

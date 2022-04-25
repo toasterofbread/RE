@@ -30,7 +30,7 @@ if not VITASDK.endswith("/"):
 
 VITA_PLATFORM_PREFIX = "arm-vita-eabi"
 VITA_TITLEID = "RETEST001" # Doesn't like underscores
-VITA_IP = "192.168.10.105"
+VITA_IP = "192.168.10.104"
 USB_DEVICE_DIR = "/run/media/" + os.environ["USER"] + "/"
 
 def vitaCommand(cmd: str):

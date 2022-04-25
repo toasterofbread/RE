@@ -2,8 +2,8 @@
 #define INCLUDED_NODE3D
 
 #include "engine/src/node/node.h"
-
 #include "common/vector3.h"
+#include "common/enums.h"
 
 class Node3D: public Node {
 
@@ -89,7 +89,8 @@ class Node3D: public Node {
         void setUseRelativeVisibility(bool value) { visible_relative_to_parent = value; }
         bool getUseRelativeVisibility() { return visible_relative_to_parent; }
 
-        bool inFrontOfCamera();
+        bool inFrontOfCamera(Vector3 global_position);
+        Vector2 getForward(Vector3 global_rotation);
 
     protected:
         void addedToNode();

@@ -31,54 +31,36 @@ struct InternalVector3: public Vector3 {
         return InternalVector3(value, value, value);
     }
 
-    bool compare(float cx, float cy, float cz) {
+    bool compare(float cx, float cy, float cz) const {
         return x == cx && y == cy && z == cz;
     }
 
-    string toString();
+    string toString(int max_decimals = 1) const;
 
-    InternalVector3 deg2rad();
-    InternalVector3 rad2deg();
+    InternalVector3 deg2rad() const;
+    InternalVector3 rad2deg() const;
 
-    InternalVector3 ABS() {
+    InternalVector3 ABS() const {
         return InternalVector3(abs(x), abs(y), abs(z));
     }
 
-    InternalVector3 clampAngle();
+    InternalVector3 clampAngle() const;
 
-    InternalVector3 move(Vector2 direction, InternalVector3 rotation, float delta);
+    InternalVector3 move(Vector2 direction, InternalVector3 rotation, float delta) const;
+    InternalVector3 forward() const;
 
-    float dot(InternalVector3 with) {
-        return Vector3DotProduct(*this, with);
+    float dot(InternalVector3 with) const {
+        return x * with.x + y * with.y + z * with.z;
     }
 
-    // void rotate(float angle) {
-    //     float _x = x;
-    //     float _y = y;
+    InternalVector3 cross(InternalVector3 with) const {
+        return InternalVector3(y * with.z - z * with.y, z * with.x - x * with.z, x * with.y - y * with.x);
+    }
 
-    //     x = _x*cosf(angle) - _y*sinf(angle);
-    //     y = _x*sinf(angle) + _y*cosf(angle);
-    // }
+    InternalVector3 cAngle() const;
 
-    // void rotateAround(float angle, InternalVector3 origin) {
-    //     float _x = x;
-    //     float _y = y;
-
-    //     x = cos(angle) * (_x - origin.x) - sin(angle) * (_y - origin.y) + origin.x;
-    //     y = sin(angle) * (_x - origin.x) + cos(angle) * (_y - origin.y) + origin.y;
-    // }
-
-    // InternalVector3 rotated(float angle) {
-    //     InternalVector3 ret = InternalVector3(x, y);
-    //     ret.rotate(angle);
-    //     return ret;
-    // }
-
-    // InternalVector3 rotatedAround(float angle, InternalVector3 origin) {
-    //     InternalVector3 ret = InternalVector3(x, y);
-    //     ret.rotateAround(angle, origin);
-    //     return ret;
-    // }
+    void normalise();
+    InternalVector3 normalised() const;
 
     bool isZero() {
         return x == 0.0f && y == 0.0f && z == 0.0f;
@@ -185,9 +167,29 @@ struct InternalVector3: public Vector3 {
         return InternalVector3(1.0f, 1.0f, 1.0f);
     }
 
-    // operator Vector3() {
-    //     return Vector3{x, y};
-    // }
+    static InternalVector3 UP() {
+        return InternalVector3(0, -1, 0);
+    }
+
+    static InternalVector3 DOWN() {
+        return InternalVector3(0, 1, 0);
+    }
+
+    static InternalVector3 LEFT() {
+        return InternalVector3(-1, 0, 0);
+    }
+
+    static InternalVector3 RIGHT() {
+        return InternalVector3(1, 0, 0);
+    }
+
+    static InternalVector3 FRONT() {
+        return InternalVector3(0, 0, -1);
+    }
+
+    static InternalVector3 BACK() {
+        return InternalVector3(0, 0, 1);
+    }
 
 };
 

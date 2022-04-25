@@ -21,7 +21,7 @@ void Node3D::ready() {
 
 void Node3D::draw() {
 
-    if (show_gizmos && inFrontOfCamera()) {
+    if (show_gizmos && inFrontOfCamera(getGlobalPosition())) {
         string text = getTypeName();
         if (getName() != text) {
             text += " | " + getName();
@@ -42,7 +42,7 @@ void Node3D::draw() {
             text += suffix;
         }
 
-        markPosition(100, draw_position, text, Colour::BLACK());
+        markPosition(100, draw_position, text, Colour::GREEN());
 
         draw_position.y -= 15;
         for (string line : additional_gizmos_unique) {
@@ -52,7 +52,7 @@ void Node3D::draw() {
         }
 
         if (getId() == 3) {
-            Draw::drawCube(getGlobalPosition(), Vector3(1, 1, 1), Colour::BLUE());
+            Draw::drawCube(getGlobalPosition() + Vector3(0, 2, 0), Vector3(1, 1, 1), Colour::BLUE());
         }
     }
 
@@ -375,13 +375,15 @@ void Node3D::onParentGlobalScaleChanged(Vector3 old_global_scale) {
     SIGNAL_GLOBAL_SCALE_CHANGED.emit(old_global_scale + getScale());
 }
 
-bool Node3D::inFrontOfCamera() {
+bool Node3D::inFrontOfCamera(Vector3 global_position) {
+
     if (!isInsideTree()) {
         return false;
     }
 
     if (Camera3D* camera = getTree()->getEnabledCamera3D()) {
-        return (getGlobalPosition() - camera->getCamera()->position).dot((Vector3)camera->getCamera()->target - camera->getCamera()->position) > 0;
+        RayCam3D* cam = camera->getCamera();
+        return (global_position - cam->position).dot(Vector3Subtract(cam->target, cam->position)) > 0;
     }
 
     return false;

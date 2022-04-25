@@ -1,6 +1,7 @@
 #include "camera_3d.h"
 
 #include "raylib/raymath.h"
+#include "common/draw.h"
 
 #define MAX_FOV 100.0f
 #define MIN_FOV 10.0f
@@ -66,6 +67,7 @@ void Camera3D::onParentGlobalRotationChanged(Vector3 old_global_rotation) {
 void Camera3D::setZoom(float value) {
     ASSERT(value <= 1.0f && value >= 0.0f);
     camera.fovy = MIN_FOV + ((MAX_FOV - MIN_FOV) * value);
+    updateFrustum();
 }
 
 float Camera3D::getZoom() {
@@ -82,6 +84,15 @@ void Camera3D::setRotation(Vector3 value) {
     updateCamera();
 }
 
+bool Camera3D::isPointVisibleInFrustum(Vector3 point) {
+    for (int face = 0; face < Camera3D::Frustum::FACE_COUNT - 1; face++) {
+        if (frustum.faces[face].getDistanceTo(Vector3Transform(point, matrix)) < 0.0f) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void Camera3D::updateCamera() {
     camera.position = getGlobalPosition();
 
@@ -90,4 +101,25 @@ void Camera3D::updateCamera() {
     camera.target.x = camera.position.x - transform.m12;
     camera.target.y = camera.position.y - transform.m13;
     camera.target.z = camera.position.z - transform.m14;
+
+    updateFrustum();
+}
+
+void Camera3D::updateFrustum() {
+    float hh = tan(DEG2RAD(camera.fovy) * 0.5) * CAM_NEAR;
+    float hw = hh * OS::getAspectRatio();
+
+    Vector3 nw = Vector3(-hw, hh, 1.0);
+    Vector3 ne = Vector3(hw, hh, 1.0);
+    Vector3 se = Vector3(hw, -hh, 1.0);
+    Vector3 sw = Vector3(-hw, -hh, 1.0);
+
+    frustum.faces[Frustum::TOP].set(nw.cross(ne));
+    frustum.faces[Frustum::RIGHT].set(ne.cross(se));
+    frustum.faces[Frustum::BOTTOM].set(se.cross(sw));
+    frustum.faces[Frustum::LEFT].set(sw.cross(nw));
+    frustum.faces[Frustum::NEAR].set(Vector3::BACK());
+    frustum.faces[Frustum::FAR].set(Vector3::FRONT());
+
+    matrix = GetCameraMatrix(camera);
 }

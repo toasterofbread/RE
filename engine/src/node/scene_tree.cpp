@@ -78,10 +78,12 @@ void SceneTree::onNodeAddedToTree(Node* node) {
     if (Node2D* converted = dynamic_cast<Node2D*>(node)) {
         drawable_nodes[converted->getGlobalDrawLayer() - MIN_DRAW_LAYER].push_back(new Drawable(converted));
         converted->SIGNAL_DRAW_LAYER_CHANGED.connect(&SceneTree::onDrawableNodeLayerChanged, this, false, converted);
+        converted->SIGNAL_KILLED.connect(&SceneTree::onNodeRemovedFromTree, this, false, node);
     }
     else if (Node3D* converted = dynamic_cast<Node3D*>(node)) {
         drawable_nodes[converted->getGlobalDrawLayer() - MIN_DRAW_LAYER].push_back(new Drawable(converted));
         converted->SIGNAL_DRAW_LAYER_CHANGED.connect(&SceneTree::onDrawableNodeLayerChanged, this, false, converted);
+        converted->SIGNAL_KILLED.connect(&SceneTree::onNodeRemovedFromTree, this, false, node);
     }
 }
 

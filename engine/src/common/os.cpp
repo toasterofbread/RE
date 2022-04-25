@@ -2,6 +2,22 @@
 
 #include "node/node.h"
 
+list<any> db_print_stack;
+void OS::dbPrintAny(any message) {
+    db_print_stack.push_back(message);
+}
+void OS::dbPrint(string message) {
+    dbPrintAny(message);
+}
+
+list<any>* OS::getDbPrintStack() { 
+    return &db_print_stack;
+}
+
+void OS::resetDbPrint() {
+    db_print_stack.clear();
+}
+
 void OS::print(Vector2 msg, int type) {
     print(msg.toString(), type);
 }
@@ -23,6 +39,10 @@ void OS::print(Node* msg, int type) {
 
 Vector2 OS::getScreenSize() {
     return Vector2(OS::getScreenWidth(), OS::getScreenHeight());
+}
+
+float OS::getAspectRatio() {
+    return (float)OS::getScreenWidth() / (float)OS::getScreenHeight();
 }
 
 double last_frame_step = 0.0;
