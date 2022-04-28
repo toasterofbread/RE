@@ -1,6 +1,2 @@
 World:
   children:
-    Node3D:
-      name: "3DTestCube"
-      position: [0, 0, 0]
-      show_gizmos: true

@@ -1,21 +1,25 @@
-#include "physics_body.h"
+#include "engine/compiler_settings.h"
+
+#if PHYSICS_2D_ENABLED
+
+#include "physics_body_2d.h"
 
 #include "engine/src/physics/physics_server.h"
-#include "engine/src/physics/node/collision_shape.h"
+#include "engine/src/physics/node/collision_shape_2d.h"
 #include "engine/src/node/types/timer.h"
 
 #define FLOOR_ANGLE_THRESHOLD 0.01
 #define p_floor_max_angle DEG2RAD(45.0f)
 
-void PhysicsBody::physicsProcess(float delta) {
+void PhysicsBody2D::physicsProcess(float delta) {
     super::physicsProcess(delta);
 
     updating_position = true;
 
-    setGlobalPosition(PhysicsServer::phys2World(body->GetPosition()));
+    setGlobalPosition(PhysicsServer::phys2World2(body->GetPosition()));
     setGlobalRotation(body->GetAngle());
 
-    vector<PhysicsBody*> collisions;
+    vector<PhysicsBody2D*> collisions;
 
     string collisions_text = "Colliding with: ";
 
@@ -34,7 +38,7 @@ void PhysicsBody::physicsProcess(float delta) {
             continue;
         }
 
-        PhysicsBody* other = reinterpret_cast<PhysicsBody*>(ce->other->GetUserData().pointer);
+        PhysicsBody2D* other = reinterpret_cast<PhysicsBody2D*>(ce->other->GetUserData().pointer);
         collisions.push_back(other);
 
         bool was_colliding = false;
@@ -92,7 +96,7 @@ void PhysicsBody::physicsProcess(float delta) {
         }    
     }
 
-    for (PhysicsBody* body : previous_collisions) {
+    for (PhysicsBody2D* body : previous_collisions) {
         SIGNAL_COLLISION_ENDED.emit(body);
     }
     previous_collisions = collisions;
@@ -102,12 +106,12 @@ void PhysicsBody::physicsProcess(float delta) {
     addGizmoText("On floor: " + to_string(on_floor), true);
     addGizmoText("On wall: " + to_string(on_wall), true);
     addGizmoText("On ceiling: " + to_string(on_ceiling), true);
-    addGizmoText("Velocity: " + PhysicsServer::phys2World(linear_velocity).toString(), true);
+    addGizmoText("Velocity: " + PhysicsServer::phys2World2(linear_velocity).toString(), true);
 
     updating_position = false;
 }
 
-void PhysicsBody::setPosition(Vector2 value) {
+void PhysicsBody2D::setPosition(Vector2 value) {
     super::setPosition(value);
 
     if (updating_position) {
@@ -115,41 +119,41 @@ void PhysicsBody::setPosition(Vector2 value) {
     }
     
     if (body) {
-        b2Vec2 global_position = PhysicsServer::world2Phys(getGlobalPosition());
+        b2Vec2 global_position = PhysicsServer::world2Phys2(getGlobalPosition());
         definition.position.Set(global_position.x, global_position.y);
         body->SetTransform(global_position, body->GetAngle());
     }
 }
 
-bool PhysicsBody::isOnFloor() {
+bool PhysicsBody2D::isOnFloor() {
     return on_floor;
 }
 
-bool PhysicsBody::isOnWall() {
+bool PhysicsBody2D::isOnWall() {
     return on_wall;
 }
 
-bool PhysicsBody::isOnCeiling() {
+bool PhysicsBody2D::isOnCeiling() {
     return on_ceiling;
 }
 
-void PhysicsBody::setLinearVelocity(Vector2 value) {
-    body->SetLinearVelocity(PhysicsServer::world2Phys(value));
+void PhysicsBody2D::setLinearVelocity(Vector2 value) {
+    body->SetLinearVelocity(PhysicsServer::world2Phys2(value));
 }
 
-Vector2 PhysicsBody::getLinearVelocity() {
-    return PhysicsServer::phys2World(body->GetLinearVelocity());
+Vector2 PhysicsBody2D::getLinearVelocity() {
+    return PhysicsServer::phys2World2(body->GetLinearVelocity());
 }
 
-void PhysicsBody::setFixedRotation(bool value) {
+void PhysicsBody2D::setFixedRotation(bool value) {
     body->SetFixedRotation(value);
 }
 
-bool PhysicsBody::isFixedRotation() {
+bool PhysicsBody2D::isFixedRotation() {
     return body->IsFixedRotation();
 }
 
-void PhysicsBody::setGravityScale(float value) {
+void PhysicsBody2D::setGravityScale(float value) {
     gravity_scale = value;
     if (apply_gravity) {
         definition.gravityScale = gravity_scale;
@@ -157,63 +161,63 @@ void PhysicsBody::setGravityScale(float value) {
     }
 }
 
-float PhysicsBody::getGravityScale() {
+float PhysicsBody2D::getGravityScale() {
     return apply_gravity;
 }
 
-void PhysicsBody::setApplyGravity(bool value) {
+void PhysicsBody2D::setApplyGravity(bool value) {
     apply_gravity = value;
     definition.gravityScale = apply_gravity ? gravity_scale : 0.0f;
     body->SetGravityScale(definition.gravityScale);
 }
 
-bool PhysicsBody::isApplyGravity() {
+bool PhysicsBody2D::isApplyGravity() {
     return apply_gravity;
 }
 
-Vector2 PhysicsBody::getFinalGravity() {
+Vector2 PhysicsBody2D::getFinalGravity() {
     if (!apply_gravity) {
         return Vector2::ZERO();
     }
     return PhysicsServer::getSingleton()->getGravity() * gravity_scale;
 }
 
-void PhysicsBody::setUpDirection(Vector2 value) {
+void PhysicsBody2D::setUpDirection(Vector2 value) {
     up_direction = value;
 }
 
-Vector2 PhysicsBody::getUpDirection() {
+Vector2 PhysicsBody2D::getUpDirection() {
     return up_direction;
 }
 
-void PhysicsBody::enteredTree() {
-    b2Vec2 global_position = PhysicsServer::world2Phys(getGlobalPosition());
+void PhysicsBody2D::enteredTree() {
+    b2Vec2 global_position = PhysicsServer::world2Phys2(getGlobalPosition());
     definition.position.Set(global_position.x, global_position.y);
     createBody();
 
     super::enteredTree();
 }
 
-void PhysicsBody::removedFromNode(Node* former_parent_node) {
+void PhysicsBody2D::removedFromNode(Node* former_parent_node) {
     super::removedFromNode(former_parent_node);
     destroyBody();
 }
 
-void PhysicsBody::addChild(Node* child) {
-    if (CollisionShape* collision_shape = dynamic_cast<CollisionShape*>(child)) {
+void PhysicsBody2D::addChild(Node* child) {
+    if (CollisionShape2D* collision_shape = dynamic_cast<CollisionShape2D*>(child)) {
         addShape(collision_shape);
     }
     super::addChild(child);
 }
 
-void PhysicsBody::removeChild(Node* child) {
+void PhysicsBody2D::removeChild(Node* child) {
     super::removeChild(child);
-    if (CollisionShape* collision_shape = dynamic_cast<CollisionShape*>(child)) {
+    if (CollisionShape2D* collision_shape = dynamic_cast<CollisionShape2D*>(child)) {
         removeShape(collision_shape);
     }
 }
 
-void PhysicsBody::addShape(CollisionShape* shape) {
+void PhysicsBody2D::addShape(CollisionShape2D* shape) {
 
     ASSERT(!vectorContainsValue(added_shapes, shape));
     ASSERT(!shape->isAttachedToBody());
@@ -222,13 +226,13 @@ void PhysicsBody::addShape(CollisionShape* shape) {
         createShapeFixture(shape);
     }
 
-    shape->SIGNAL_POLYGON_CHANGED.connect(&PhysicsBody::onShapePolygonChanged, this, false, shape);
+    shape->SIGNAL_POLYGON_CHANGED.connect(&PhysicsBody2D::onShapePolygonChanged, this, false, shape);
 
     added_shapes.push_back(shape);
     SIGNAL_SHAPE_ADDED.emit(shape);
 }
 
-void PhysicsBody::removeShape(CollisionShape* shape) {
+void PhysicsBody2D::removeShape(CollisionShape2D* shape) {
     SIGNAL_SHAPE_REMOVED.emit(shape);
 
     ASSERT(vectorContainsValue(added_shapes, shape));
@@ -242,7 +246,7 @@ void PhysicsBody::removeShape(CollisionShape* shape) {
     SIGNAL_SHAPE_REMOVED.emit(shape);
 }
 
-void PhysicsBody::setType(b2BodyType value) {
+void PhysicsBody2D::setType(b2BodyType value) {
     definition.type = value;
 
     if (body != NULL) {
@@ -250,26 +254,26 @@ void PhysicsBody::setType(b2BodyType value) {
     }
 }
 
-b2BodyType PhysicsBody::getType() {
+b2BodyType PhysicsBody2D::getType() {
     return definition.type;
 }
 
-void PhysicsBody::createBody() {
+void PhysicsBody2D::createBody() {
     ASSERT(body == NULL);
     body = PhysicsServer::getSingleton()->createBody(&definition);
 
-    for (CollisionShape* shape : added_shapes) {
+    for (CollisionShape2D* shape : added_shapes) {
         createShapeFixture(shape);
     }
 }
 
-void PhysicsBody::destroyBody() {
+void PhysicsBody2D::destroyBody() {
     PhysicsServer::getSingleton()->destroyBody(body);
     body = NULL;
 }
 
 
-void PhysicsBody::onShapePolygonChanged(CollisionShape* shape) {
+void PhysicsBody2D::onShapePolygonChanged(CollisionShape2D* shape) {
 
     if (body == NULL) {
         return;
@@ -284,7 +288,7 @@ void PhysicsBody::onShapePolygonChanged(CollisionShape* shape) {
     }
 }
 
-void PhysicsBody::createShapeFixture(CollisionShape* shape) {
+void PhysicsBody2D::createShapeFixture(CollisionShape2D* shape) {
     ASSERT(body != NULL);
     ASSERT(shape->hasShape());
 
@@ -296,19 +300,21 @@ void PhysicsBody::createShapeFixture(CollisionShape* shape) {
     shape->attachToBody(this, body->CreateFixture(&fixture_def));
 }
 
-void PhysicsBody::destroyShapeFixture(CollisionShape* shape) {
+void PhysicsBody2D::destroyShapeFixture(CollisionShape2D* shape) {
     ASSERT(body != NULL);
     body->DestroyFixture(shape->getAttachedFixture());
     shape->SIGNAL_POLYGON_CHANGED.disconnect(this);
     shape->detachFromBody();
 }
 
-void PhysicsBody::onParentGlobalPositionChanged(Vector2 old_global_position) {
+void PhysicsBody2D::onParentGlobalPositionChanged(Vector2 old_global_position) {
     super::onParentGlobalPositionChanged(old_global_position);
-    b2Vec2 global_position = PhysicsServer::world2Phys(getGlobalPosition());
+    b2Vec2 global_position = PhysicsServer::world2Phys2(getGlobalPosition());
 
     definition.position.Set(global_position.x, global_position.y);
     if (body != NULL) {
         body->SetTransform(global_position, body->GetAngle());
     }
 }
+
+#endif

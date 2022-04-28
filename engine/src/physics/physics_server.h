@@ -1,6 +1,15 @@
-#include <box2d/box2d.h>
-
 #include "common/utils.h"
+
+
+#if PHYSICS_2D_ENABLED
+#include <box2d/box2d.h>
+#endif
+
+#if PHYSICS_3D_ENABLED
+#include "physics/node/physics_body_3d.h"
+#include <reactphysics3d/reactphysics3d.h> 
+#define react reactphysics3d
+#endif
 
 class PhysicsServer {
 
@@ -8,27 +17,54 @@ class PhysicsServer {
         PhysicsServer();
         static PhysicsServer* getSingleton();
 
-        static Vector2 world2Phys(Vector2 world_position);
-        static float world2Phys(float world_position);
+        #if PHYSICS_2D_ENABLED
+        static Vector2 world2Phys2(Vector2 world_position);
+        static float world2Phys2(float world_position);
 
-        static Vector2 phys2World(Vector2 physics_position);
-        static float phys2World(float physics_position);
+        static Vector2 phys2World2(Vector2 physics_position);
+        static float phys2World2(float physics_position);
+        
+        void setGravity(Vector2 value);
+        Vector2 getGravity2();
+
+        b2Body* createBody2(const b2BodyDef* definition);
+        void destroyBody2(b2Body* body);
+        #endif
+
+        #if PHYSICS_3D_ENABLED
+        static Vector3 world2Phys3(Vector3 world_position);
+        static float world2Phys3(float world_position);
+
+        static Vector3 phys2World3(Vector3 physics_position);
+        static float phys2World3(float physics_position);
+        
+        void setGravity(Vector3 value);
+        Vector3 getGravity3();
+
+        react::CollisionBody* createBody3(react::Transform transform, PhysicsBody3D::TYPE type);
+        void destroyBody3(react::CollisionBody* body);
+
+        static react::PhysicsCommon* getCommon() { return &singleton->phys_common; }
+        static react::PhysicsWorld* getWorld3() { return singleton->world_3d; }
+        #endif
 
         void physicsProcess(float delta);
-
-        void setGravity(Vector2 value);
-        Vector2 getGravity();
-
-        b2Body* createBody(const b2BodyDef* definition);
-        void destroyBody(b2Body* body);
 
     private:
         static PhysicsServer* singleton;
 
-        static const float world_scale;
+        #if PHYSICS_2D_ENABLED
+        b2World world_2d = b2World(Vector2(0.0f, 0.0f));
+        static const float world_scale_2d;
+        Vector2 gravity_2d;
+        #endif
 
-        Vector2 gravity;
-        b2World world = b2World(Vector2(0.0f, 0.0f));
+        #if PHYSICS_3D_ENABLED
+        react::PhysicsWorld* world_3d;
+        static const float world_scale_3d;
+        Vector3 gravity_3d;
+        react::PhysicsCommon phys_common;
+        #endif
 
         float time_step;
         int32 velocity_iterations;

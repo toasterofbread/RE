@@ -153,7 +153,7 @@ void print_stacktrace(int additional_skip) {
     using namespace backward;
     StackTrace st;
 
-    st.load_here(9); //Limit the number of trace depth to 99
+    st.load_here(99); //Limit the number of trace depth to 99
     st.skip_n_firsts(3 + additional_skip);//This will skip some backward internal function from the trace
 
     Printer p;

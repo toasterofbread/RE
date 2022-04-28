@@ -87,8 +87,8 @@ void print_stacktrace(int additional_skip = 0);
 #if DEBUG_ENABLED
 #define ASSERT_MSG(expr, msg)						                   \
 if (!static_cast<bool>(expr)) {                                        \
-    OS::print("Assertion failed at " + string(__FILE__) + ":" + to_string(__LINE__) + " with expression \"" + string(#expr) + "\" | " + string(msg), 3);             \
     print_stacktrace();                                                \
+    OS::print("Assertion failed at " + string(__FILE__) + ":" + to_string(__LINE__) + " with expression \"" + string(#expr) + "\" | " + string(msg), 3);             \
     throw exception(); \
 }
 #define ASSERT(expr) ASSERT_MSG(expr, "(no message provided)")

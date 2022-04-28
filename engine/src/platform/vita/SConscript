@@ -30,7 +30,7 @@ if not VITASDK.endswith("/"):
 
 VITA_PLATFORM_PREFIX = "arm-vita-eabi"
 VITA_TITLEID = "RETEST001" # Doesn't like underscores
-VITA_IP = "192.168.10.104"
+VITA_IP = "192.168.10.105"
 USB_DEVICE_DIR = "/run/media/" + os.environ["USER"] + "/"
 
 def vitaCommand(cmd: str):
@@ -165,7 +165,7 @@ env.Append(
 original_converter = env.convertSconsLine
 def convertSconsLine(self, line: str, progress: float):
     if line.startswith("vita-mksfoex"):
-        line = "Generating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[4], env.COLOURS["compile"]["attrs"])
+        line = "Generating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[-1], env.COLOURS["compile"]["attrs"])
     elif line.startswith("vita-elf-create"):
         line = "Creating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[2], env.COLOURS["compile"]["attrs"])
     elif line.startswith("vita-make-fself"):
@@ -185,7 +185,7 @@ if GetOption("build_project"):
     env.VITA_EBOOT = env.Command(lib_dir + "eboot.bin", vita_velf[0], "vita-make-fself $SOURCE $TARGET")
     Depends(env.VITA_EBOOT, vita_velf)
 
-    vita_params = env.Command(lib_dir + "param.sfo", None, f"vita-mksfoex -s TITLE_ID={VITA_TITLEID} \"{env.PROJECT_NAME}\" $TARGET")
+    vita_params = env.Command(lib_dir + "param.sfo", None, f"vita-mksfoex -s TITLE_ID={VITA_TITLEID} -d ATTRIBUTE2=12 \"{env.PROJECT_NAME}\" $TARGET")
 
     def packVpk(target, source, env):
 

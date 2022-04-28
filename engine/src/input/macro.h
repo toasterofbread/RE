@@ -12,6 +12,10 @@ class Macro {
         bool isJustPressed();
         bool isJustReleased();
 
+        Macro* setKb(vector<Input::KeyboardButton> buttons);
+        Macro* setPad(vector<Input::GamepadButton> buttons);
+        Macro* setMouse(vector<Input::MouseButton> buttons);
+
         template<typename T>
         bool isButtonSetPressed(vector<T> buttons);
         template<typename T>
@@ -19,21 +23,19 @@ class Macro {
         template<typename T>
         bool isButtonSetJustReleased(vector<T> buttons);
     
-        static Macro* create_kb(vector<Input::KeyboardButton> keyboard_buttons);
-        static Macro* create_pad(vector<Input::GamepadButton> gamepad_buttons);
-        static Macro* create_dual(vector<Input::KeyboardButton> keyboard_buttons, vector<Input::GamepadButton> gamepad_buttons);
+        static Macro* create();
 
     private:
 
-        enum MACRO_TYPE {MACRO_TYPE_KEYBOARD, MACRO_TYPE_GAMEPAD, MACRO_TYPE_BOTH};
-        MACRO_TYPE type;
+        bool has_kb = false;
+        bool has_pad = false;
+        bool has_mouse = false;
+
         bool all_modifiers = false;
         vector<Input::KeyboardButton> keyboard_buttons;
         vector<Input::GamepadButton> gamepad_buttons;
+        vector<Input::MouseButton> mouse_buttons;
 
-        Macro(vector<Input::KeyboardButton> keyboard_buttons);
-        Macro(vector<Input::GamepadButton> gamepad_buttons);
-        Macro(vector<Input::KeyboardButton> keyboard_buttons, vector<Input::GamepadButton> gamepad_buttons);
 };
 
 #endif

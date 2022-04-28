@@ -21,4 +21,7 @@
 
 #define DEBUG_ENABLED true
 
+#define PHYSICS_2D_ENABLED false
+#define PHYSICS_3D_ENABLED false
+
 #endif

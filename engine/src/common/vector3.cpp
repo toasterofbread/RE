@@ -43,7 +43,7 @@ InternalVector3 InternalVector3::clampAngle() const {
     return ret;
 }
 
-InternalVector3 InternalVector3::move(Vector2 direction, InternalVector3 rotation, float delta) const {
+InternalVector3 InternalVector3::move(Vector2 direction, InternalVector3 rotation, float delta, bool vertical) const {
     InternalVector3 ret = InternalVector3(x, y, z);
     
     direction.Normalize();
@@ -52,17 +52,19 @@ InternalVector3 InternalVector3::move(Vector2 direction, InternalVector3 rotatio
                             sinf(rotation.x) * -direction.y -
                             cosf(rotation.x) * -direction.x +
                             cosf(rotation.x) * direction.x) *
-                        delta) * GetFrameTime();
+                        delta);
 
-    // ret.y += ((sinf(rotation.y) * -direction.y -
-    //                         sinf(rotation.y) * direction.y) *
-    //                     delta) * GetFrameTime();
+    if (vertical) {
+        ret.y += ((sinf(rotation.y) * -direction.y -
+                                sinf(rotation.y) * direction.y) *
+                            delta);
+    }
 
     ret.z += ((cosf(rotation.x) * direction.y -
                             cosf(rotation.x) * -direction.y +
                             sinf(rotation.x) * -direction.x -
                             sinf(rotation.x) * direction.x) *
-                        delta) * GetFrameTime();
+                        delta);
 
     return ret;
 }

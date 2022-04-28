@@ -12,12 +12,17 @@
 using namespace std;
 using json = nlohmann::json;
 
-struct InternalVector3: public Vector3 {
+#if PHYSICS_3D_ENABLED
+#include <reactphysics3d/reactphysics3d.h> 
+#define react reactphysics3d
+#endif
 
+struct InternalVector3: public Vector3 {
 
     InternalVector3(): Vector3() {}
     InternalVector3(float _x, float _y, float _z) {x = _x; y = _y; z = _z;}
     InternalVector3(int _x, int _y, int _z) {x = _x; y = _y; z = _z;}
+    InternalVector3(unsigned int _x, unsigned int _y, unsigned int _z) {x = _x; y = _y; z = _z;}
     InternalVector3(int _x, float _y, float _z) {x = _x; y = _y; z = _z;}
     InternalVector3(float _x, int _y, int _z) {x = _x; y = _y; z = _z;}
     InternalVector3(float _x, int _y, float _z) {x = _x; y = _y; z = _z;}
@@ -46,7 +51,7 @@ struct InternalVector3: public Vector3 {
 
     InternalVector3 clampAngle() const;
 
-    InternalVector3 move(Vector2 direction, InternalVector3 rotation, float delta) const;
+    InternalVector3 move(Vector2 direction, InternalVector3 rotation, float delta, bool vertical = false) const;
     InternalVector3 forward() const;
 
     float dot(InternalVector3 with) const {
@@ -76,6 +81,12 @@ struct InternalVector3: public Vector3 {
         if (abs(z) <= deadzone) {
             z = 0.0f;
         }
+    }
+
+    void set(float _x, float _y, float _z) {
+        x = _x;
+        y = _y;
+        z = _z;
     }
 
     InternalVector3& operator=(const ::InternalVector3& vector) {
@@ -190,6 +201,28 @@ struct InternalVector3: public Vector3 {
     static InternalVector3 BACK() {
         return InternalVector3(0, 0, 1);
     }
+
+    #if PHYSICS_3D_ENABLED
+    operator react::Vector3() {
+        return react::Vector3(x, y, z);
+    }
+    InternalVector3(react::Vector3 vector) {
+        x = vector.x;
+        y = vector.y;
+        z = vector.z;
+    }
+    InternalVector3(react::Quaternion quat) {
+        x = std::atan2(2 * (quat.w * quat.x + quat.y * quat.z), 1 - 2 * (quat.x * quat.x + quat.y * quat.y));
+
+        double sinp = 2 * (quat.w * quat.y - quat.z * quat.x);
+        if (std::abs(sinp) >= 1)
+            y = std::copysign(PI / 2, sinp);
+        else
+            y = std::asin(sinp);
+
+        z = std::atan2(2 * (quat.w * quat.z + quat.x * quat.y), 1 - 2 * (quat.y * quat.y + quat.z * quat.z));
+    }
+    #endif
 
 };
 

@@ -5,10 +5,10 @@
 #include "input/input_event.h"
 #include "input/macro.h"
 
-InputEvent INPUTEVENT_PAD_UP = InputEvent({Macro::create_kb({Input::KEY_ARROW_UP}), Macro::create_kb({Input::KEY_W}), Macro::create_pad({Input::PAD_UP})});
-InputEvent INPUTEVENT_PAD_DOWN = InputEvent({Macro::create_kb({Input::KEY_ARROW_DOWN}), Macro::create_kb({Input::KEY_S}), Macro::create_pad({Input::PAD_DOWN})});
-InputEvent INPUTEVENT_PAD_LEFT = InputEvent({Macro::create_kb({Input::KEY_ARROW_LEFT}), Macro::create_kb({Input::KEY_A}), Macro::create_pad({Input::PAD_LEFT})});
-InputEvent INPUTEVENT_PAD_RIGHT = InputEvent({Macro::create_kb({Input::KEY_ARROW_RIGHT}), Macro::create_kb({Input::KEY_D}), Macro::create_pad({Input::PAD_RIGHT})});
+InputEvent INPUTEVENT_PAD_UP = InputEvent({Macro::create()->setKb({Input::KEY_ARROW_UP}), Macro::create()->setKb({Input::KEY_W}), Macro::create()->setPad({Input::PAD_UP})});
+InputEvent INPUTEVENT_PAD_DOWN = InputEvent({Macro::create()->setKb({Input::KEY_ARROW_DOWN}), Macro::create()->setKb({Input::KEY_S}), Macro::create()->setPad({Input::PAD_DOWN})});
+InputEvent INPUTEVENT_PAD_LEFT = InputEvent({Macro::create()->setKb({Input::KEY_ARROW_LEFT}), Macro::create()->setKb({Input::KEY_A}), Macro::create()->setPad({Input::PAD_LEFT})});
+InputEvent INPUTEVENT_PAD_RIGHT = InputEvent({Macro::create()->setKb({Input::KEY_ARROW_RIGHT}), Macro::create()->setKb({Input::KEY_D}), Macro::create()->setPad({Input::PAD_RIGHT})});
 
 bool Input::isButtonPressed(GamepadButton button) {
     return IsGamepadButtonDown(0, button);
@@ -81,6 +81,10 @@ bool Input::isKeyModifier(KeyboardButton key) {
 }
 
 bool Input::isKeyModifier(GamepadButton key) {
+    return false;
+}
+
+bool Input::isKeyModifier(MouseButton key) {
     return false;
 }
 

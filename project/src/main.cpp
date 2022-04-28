@@ -4,8 +4,6 @@
 #include "engine/src/node/scene_tree.h"
 #include "engine/src/node/types/animated_sprite.h"
 #include "engine/src/input/input_event.h"
-#include "engine/src/physics/node/physics_body.h"
-#include "engine/src/physics/node/collision_shape.h"
 #include "engine/src/core/resource/sprite_animation.h"
 #include "node/types/camera_2d.h"
 #include "node/types/camera_3d.h"
@@ -19,11 +17,11 @@
 
 Engine* engine = Engine::getSingleton();
 
-Macro* quit_macro = Macro::create_kb({Input::KEY_ESC});
-// Macro* reset_macro = Macro::create_dual({Input::KEY_F1}, {Input::SELECT});
-Macro* reset_macro = Macro::create_kb({Input::KEY_F1});
-Macro* tree_macro = Macro::create_kb({Input::KEY_TAB});
-Macro* trigger_macro = Macro::create_kb({Input::KEY_TILDE});
+Macro* quit_macro = Macro::create()->setKb({Input::KEY_ESC});
+Macro* reset_macro = Macro::create()->setKb({Input::KEY_F1})->setPad({Input::SELECT});
+// Macro* reset_macro = Macro::create()->setKb({Input::KEY_F1});
+Macro* tree_macro = Macro::create()->setKb({Input::KEY_TAB});
+Macro* trigger_macro = Macro::create()->setKb({Input::KEY_TILDE});
 
 struct Project {
 
@@ -32,7 +30,7 @@ struct Project {
     void init() {
         Node* main_scene = SceneLoader::loadSceneFromFile("project/resources/main.rescn");
         engine->getTree()->addNode(main_scene);
-        engine->getTree()->getRoot()->printTree();
+        // engine->getTree()->getRoot()->printTree();
     }
 
     void toggle() {
@@ -134,6 +132,6 @@ int main() {
 }
 
 void registerNodes() {
-    Player::registerPropeties();
-    World::registerPropeties();
+    Player::registerNode();
+    World::registerNode();
 }

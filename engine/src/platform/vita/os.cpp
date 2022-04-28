@@ -30,7 +30,10 @@
 #define GIT_COMMIT_HASH "UNDEFINED"
 #endif
 
-extern uint32_t sceLibcHeapSize = 2194304;
+extern uint32_t sceLibcHeapSize = 16 * 1024 * 1024;
+
+int _newlib_heap_size_user  = 300 * 1024 * 1024;
+// unsigned int sceLibcHeapSize = 12 * 1024 * 1024;
 
 const int WindowX = 960;
 const int WindowY = 544;

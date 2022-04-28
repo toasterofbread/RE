@@ -1,17 +1,19 @@
-#include <box2d/box2d.h>
+#if PHYSICS_2D_ENABLED
 
 #include "engine/src/node/types/node_2d.h"
 #include "engine/src/core/signal.h"
 #include "engine/src/engine_texture.h"
 
-// Forward declarations
-class PhysicsBody;
+#include <box2d/box2d.h>
 
-class CollisionShape: public Node2D {
+// Forward declarations
+class PhysicsBody2D;
+
+class CollisionShape2D: public Node2D {
 
     public:
     
-        REGISTER_NODE(CollisionShape, Node2D, ({
+        REGISTER_NODE(CollisionShape2D, Node2D, ({
             c->template registerMethod<Vector2, Vector2, float>("setBoxShape", &NodeType::setBoxShape);
         }));
         
@@ -35,14 +37,14 @@ class CollisionShape: public Node2D {
 
     private:
 
-        friend class PhysicsBody;
+        friend class PhysicsBody2D;
         
         bool isAttachedToBody() { return attached_body != NULL; }
-        void attachToBody(PhysicsBody* body, b2Fixture* fixture);
+        void attachToBody(PhysicsBody2D* body, b2Fixture* fixture);
         void detachFromBody();
 
-        PhysicsBody* getAttachedBody() { return attached_body; }
-        PhysicsBody* attached_body = NULL;
+        PhysicsBody2D* getAttachedBody() { return attached_body; }
+        PhysicsBody2D* attached_body = NULL;
 
         b2Fixture* getAttachedFixture() { return attached_fixture; }
         b2Fixture* attached_fixture = NULL;
@@ -55,3 +57,5 @@ class CollisionShape: public Node2D {
 
         void scaleChanged(Vector2 old_scale);
 };
+
+#endif

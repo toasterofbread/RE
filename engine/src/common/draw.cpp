@@ -136,6 +136,14 @@ void Draw::drawLine(Vector3 start, Vector3 end, Colour colour) {
     DRAW_3D(DrawLine3D(start, end, colour));
 }
 
+void Draw::drawRay(Ray ray, Colour colour) {
+    DRAW_3D(DrawRay(ray, colour));
+}
+
+void Draw::drawTriangle(Vector3 p1, Vector3 p2, Vector3 p3, Colour colour) {
+    DRAW_3D(DrawTriangle3D(p1, p2, p3, colour));
+}
+
 void Draw::drawCube(Vector3 position, Vector3 size, Colour colour) {
     DRAW_3D(DrawCubeV(position, size, colour));
     DRAW_3D(DrawCubeWiresV(position, size, Colour::WHITE()));
@@ -143,6 +151,27 @@ void Draw::drawCube(Vector3 position, Vector3 size, Colour colour) {
 
 void Draw::drawCube(Vector3 position, Vector3 size, TEXTURE_TYPE texture, Colour colour) {
     DRAW_3D(DrawCubeTexture(getTexture(texture), position, size.x, size.y, size.z, colour));
+}
+
+void Draw::drawBoundingBox(BoundingBox box, Colour colour, Vector3 offset) {
+    drawCube((Vector3)box.min + offset + ((Vector3)box.max - box.min) * 0.5, ((Vector3)box.max - box.min), colour);
+}
+
+void Draw::drawMesh(Mesh mesh, Material material, Matrix transform) {
+    DRAW_3D(DrawMesh(mesh, material, transform));
+}
+
+void drawMeshInstanced(Mesh mesh, Material material, Matrix *transforms, int instances) {
+    DRAW_3D(DrawMeshInstanced(mesh, material, transforms, instances));
+}
+
+void Draw::drawModel(Model model, Vector3 position, float scale, Color tint, bool wires) {
+    if (wires) {
+        DrawModelWires(model, position, scale, tint);
+    }
+    else {
+        DrawModel(model, position, scale, tint);
+    }
 }
 
 void Draw::drawGrid(int slices, float spacing) {

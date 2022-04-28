@@ -3,60 +3,62 @@
 #include "common/utils.h"
 #include "common/input.h"
 
-Macro::Macro(vector<Input::KeyboardButton> _keyboard_buttons) {
-    type = MACRO_TYPE_KEYBOARD;
-    keyboard_buttons = _keyboard_buttons;
+Macro* Macro::create() {
+    return new Macro;
+}
+
+Macro* Macro::setKb(vector<Input::KeyboardButton> buttons) {
+    keyboard_buttons = buttons;
+    has_kb = true;
 
     all_modifiers = true;
-    for (auto i = keyboard_buttons.begin(); i != keyboard_buttons.end(); ++i) {
-        if (!Input::isKeyModifier(*i)) {
+    for (Input::KeyboardButton button : keyboard_buttons) {
+        if (!Input::isKeyModifier(button)) {
             all_modifiers = false;
             break;
         }
     }
+
+    return this;
 }
-
-Macro::Macro(vector<Input::GamepadButton> _gamepad_buttons) {
-    type = MACRO_TYPE_GAMEPAD;
-    gamepad_buttons = _gamepad_buttons;
+Macro* Macro::setPad(vector<Input::GamepadButton> buttons) {
+    gamepad_buttons = buttons;
+    has_pad = true;
+    return this;
 }
-
-Macro::Macro(vector<Input::KeyboardButton> _keyboard_buttons, vector<Input::GamepadButton> _gamepad_buttons) {
-    type = MACRO_TYPE_BOTH;
-    keyboard_buttons = _keyboard_buttons;
-    gamepad_buttons = _gamepad_buttons;
-
-    all_modifiers = true;
-    for (auto i = keyboard_buttons.begin(); i != keyboard_buttons.end(); ++i) {
-        if (!Input::isKeyModifier(*i)) {
-            all_modifiers = false;
-            break;
-        }
-    }
+Macro* Macro::setMouse(vector<Input::MouseButton> buttons) {
+    mouse_buttons = buttons;
+    has_mouse = true;
+    return this;
 }
 
 bool Macro::isPressed() {
-    switch (type) {
-        case MACRO_TYPE_KEYBOARD: return isButtonSetPressed(keyboard_buttons);
-        case MACRO_TYPE_GAMEPAD: return isButtonSetPressed(gamepad_buttons);
-        case MACRO_TYPE_BOTH: return isButtonSetPressed(keyboard_buttons) || isButtonSetPressed(gamepad_buttons);
-    }
+    if (has_kb && isButtonSetPressed(keyboard_buttons))
+        return true;
+    if (has_pad && isButtonSetPressed(gamepad_buttons))
+        return true;
+    if (has_mouse && isButtonSetPressed(mouse_buttons))
+        return true;
     return false;
 }
+
 bool Macro::isJustPressed() {
-    switch (type) {
-        case MACRO_TYPE_KEYBOARD: return isButtonSetJustPressed(keyboard_buttons, all_modifiers);
-        case MACRO_TYPE_GAMEPAD: return isButtonSetJustPressed(gamepad_buttons, all_modifiers);
-        case MACRO_TYPE_BOTH: return isButtonSetJustPressed(keyboard_buttons, all_modifiers) || isButtonSetJustPressed(gamepad_buttons, all_modifiers);
-    }
+    if (has_kb && isButtonSetJustPressed(keyboard_buttons, all_modifiers))
+        return true;
+    if (has_pad && isButtonSetJustPressed(gamepad_buttons, all_modifiers))
+        return true;
+    if (has_mouse && isButtonSetJustPressed(mouse_buttons, all_modifiers))
+        return true;
     return false;
 }
+
 bool Macro::isJustReleased() {
-    switch (type) {
-        case MACRO_TYPE_KEYBOARD: return isButtonSetJustReleased(keyboard_buttons);
-        case MACRO_TYPE_GAMEPAD: return isButtonSetJustReleased(gamepad_buttons);
-        case MACRO_TYPE_BOTH: return isButtonSetJustReleased(keyboard_buttons) || isButtonSetJustReleased(gamepad_buttons);
-    }
+    if (has_kb && isButtonSetJustReleased(keyboard_buttons))
+        return true;
+    if (has_pad && isButtonSetJustReleased(gamepad_buttons))
+        return true;
+    if (has_mouse && isButtonSetJustReleased(mouse_buttons))
+        return true;
     return false;
 }
 
@@ -94,14 +96,4 @@ bool Macro::isButtonSetJustReleased(vector<T> buttons) {
         }
     }
     return released;
-}
-
-Macro* Macro::create_kb(vector<Input::KeyboardButton> keyboard_buttons) {
-    return new Macro(keyboard_buttons);
-}
-Macro* Macro::create_pad(vector<Input::GamepadButton> gamepad_buttons) {
-    return new Macro(gamepad_buttons);
-}
-Macro* Macro::create_dual(vector<Input::KeyboardButton> keyboard_buttons, vector<Input::GamepadButton> gamepad_buttons) {
-    return new Macro(keyboard_buttons, gamepad_buttons);
 }

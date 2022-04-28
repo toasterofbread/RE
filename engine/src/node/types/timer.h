@@ -7,7 +7,6 @@ class Timer: public Node {
 
         REGISTER_NODE(Timer, Node, {
             c->template registerProperty<MODE>("mode", &NodeType::setMode);
-            OS::print("TIMER");
         });
         
         Signal<> SIGNAL_TIMEOUT;

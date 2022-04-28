@@ -41,8 +41,19 @@ namespace Draw {
 
     void drawLine(Vector3 start, Vector3 end, Colour colour);
 
+    void drawRay(Ray ray, Colour colour);
+
+    void drawTriangle(Vector3 p1, Vector3 p2, Vector3 p3, Colour colour);
+
     void drawCube(Vector3 position, Vector3 size, Colour colour = Colour::WHITE());
     void drawCube(Vector3 position, Vector3 size, TEXTURE_TYPE texture, Colour colour = Colour::WHITE());
+
+    void drawBoundingBox(BoundingBox box, Colour colour, Vector3 offset = Vector3::ZERO());
+
+    void drawMesh(Mesh mesh, Material material, Matrix transform);
+    void drawMeshInstanced(Mesh mesh, Material material, Matrix *transforms, int instances);
+
+    void drawModel(Model model, Vector3 position, float scale, Color tint, bool wires = false);
 
     void drawGrid(int slices, float spacing);
 

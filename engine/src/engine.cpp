@@ -18,8 +18,8 @@
 #include "engine/src/engine_texture.h"
 #include "engine/src/core/resource/sprite_animation.h"
 #include "engine/src/physics/physics_server.h"
-#include "engine/src/physics/node/physics_body.h"
-#include "engine/src/physics/node/collision_shape.h"
+#include "engine/src/physics/node/physics_body_2d.h"
+#include "engine/src/physics/node/collision_shape_2d.h"
 #include "node/types/camera_2d.h"
 #include "node/types/camera_3d.h"
 
@@ -37,15 +37,19 @@ Engine::Engine() {
     // Create singletons
     new PhysicsServer();
 
-    Node::registerPropeties();
-    Node2D::registerPropeties();
-    Node3D::registerPropeties();
-    Sprite::registerPropeties();
-    AnimatedSprite::registerPropeties();
-    PhysicsBody::registerPropeties();
-    CollisionShape::registerPropeties();
-    Camera2D::registerPropeties();
-    Camera3D::registerPropeties();
+    // Register nodes
+    Node::registerNode();
+    Node2D::registerNode();
+    Node3D::registerNode();
+    Sprite::registerNode();
+    AnimatedSprite::registerNode();
+    Camera2D::registerNode();
+    Camera3D::registerNode();
+
+    #if PHYSICS_2D_ENABLED
+    PhysicsBody2D::registerNode();
+    CollisionShape2D::registerNode();
+    #endif
 }
 
 Engine* Engine::getSingleton() {

@@ -1,5 +1,7 @@
-#ifndef INCLUDED_PHYSICS_BODY
-#define INCLUDED_PHYSICS_BODY
+#if PHYSICS_2D_ENABLED
+
+#ifndef INCLUDED_PHYSICS_BODY_2D
+#define INCLUDED_PHYSICS_BODY_2D
 
 #include <box2d/box2d.h>
 #include <box2d/b2_math.h>
@@ -8,13 +10,13 @@
 #include "engine/src/core/signal.h"
 
 // Forward declarations
-class CollisionShape;
+class CollisionShape2D;
 
-class PhysicsBody: public Node2D {
+class PhysicsBody2D: public Node2D {
 
     public:
     
-        REGISTER_NODE_WITH_CONSTRUCTOR(PhysicsBody, Node2D, {
+        REGISTER_NODE_WITH_CONSTRUCTOR(PhysicsBody2D, Node2D, {
             c->template registerProperty<b2BodyType>("type", &NodeType::setType)
             ->template registerProperty<Vector2>("linear_velocity", &NodeType::setLinearVelocity)
             ->template registerProperty<bool>("fixed_rotation", &NodeType::setFixedRotation)
@@ -25,12 +27,12 @@ class PhysicsBody: public Node2D {
             definition.userData.pointer = reinterpret_cast<uintptr_t>(this);
         });
 
-        Signal<CollisionShape*> SIGNAL_SHAPE_ADDED;
-        Signal<CollisionShape*> SIGNAL_SHAPE_REMOVED;
+        Signal<CollisionShape2D*> SIGNAL_SHAPE_ADDED;
+        Signal<CollisionShape2D*> SIGNAL_SHAPE_REMOVED;
 
-        Signal<PhysicsBody*> SIGNAL_COLLIDED; // Emitted on the first frame of collision
-        Signal<PhysicsBody*> SIGNAL_COLLIDING; // Emitted on every frame of collision (including the first)
-        Signal<PhysicsBody*> SIGNAL_COLLISION_ENDED; // Emitted on the first frame after collision ends
+        Signal<PhysicsBody2D*> SIGNAL_COLLIDED; // Emitted on the first frame of collision
+        Signal<PhysicsBody2D*> SIGNAL_COLLIDING; // Emitted on every frame of collision (including the first)
+        Signal<PhysicsBody2D*> SIGNAL_COLLISION_ENDED; // Emitted on the first frame after collision ends
 
         void physicsProcess(float delta);
 
@@ -72,23 +74,23 @@ class PhysicsBody: public Node2D {
     private:
         b2Body* body = NULL;
 
-        void addShape(CollisionShape* shape);
-        void removeShape(CollisionShape* shape);
+        void addShape(CollisionShape2D* shape);
+        void removeShape(CollisionShape2D* shape);
 
         void createBody();
         void destroyBody();
 
-        void onShapePolygonChanged(CollisionShape* shape);
-        void createShapeFixture(CollisionShape* shape);
-        void destroyShapeFixture(CollisionShape* shape);
+        void onShapePolygonChanged(CollisionShape2D* shape);
+        void createShapeFixture(CollisionShape2D* shape);
+        void destroyShapeFixture(CollisionShape2D* shape);
 
         void onParentGlobalPositionChanged(Vector2 old_global_position);
 
-        vector<CollisionShape*> added_shapes;
+        vector<CollisionShape2D*> added_shapes;
         
         b2BodyDef definition;
         bool updating_position = false;
-        vector<PhysicsBody*> previous_collisions;
+        vector<PhysicsBody2D*> previous_collisions;
 
         // Runtime data
         bool on_floor = false;
@@ -101,4 +103,5 @@ class PhysicsBody: public Node2D {
         Vector2 up_direction = Vector2(0.0f, -1.0f);
 };
 
+#endif
 #endif
