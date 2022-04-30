@@ -10,11 +10,11 @@ InputEvent INPUTEVENT_PAD_DOWN = InputEvent({Macro::create()->setKb({Input::KEY_
 InputEvent INPUTEVENT_PAD_LEFT = InputEvent({Macro::create()->setKb({Input::KEY_ARROW_LEFT}), Macro::create()->setKb({Input::KEY_A}), Macro::create()->setPad({Input::PAD_LEFT})});
 InputEvent INPUTEVENT_PAD_RIGHT = InputEvent({Macro::create()->setKb({Input::KEY_ARROW_RIGHT}), Macro::create()->setKb({Input::KEY_D}), Macro::create()->setPad({Input::PAD_RIGHT})});
 
-bool Input::isButtonPressed(GamepadButton button) {
-    return IsGamepadButtonDown(0, button);
-}
 bool Input::isButtonPressed(KeyboardButton button) {
     return IsKeyDown(button);
+}
+bool Input::isButtonPressed(GamepadButton button) {
+    return IsGamepadButtonDown(0, button);
 }
 bool Input::isButtonPressed(MouseButton button) {
     switch (button) {
@@ -27,11 +27,11 @@ bool Input::isButtonPressed(MouseButton button) {
     }
 }
 
-bool Input::isButtonJustPressed(GamepadButton button) {
-    return IsGamepadButtonPressed(0, button);
-}
 bool Input::isButtonJustPressed(KeyboardButton button) {
     return IsKeyPressed(button);
+}
+bool Input::isButtonJustPressed(GamepadButton button) {
+    return IsGamepadButtonPressed(0, button);
 }
 bool Input::isButtonJustPressed(MouseButton button) {
     switch (button) {

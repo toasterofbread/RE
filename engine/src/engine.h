@@ -9,7 +9,6 @@ using namespace std;
 #include "engine/src/core/signal.h"
 #include "engine/src/core/object_constructor.h"
 #include "engine/src/node/scene_tree.h"
-#include "engine/src/input/input_manager.h"
 #include "engine/src/core/yaml_data_converter.h"
 #include "engine/src/core/resource/resource.h"
 

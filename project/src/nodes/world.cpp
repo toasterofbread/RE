@@ -15,7 +15,13 @@ void World::init() {
 
     material = LoadMaterialDefault();
     material.shader = LoadShader(0, 0);
-    material.maps[MATERIAL_MAP_DIFFUSE].color = Colour::WHITE();
+    material.maps[MATERIAL_MAP_DIFFUSE].color = Colour(0.8, 0.8, 0.8);
+
+    // Image checked = GenImageChecked(2, 2, 1, 1, Colour::RED(), Colour::GREEN());
+    // Texture2D texture = LoadTextureFromImage(checked);
+    // UnloadImage(checked);
+
+    // material.maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("terrain.png");
 
     // Create initial chunks
     chunks = new Chunk;

@@ -22,16 +22,9 @@ struct SubChunk {
     int index;
     Mesh mesh;
 
-    bool generated = false;
     bool drawn = false;
 
-    SubChunk(Chunk* _chunk, int _index) {
-        chunk = _chunk;
-        index = _index;
-
-        generateBoundingBox();
-        generateMesh();
-    }
+    SubChunk(Chunk* _chunk, int _index);
     bool isVisible(Camera3D* camera, Vector3 chunk_position);
 
     bool isAxisOpaque(AXIS axis);
@@ -40,10 +33,13 @@ struct SubChunk {
     BoundingBox bounding_box;
 
     Vector3 getCenter();
+    void generateMesh();
 
     private:
-        void generateMesh();
         void generateBoundingBox();
+        void addFace(DIRECTION_3 dir, int x, int y, int z, int face_i);
+        bool mesh_loaded = false;
+        unsigned int allocated_vertices = 0;
 };
 
 struct Chunk: public Node3D {
@@ -58,9 +54,7 @@ struct Chunk: public Node3D {
     Chunk* previous = NULL;
 
     Block* blocks[CHUNK_SIZE][CHUNK_HEIGHT][CHUNK_SIZE];
-    Block* getBlock(int x, int y, int z) {
-        return blocks[x][y][z];
-    }
+    Block* getBlock(int x, int y, int z, bool allow_nonexistent = false);
 
     World* world;
 
@@ -84,8 +78,10 @@ struct Block {
     unsigned int z;
     
     bool transparent = false;
+    bool exists = true;
 
     Chunk* chunk;
+    SubChunk* subchunk;
     Block(Chunk* _chunk, unsigned int _x, unsigned int _y, unsigned int _z) {
         chunk = _chunk;
         x = _x;

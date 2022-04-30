@@ -89,6 +89,10 @@ struct InternalVector3: public Vector3 {
         z = _z;
     }
 
+    bool equals(float _x, float _y, float _z) {
+        return x == _x && y == _y && z == _z;
+    }
+
     InternalVector3& operator=(const ::InternalVector3& vector) {
         x = vector.x;
         y = vector.y;

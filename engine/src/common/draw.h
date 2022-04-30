@@ -48,7 +48,7 @@ namespace Draw {
     void drawCube(Vector3 position, Vector3 size, Colour colour = Colour::WHITE());
     void drawCube(Vector3 position, Vector3 size, TEXTURE_TYPE texture, Colour colour = Colour::WHITE());
 
-    void drawBoundingBox(BoundingBox box, Colour colour, Vector3 offset = Vector3::ZERO());
+    void drawBoundingBox(BoundingBox box, Colour colour, Vector3 offset = Vector3::ZERO(), Vector3 scale = Vector3::ONE());
 
     void drawMesh(Mesh mesh, Material material, Matrix transform);
     void drawMeshInstanced(Mesh mesh, Material material, Matrix *transforms, int instances);

@@ -3,15 +3,19 @@
 #include "common/draw.h"
 #include "node/types/camera_3d.h"
 
-void addFace(Mesh& mesh, DIRECTION_3 dir, int x, int y, int z, int face_i) {
+void SubChunk::addFace(DIRECTION_3 dir, int x, int y, int z, int face_i) {
 
     #define ADD_FACE(vertex_data) {\
     const int vertices[6][3] = vertex_data; \
     for (int vertex = 0; vertex < 6; vertex++) { \
         int v_i = (face_i * 6 + vertex) * 3; \
+        if (v_i + 2 >= allocated_vertices * 3) { \
+            break; \
+        } \
         mesh.vertices[v_i] = vertices[vertex][0] + x; \
         mesh.vertices[v_i + 1] = vertices[vertex][1] + y; \
         mesh.vertices[v_i + 2] = vertices[vertex][2] + z; \
+        ASSERT(v_i + 2 < allocated_vertices * 3); \
     } \
     break; }
 
@@ -65,10 +69,32 @@ void addFace(Mesh& mesh, DIRECTION_3 dir, int x, int y, int z, int face_i) {
             }
             ADD_FACE(VERTICES)
         
-        #if DEBUG_ENABLED
-        default: ASSERT(false);
-        #endif
+        default:
+            #undef VERTICES
+            #define VERTICES { \
+                {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, \
+                {0, 0, 0}, {0, 0, 0}, {0, 0, 0} \
+            }
+            ADD_FACE(VERTICES)
     }
+}
+
+SubChunk::SubChunk(Chunk* _chunk, int _index) {
+    chunk = _chunk;
+    index = _index;
+    mesh = { 0 };
+    mesh.vertices = NULL;
+
+    for (int x = 0; x < CHUNK_SIZE; x++) {
+        for (int y = SUBCHUNK_HEIGHT * index; y < SUBCHUNK_HEIGHT * (index + 1); y++) {
+            for (int z = 0; z < CHUNK_SIZE; z++) {
+                chunk->getBlock(x, y, z)->subchunk = this;
+            }
+        }
+    }
+
+    generateBoundingBox();
+    generateMesh();
 }
 
 Vector3 SubChunk::getCenter() {
@@ -101,15 +127,17 @@ void Chunk::setup(Vector2 grid_pos, Chunk* chunks[CHUNK_AMOUNT][CHUNK_AMOUNT]) {
     }
 }
 
+Block* Chunk::getBlock(int x, int y, int z, bool allow_nonexistent) {
+    Block* ret = blocks[x][y][z];
+    if (allow_nonexistent || ret->exists) {
+        return ret;
+    }
+    return NULL;
+}
+
 void SubChunk::generateMesh() {
 
-    ASSERT(!generated);
-    generated = true;
-
-    mesh = { 0 };
-
     double start_time = OS::getTime();
-    mesh.triangleCount = 0;
 
     #define ITERATE_BLOCKS(code) \
     for (int x = 0; x < CHUNK_SIZE; x++) { \
@@ -120,37 +148,68 @@ void SubChunk::generateMesh() {
         } \
     }
 
-    ITERATE_BLOCKS({
-        Block* block = chunk->getBlock(x, y, z);
-        for (int dir = 0; dir < DIRECTION_3_COUNT; dir++) {
-            if (block->get((DIRECTION_3)dir) == NULL) {
-                mesh.triangleCount += 2;
+
+    if (!mesh_loaded || true) {
+        mesh.triangleCount = 0;
+        ITERATE_BLOCKS({
+            Block* block = chunk->getBlock(x, y, z);
+            if (block == NULL) {
+                continue;
             }
 
-            // if (block->get((DIRECTION_3)dir) == NULL) {
-            //     for (int offset = 0; offset < DIRECTION_COUNT; offset++) {
-            //         Block* neighbour = block->get(relativeDirection((DIRECTION_3)dir, (DIRECTION_3)offset));
-            //         if (neighbour == NULL || neighbour->get((DIRECTION_3)dir) != NULL) {
-            //             mesh.triangleCount += 2;
-            //             break;
-            //         }
-            //     }
-            // }
+            for (int dir = 0; dir < DIRECTION_3_COUNT; dir++) {
+                if (block->get((DIRECTION_3)dir) == NULL) {
+                    mesh.triangleCount += 2;
+                }
+
+                // if (block->get((DIRECTION_3)dir) == NULL) {
+                //     for (int offset = 0; offset < DIRECTION_COUNT; offset++) {
+                //         Block* neighbour = block->get(relativeDirection((DIRECTION_3)dir, (DIRECTION_3)offset));
+                //         if (neighbour == NULL || neighbour->get((DIRECTION_3)dir) != NULL) {
+                //             mesh.triangleCount += 2;
+                //             break;
+                //         }
+                //     }
+                // }
+            }
+        });
+        
+        mesh.vertexCount = mesh.triangleCount * 3;
+
+        if (mesh.vertexCount > allocated_vertices && mesh_loaded) {
+            allocated_vertices = mesh.vertexCount;
+
+            UnloadMesh(mesh);
+            mesh = { 0 };
+            mesh.vertexCount = allocated_vertices;
+            mesh.triangleCount = mesh.vertexCount / 3;
+            mesh.vertices = (float *)malloc(mesh.vertexCount * 3 * sizeof(float));
+            UploadMesh(&mesh, false);
+
+            OS::print("----------------RESIZE (" + to_string(mesh.vertexCount) + ")----------------");
         }
-    });
+    }
 
-    mesh.vertexCount = mesh.triangleCount*3;
-    mesh.vertices = (float *)malloc(mesh.vertexCount*3*sizeof(float));
-    // mesh.texcoords = (float *)MemAlloc(mesh.vertexCount*2*sizeof(float));
-    // mesh.normals = (float *)MemAlloc(mesh.vertexCount*3*sizeof(float)); 
-
+    if (mesh.vertices == NULL) {
+        mesh.vertexCount = max(10000, mesh.vertexCount);
+        allocated_vertices = mesh.vertexCount;
+        mesh.vertices = (float *)malloc(allocated_vertices * 3 * sizeof(float));
+        // mesh.texcoords = (float *)MemAlloc(mesh.vertexCount*2*sizeof(float));
+        // mesh.normals = (float *)MemAlloc(mesh.vertexCount*3*sizeof(float)); 
+    }
+    
     int face = 0;
+    int v = 0;
     ITERATE_BLOCKS({
         Block* block = chunk->getBlock(x, y, z);
-
+        if (block == NULL) {
+            continue;
+        }
+        
         for (int dir = 0; dir < DIRECTION_3_COUNT; dir++) {
             if (block->get((DIRECTION_3)dir) == NULL) {
-                addFace(mesh, (DIRECTION_3)dir, x, y, z, face++);
+                addFace((DIRECTION_3)dir, x, y, z, face++);
+                v += 3;
             }
 
             // if (block->get((DIRECTION_3)dir) == NULL) {
@@ -165,10 +224,17 @@ void SubChunk::generateMesh() {
         }
     });
 
-    UploadMesh(&mesh, false);
+    for (int i = face * 6 * 3; i < allocated_vertices * 3; i++) {
+        mesh.vertices[i] = 0;
+    }
 
-    // Vertex data no longer needed on CPUI
-    free(mesh.vertices);
+    if (!mesh_loaded) {
+        UploadMesh(&mesh, false);
+        mesh_loaded = true;
+    }
+    else {
+        UpdateMeshBuffer(mesh, 0, mesh.vertices, allocated_vertices * 3 * sizeof(float), 0);
+    }
 
     OS::print("Chunkmesh generation took " + to_string(OS::getTime() - start_time) + " seconds");
 }

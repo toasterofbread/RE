@@ -55,7 +55,6 @@ void Player::process(float delta) {
     else
         world->starting_chunk = NULL;
 
-
     // Calculate camera view ray
     Ray view_ray;
     view_ray.position = position;
@@ -146,13 +145,21 @@ void Player::process(float delta) {
             break;
         }
     }
+
+    if (INPUT_EVENT_ATTACK.isTriggered() && looking_at_block != NULL) {
+        looking_at_block->exists = false;
+        looking_at_block->subchunk->generateMesh();
+    }
+
 }
 
 void Player::draw() {
-    // Crosshair
-    Draw::drawText("X", OS::getScreenSize() / 2.0, Colour::BLACK(), 1.0f, true);
-
     if (looking_at_block) {
-        Draw::drawBoundingBox(looking_at_block->getBoundingBox(), Colour(0.9, 0.9, 0.9), Vector3(0.0f, 0.01f, 0.0f));
+        Draw::drawBoundingBox(looking_at_block->getBoundingBox(), Colour(0.9, 0.9, 0.9), Vector3::ZERO(), Vector3(1.1f, 1.1f, 1.1f));
     }
+
+    #define CROSSHAIR_SIZE 10
+    Vector2 center = OS::getScreenSize() / 2.0;
+    Draw::drawLine(center - Vector2(CROSSHAIR_SIZE, 0), center + Vector2(CROSSHAIR_SIZE, 0), Colour::BLACK());
+    Draw::drawLine(center - Vector2(0, CROSSHAIR_SIZE), center + Vector2(0, CROSSHAIR_SIZE), Colour::BLACK());
 }

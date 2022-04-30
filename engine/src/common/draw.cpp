@@ -153,8 +153,8 @@ void Draw::drawCube(Vector3 position, Vector3 size, TEXTURE_TYPE texture, Colour
     DRAW_3D(DrawCubeTexture(getTexture(texture), position, size.x, size.y, size.z, colour));
 }
 
-void Draw::drawBoundingBox(BoundingBox box, Colour colour, Vector3 offset) {
-    drawCube((Vector3)box.min + offset + ((Vector3)box.max - box.min) * 0.5, ((Vector3)box.max - box.min), colour);
+void Draw::drawBoundingBox(BoundingBox box, Colour colour, Vector3 offset, Vector3 scale) {
+    drawCube((Vector3)box.min + offset + ((Vector3)box.max - box.min) * 0.5, ((Vector3)box.max - box.min) * scale, colour);
 }
 
 void Draw::drawMesh(Mesh mesh, Material material, Matrix transform) {
