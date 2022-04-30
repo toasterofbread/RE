@@ -21,7 +21,7 @@ Macro* quit_macro = Macro::create()->setKb({Input::KEY_ESC});
 Macro* reset_macro = Macro::create()->setKb({Input::KEY_F1})->setPad({Input::SELECT});
 // Macro* reset_macro = Macro::create()->setKb({Input::KEY_F1});
 Macro* tree_macro = Macro::create()->setKb({Input::KEY_TAB});
-Macro* trigger_macro = Macro::create()->setKb({Input::KEY_TILDE});
+Macro* toggle_mouse_capture_macro = Macro::create()->setKb({Input::KEY_TILDE});
 
 struct Project {
 
@@ -62,6 +62,14 @@ void mainLoop(float delta) {
     }
     else if (reset_macro->isJustPressed()) {
         project.toggle();
+    }
+    else if (toggle_mouse_capture_macro->isJustPressed()) {
+        if (IsCursorHidden()) {
+            EnableCursor();
+        }
+        else {
+            DisableCursor();
+        }
     }
 }
 

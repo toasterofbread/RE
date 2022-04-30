@@ -11,7 +11,8 @@ from ftplib import FTP, error_perm
 from multiprocessing import Process
 
 RESOURCE_DIR = "resources/"
-RESOURCE_TYPES = ("json", "png", "rescn")
+RESOURCE_TYPES = ("json", "rescn")
+IMAGE_TYPES = ("png", )
 
 PACK_VPK = False
 
@@ -205,7 +206,7 @@ if GetOption("build_project"):
             if root == "im":
                 continue
 
-            images = {}
+            images = {ext: {} for ext in IMAGE_TYPES}
             for file in filenames:
                 ext = file.split(".")[-1]
                 path = os.path.join(root, file)
@@ -218,40 +219,43 @@ if GetOption("build_project"):
 
                     package.writestr(os.path.join(RESOURCE_DIR, str(len(index)) + "." + ext), str.encode(string))
                     index[utils.formatPath(path)] = os.path.join(RESOURCE_DIR, str(len(index)) + "." + ext)
-                elif ext == "png":
-                    images[file.removesuffix("." + ext)] = path
+                elif ext in IMAGE_TYPES:
+                    images[ext][file.removesuffix("." + ext)] = path
                 elif ext in RESOURCE_TYPES:
                     package.write(path, os.path.join(RESOURCE_DIR, str(len(index)) + "." + ext))
                     index[utils.formatPath(path)] = os.path.join(RESOURCE_DIR, str(len(index)) + "." + ext)
 
-            if len(images) > 0:
+            for ext in images:
+                if len(images[ext]) > 0:
+                    
+                    atlas = None
+
+                    for image in images[ext].values():
+
+                        im = Image.open(image)
+
+                        if atlas is None:
+                            pos = 0
+                            atlas = Image.new("RGBA", (im.size[0], im.size[1]))
+                        else:
+                            pos = atlas.size[0] + 0
+
+                            old = atlas
+                            atlas = Image.new("RGBA", (old.size[0] + im.size[0], old.size[1]))
+                            atlas.paste(old, (0, 0))
+
+                        atlas.paste(im, (pos, 0))
+                        index[utils.formatPath(image)] = [os.path.join(RESOURCE_DIR, str(i) + "." + ext), [
+                            pos, 0, im.size[0], im.size[1]
+                        ]]
+
+                    bytes = io.BytesIO()
+                    atlas.save(bytes, format='PNG')
+
+                    package.writestr(os.path.join(RESOURCE_DIR, str(i) + "." + ext), bytes.getvalue())
+                    i += 1
                 
-                atlas = None
 
-                for image in images.values():
-
-                    im = Image.open(image)
-
-                    if atlas is None:
-                        pos = 1
-                        atlas = Image.new("RGBA", (im.size[0] + 1, im.size[1]))
-                    else:
-                        pos = atlas.size[0] + 1
-
-                        old = atlas
-                        atlas = Image.new("RGBA", (old.size[0] + im.size[0] + 1, old.size[1]))
-                        atlas.paste(old, (0, 0))
-
-                    atlas.paste(im, (pos, 0))
-                    index[utils.formatPath(image)] = [os.path.join(RESOURCE_DIR, str(i) + "." + ext), [
-                        pos, 0, im.size[0], im.size[1]
-                    ]]
-
-                bytes = io.BytesIO()
-                atlas.save(bytes, format='PNG')
-
-                package.writestr(os.path.join(RESOURCE_DIR, str(i) + "." + ext), bytes.getvalue())
-                i += 1
 
         package.writestr("resource_index.json", json.dumps(index, indent=1))
         package.close()

@@ -39,6 +39,8 @@ namespace Draw {
 
     // - 3D draw methods -
 
+    void markPoint(Vector3 point, Colour colour, float size = 10.0f);
+
     void drawLine(Vector3 start, Vector3 end, Colour colour);
 
     void drawRay(Ray ray, Colour colour);

@@ -15,7 +15,7 @@ using namespace std;
 constexpr int WindowX = 960, WindowY = 540;
 
 void OS::initialiseApplication() {    
-    SetTraceLogLevel(LOG_ALL); // Disable info logs
+    SetTraceLogLevel(LOG_WARNING); // Disable info logs
     SetConfigFlags(FLAG_VSYNC_HINT); // Enable VSync
     InitWindow(WindowX, WindowY, ("RE Pre-Alpha Build #" + string(GIT_COMMIT_HASH)).c_str()); // Create window
     SetWindowPosition(1920 + WindowX/2, WindowY/2); // Move window to center of second monitor
@@ -24,6 +24,10 @@ void OS::initialiseApplication() {
 
 void OS::closeApplication() {
 
+}
+
+Texture2D OS::getRaylibTexture(TEXTURE_TYPE texture) {
+    return texture;
 }
 
 TEXTURE_TYPE OS::loadTexture(string path) {

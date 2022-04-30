@@ -30,10 +30,10 @@
 #define GIT_COMMIT_HASH "UNDEFINED"
 #endif
 
-extern uint32_t sceLibcHeapSize = 16 * 1024 * 1024;
+// !todo Rewrite or remove VitaTexture system 
 
 int _newlib_heap_size_user  = 300 * 1024 * 1024;
-// unsigned int sceLibcHeapSize = 12 * 1024 * 1024;
+uint32_t sceLibcHeapSize = 16 * 1024 * 1024;
 
 const int WindowX = 960;
 const int WindowY = 544;
@@ -50,6 +50,10 @@ unordered_map<string, VitaTexture*> VitaTexture::index;
 #define SERVER_URL "http://192.168.10.111:5000/"
 #define MAX_MESSAGE_LENGTH 1000
 void sendServerMessage(string message, const char* url = SERVER_URL);
+
+Texture2D OS::getRaylibTexture(VitaTexture* texture) {
+    return texture->texture;
+}
 
 VitaTexture* OS::loadTexture(string path) {
 

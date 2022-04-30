@@ -107,6 +107,7 @@ void Player::process(float delta) {
     }
 
     looking_at_block = NULL;
+    looking_at_face = DIRECTION_3::NONE;
 
     // Iterate through intersected subchunks
     BoundingBox box;
@@ -117,6 +118,7 @@ void Player::process(float delta) {
         chunk_position.y = 0;
 
         float closest_distance = -1.0f;
+        Vector3 closest_point;
 
         // Iterate through subchunk blocks
         for (int x = 0; x < CHUNK_SIZE; x++) {
@@ -135,6 +137,7 @@ void Player::process(float delta) {
                     if (collision.hit && (closest_distance == -1.0f || collision.distance < closest_distance)) {
                         looking_at_block = block;
                         closest_distance = collision.distance;
+                        closest_point = collision.point;
                     }
                 }
             }
@@ -142,20 +145,32 @@ void Player::process(float delta) {
 
         // End iteration if block was found
         if (looking_at_block) {
+            looking_at_face = looking_at_block->getNearestFace(closest_point);
+            Draw::markPoint(closest_point, Colour::BLUE());
             break;
         }
     }
 
-    if (INPUT_EVENT_ATTACK.isTriggered() && looking_at_block != NULL) {
-        looking_at_block->exists = false;
-        looking_at_block->subchunk->generateMesh();
+    if (looking_at_block != NULL) {
+
+        if (INPUT_EVENT_ATTACK.isTriggered()) {
+            looking_at_block->type = Block::TYPE::AIR;
+            looking_at_block->subchunk->generateMesh();
+        }
+
+        if (INPUT_EVENT_INTERACT.isJustTriggered()) {
+            OS::print("Block position: " + Vector3(looking_at_block->x, looking_at_block->y, looking_at_block->z).toString());
+            OS::print("Face: " + getDirectionName(looking_at_face));
+            OS::print("-------------------");
+        }
     }
 
 }
 
 void Player::draw() {
     if (looking_at_block) {
-        Draw::drawBoundingBox(looking_at_block->getBoundingBox(), Colour(0.9, 0.9, 0.9), Vector3::ZERO(), Vector3(1.1f, 1.1f, 1.1f));
+        #define SIZE 1.01f
+        Draw::drawBoundingBox(looking_at_block->getBoundingBox(), Colour(0.9, 0.9, 0.9), Vector3::ZERO(), Vector3(SIZE, SIZE, SIZE));
     }
 
     #define CROSSHAIR_SIZE 10

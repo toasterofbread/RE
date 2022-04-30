@@ -33,6 +33,8 @@ namespace OS {
     void setTextureLocked(string path, bool locked);
     bool isTextureLocked(string path);
 
+    Texture2D getRaylibTexture(TEXTURE_TYPE texture);
+
     TEXTURE_TYPE loadTexture(string path);
     void unloadTexture(TEXTURE_TYPE texture);
 

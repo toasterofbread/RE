@@ -3,71 +3,73 @@
 #include "common/draw.h"
 #include "node/types/camera_3d.h"
 
-void SubChunk::addFace(DIRECTION_3 dir, int x, int y, int z, int face_i) {
+void SubChunk::addFace(DIRECTION_3 face, Block* block, int face_i) {
+
+    const int texcoords[6][2] = {
+        {1, 0}, {0, 0}, {1, 1},
+        {0, 0}, {0, 1}, {1, 1}
+    };
 
     #define ADD_FACE(vertex_data) {\
     const int vertices[6][3] = vertex_data; \
+    const Vector2 block_texcoords = block->getFaceTexcoords(face); \
+    int v = 0; \
     for (int vertex = 0; vertex < 6; vertex++) { \
         int v_i = (face_i * 6 + vertex) * 3; \
         if (v_i + 2 >= allocated_vertices * 3) { \
             break; \
         } \
-        mesh.vertices[v_i] = vertices[vertex][0] + x; \
-        mesh.vertices[v_i + 1] = vertices[vertex][1] + y; \
-        mesh.vertices[v_i + 2] = vertices[vertex][2] + z; \
-        ASSERT(v_i + 2 < allocated_vertices * 3); \
+        mesh.vertices[v_i] = vertices[vertex][0] + block->x; \
+        mesh.vertices[v_i + 1] = vertices[vertex][1] + block->y; \
+        mesh.vertices[v_i + 2] = vertices[vertex][2] + block->z; \
+        mesh.texcoords[(face_i * 6 + vertex) * 2] = (texcoords[vertex][0] + block_texcoords.x) / TEXTURE_MAP_WIDTH; \
+        mesh.texcoords[(face_i * 6 + vertex) * 2 + 1] = (texcoords[vertex][1] + block_texcoords.y) / TEXTURE_MAP_HEIGHT; \
     } \
     break; }
 
-        // mesh.texcoords[(face_i * 6 + vertex) * 2] = 0; \
-        // mesh.texcoords[(face_i * 6 + vertex) * 2 + 1] = 0; \
-        // mesh.normals[v_i] = 0;
-        // mesh.normals[v_i + 1] = 1;
-        // mesh.normals[v_i + 2] = 0;
-
-    switch (dir) {
+    switch (face) {
 
         case DIRECTION_3::UP:
             #define VERTICES { \
                 {1, 0, 0}, {0, 0, 0}, {1, 0, 1}, \
                 {0, 0, 0}, {0, 0, 1}, {1, 0, 1}, \
             }
-            ADD_FACE(VERTICES)
+            ADD_FACE(VERTICES);
         case DIRECTION_3::DOWN:
             #undef VERTICES
             #define VERTICES { \
                 {0, -1, 0}, {1, -1, 0}, {1, -1, 1}, \
                 {0, -1, 1}, {0, -1, 0}, {1, -1, 1}, \
             }
-            ADD_FACE(VERTICES)
+            ADD_FACE(VERTICES);
         case DIRECTION_3::LEFT:
             #undef VERTICES
             #define VERTICES { \
-                {0, 0, 0}, {0, -1, 0}, {0, 0, 1}, \
-                {0, -1, 1}, {0, 0, 1}, {0, -1, 0}, \
+                {0, 0, 1}, {0, 0, 0}, {0, -1, 1}, \
+                {0, 0, 0}, {0, -1, 0}, {0, -1, 1}, \
             }
-            ADD_FACE(VERTICES)
+            ADD_FACE(VERTICES);
         case DIRECTION_3::RIGHT:
             #undef VERTICES
             #define VERTICES { \
-                {1, -1, 0}, {1, 0, 0}, {1, 0, 1}, \
+                {1, 0, 0}, {1, 0, 1}, {1, -1, 0}, \
                 {1, 0, 1}, {1, -1, 1}, {1, -1, 0}, \
             }
-            ADD_FACE(VERTICES)
+            ADD_FACE(VERTICES);
         case DIRECTION_3::FRONT:
             #undef VERTICES
             #define VERTICES { \
-                {0, 0, 0}, {1, 0, 0}, {1, -1, 0}, \
-                {0, -1, 0}, {0, 0, 0}, {1, -1, 0} \
+                {0, 0, 0}, {1, 0, 0}, {0, -1, 0}, \
+                {1, 0, 0}, {1, -1, 0}, {0, -1, 0} \
             }
-            ADD_FACE(VERTICES)
+            ADD_FACE(VERTICES);
         case DIRECTION_3::BACK:
             #undef VERTICES
             #define VERTICES { \
                 {1, 0, 1}, {0, 0, 1}, {1, -1, 1}, \
                 {0, 0, 1}, {0, -1, 1}, {1, -1, 1} \
             }
-            ADD_FACE(VERTICES)
+            ADD_FACE(VERTICES);
         
         default:
             #undef VERTICES
@@ -75,7 +77,7 @@ void SubChunk::addFace(DIRECTION_3 dir, int x, int y, int z, int face_i) {
                 {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, \
                 {0, 0, 0}, {0, 0, 0}, {0, 0, 0} \
             }
-            ADD_FACE(VERTICES)
+            ADD_FACE(VERTICES);
     }
 }
 
@@ -103,7 +105,7 @@ Vector3 SubChunk::getCenter() {
 
 void Chunk::setup(Vector2 grid_pos, Chunk* chunks[CHUNK_AMOUNT][CHUNK_AMOUNT]) {
     grid_position = grid_pos;
-    setPosition(Vector3((grid_pos * CHUNK_SIZE).x, -CHUNK_HEIGHT, (grid_pos * CHUNK_SIZE).y));
+    setPosition(Vector3((grid_pos * CHUNK_SIZE).x, 0, (grid_pos * CHUNK_SIZE).y));
 
     front = grid_position.y < CHUNK_AMOUNT - 1 ? chunks[(int)grid_position.x][(int)grid_position.y + 1] : NULL;
     back = grid_position.y > 0 ? chunks[(int)grid_position.x][(int)grid_position.y - 1] : NULL;
@@ -129,7 +131,7 @@ void Chunk::setup(Vector2 grid_pos, Chunk* chunks[CHUNK_AMOUNT][CHUNK_AMOUNT]) {
 
 Block* Chunk::getBlock(int x, int y, int z, bool allow_nonexistent) {
     Block* ret = blocks[x][y][z];
-    if (allow_nonexistent || ret->exists) {
+    if (allow_nonexistent || ret->isBlock()) {
         return ret;
     }
     return NULL;
@@ -149,53 +151,52 @@ void SubChunk::generateMesh() {
     }
 
 
-    if (!mesh_loaded || true) {
-        mesh.triangleCount = 0;
-        ITERATE_BLOCKS({
-            Block* block = chunk->getBlock(x, y, z);
-            if (block == NULL) {
-                continue;
-            }
-
-            for (int dir = 0; dir < DIRECTION_3_COUNT; dir++) {
-                if (block->get((DIRECTION_3)dir) == NULL) {
-                    mesh.triangleCount += 2;
-                }
-
-                // if (block->get((DIRECTION_3)dir) == NULL) {
-                //     for (int offset = 0; offset < DIRECTION_COUNT; offset++) {
-                //         Block* neighbour = block->get(relativeDirection((DIRECTION_3)dir, (DIRECTION_3)offset));
-                //         if (neighbour == NULL || neighbour->get((DIRECTION_3)dir) != NULL) {
-                //             mesh.triangleCount += 2;
-                //             break;
-                //         }
-                //     }
-                // }
-            }
-        });
-        
-        mesh.vertexCount = mesh.triangleCount * 3;
-
-        if (mesh.vertexCount > allocated_vertices && mesh_loaded) {
-            allocated_vertices = mesh.vertexCount;
-
-            UnloadMesh(mesh);
-            mesh = { 0 };
-            mesh.vertexCount = allocated_vertices;
-            mesh.triangleCount = mesh.vertexCount / 3;
-            mesh.vertices = (float *)malloc(mesh.vertexCount * 3 * sizeof(float));
-            UploadMesh(&mesh, false);
-
-            OS::print("----------------RESIZE (" + to_string(mesh.vertexCount) + ")----------------");
+    mesh.triangleCount = 0;
+    ITERATE_BLOCKS({
+        Block* block = chunk->getBlock(x, y, z);
+        if (block == NULL) {
+            continue;
         }
+
+        for (int dir = 0; dir < DIRECTION_3_COUNT; dir++) {
+            if (block->get((DIRECTION_3)dir) == NULL) {
+                mesh.triangleCount += 2;
+            }
+
+            // if (block->get((DIRECTION_3)dir) == NULL) {
+            //     for (int offset = 0; offset < DIRECTION_COUNT; offset++) {
+            //         Block* neighbour = block->get(relativeDirection((DIRECTION_3)dir, (DIRECTION_3)offset));
+            //         if (neighbour == NULL || neighbour->get((DIRECTION_3)dir) != NULL) {
+            //             mesh.triangleCount += 2;
+            //             break;
+            //         }
+            //     }
+            // }
+        }
+    });
+    
+    mesh.vertexCount = mesh.triangleCount * 3;
+
+    if (mesh.vertexCount > allocated_vertices && mesh_loaded) {
+        allocated_vertices = mesh.vertexCount;
+
+        UnloadMesh(mesh);
+        mesh = { 0 };
+        mesh.vertexCount = allocated_vertices;
+        mesh.triangleCount = mesh.vertexCount / 3;
+        mesh.vertices = (float*)malloc(allocated_vertices * 3 * sizeof(float));
+        mesh.texcoords = (float*)malloc(allocated_vertices * 2 * sizeof(float));
+        UploadMesh(&mesh, false);
+
+        // OS::print("----------------RESIZE (" + to_string(mesh.vertexCount) + ")----------------");
     }
 
     if (mesh.vertices == NULL) {
         mesh.vertexCount = max(10000, mesh.vertexCount);
         allocated_vertices = mesh.vertexCount;
-        mesh.vertices = (float *)malloc(allocated_vertices * 3 * sizeof(float));
-        // mesh.texcoords = (float *)MemAlloc(mesh.vertexCount*2*sizeof(float));
-        // mesh.normals = (float *)MemAlloc(mesh.vertexCount*3*sizeof(float)); 
+        mesh.vertices = (float*)malloc(allocated_vertices * 3 * sizeof(float));
+        mesh.texcoords = (float*)malloc(allocated_vertices * 2 * sizeof(float));
+        // mesh.normals = (float *)malloc(mesh.vertexCount*3*sizeof(float)); 
     }
     
     int face = 0;
@@ -208,7 +209,7 @@ void SubChunk::generateMesh() {
         
         for (int dir = 0; dir < DIRECTION_3_COUNT; dir++) {
             if (block->get((DIRECTION_3)dir) == NULL) {
-                addFace((DIRECTION_3)dir, x, y, z, face++);
+                addFace((DIRECTION_3)dir, block, face++);
                 v += 3;
             }
 
@@ -227,6 +228,9 @@ void SubChunk::generateMesh() {
     for (int i = face * 6 * 3; i < allocated_vertices * 3; i++) {
         mesh.vertices[i] = 0;
     }
+    for (int i = face * 6 * 2; i < allocated_vertices * 2; i++) {
+        mesh.texcoords[i] = 0;
+    }
 
     if (!mesh_loaded) {
         UploadMesh(&mesh, false);
@@ -234,9 +238,10 @@ void SubChunk::generateMesh() {
     }
     else {
         UpdateMeshBuffer(mesh, 0, mesh.vertices, allocated_vertices * 3 * sizeof(float), 0);
+        UpdateMeshBuffer(mesh, 1, mesh.texcoords, allocated_vertices * 2 * sizeof(float), 0);
     }
 
-    OS::print("Chunkmesh generation took " + to_string(OS::getTime() - start_time) + " seconds");
+    // OS::print("Chunkmesh generation took " + to_string(OS::getTime() - start_time) + " seconds");
 }
 
 void SubChunk::generateBoundingBox() {
@@ -293,7 +298,7 @@ bool SubChunk::isAxisOpaque(AXIS axis) {
                     bool opaque = false;
                     for (int x = 0; x < CHUNK_SIZE; x++) {
                         Block* block = chunk->getBlock(x, y, z);
-                        if (block != NULL || !block->transparent) {
+                        if (block != NULL || !block->isTransparent()) {
                             opaque = true;
                             break;
                         }
@@ -312,7 +317,7 @@ bool SubChunk::isAxisOpaque(AXIS axis) {
                     bool opaque = false;
                     for (int y = SUBCHUNK_HEIGHT * index; x < SUBCHUNK_HEIGHT * (index + 1); x++) {
                         Block* block = chunk->getBlock(x, y, z);
-                        if (block != NULL || !block->transparent) {
+                        if (block != NULL || !block->isTransparent()) {
                             opaque = true;
                             break;
                         }
@@ -331,7 +336,7 @@ bool SubChunk::isAxisOpaque(AXIS axis) {
                     bool opaque = false;
                     for (int z = 0; z < CHUNK_SIZE; z++) {
                         Block* block = chunk->getBlock(x, y, z);
-                        if (block != NULL || !block->transparent) {
+                        if (block != NULL || !block->isTransparent()) {
                             opaque = true;
                             break;
                         }

@@ -44,14 +44,6 @@ const float LOAD_MARGIN = 0.1f;
 const Colour LOAD_COLOUR = Colour::GREEN();
 int draw_calls = 0;
 
-Texture2D getTexture(TEXTURE_TYPE texture) {
-    #if PLATFORM == PLATFORM_VITA
-    return texture->texture;
-    #else
-    return texture;
-    #endif
-}
-
 int Draw::getDrawCallCount() {
     return draw_calls;
 }
@@ -106,7 +98,7 @@ void Draw::drawLine(Vector2 start, Vector2 end, Colour colour, bool screen_posit
 
 void Draw::drawTextureRST(TEXTURE_TYPE texture, Vector2 position, float rotation, Vector2 scale, Colour tint, bool screen_position) {
     DRAW_2D(DrawTexturePro(
-        getTexture(texture),
+        OS::getRaylibTexture(texture),
         Rectangle{
             0,
             0,
@@ -132,6 +124,15 @@ void Draw::drawText(string text, Vector2 position, Colour colour, float size, bo
     DRAW_2D(DrawTextPro(GetFontDefault(), text.c_str(), position, Vector2::ZERO(), 0.0f, size * 10.0f, 1.0f, colour), screen_position);
 }
 
+void Draw::markPoint(Vector3 point, Colour colour, float size) {
+    size /= 2.0f;
+    DRAW_3D({
+        drawLine(point - Vector3(size, 0, 0), point + Vector3(size, 0, 0), colour);
+        drawLine(point - Vector3(0, size, 0), point + Vector3(0, size, 0), colour);
+        drawLine(point - Vector3(0, 0, size), point + Vector3(0, 0, size), colour);
+    });
+}
+
 void Draw::drawLine(Vector3 start, Vector3 end, Colour colour) {
     DRAW_3D(DrawLine3D(start, end, colour));
 }
@@ -150,7 +151,7 @@ void Draw::drawCube(Vector3 position, Vector3 size, Colour colour) {
 }
 
 void Draw::drawCube(Vector3 position, Vector3 size, TEXTURE_TYPE texture, Colour colour) {
-    DRAW_3D(DrawCubeTexture(getTexture(texture), position, size.x, size.y, size.z, colour));
+    DRAW_3D(DrawCubeTexture(OS::getRaylibTexture(texture), position, size.x, size.y, size.z, colour));
 }
 
 void Draw::drawBoundingBox(BoundingBox box, Colour colour, Vector3 offset, Vector3 scale) {

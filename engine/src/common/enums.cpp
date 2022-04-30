@@ -77,3 +77,25 @@ DIRECTION_3 relativeDirection(DIRECTION_3 base, DIRECTION_3 offset ) {
 
     return DIRECTION_3::NONE;
 }
+
+string getDirectionName(DIRECTION dir) {
+    switch (dir) {
+        case DIRECTION::UP: return "UP";
+        case DIRECTION::DOWN: return "DOWN";
+        case DIRECTION::LEFT: return "LEFT";
+        case DIRECTION::RIGHT: return "RIGHT";
+        default: return "NONE";
+    }
+}
+
+string getDirectionName(DIRECTION_3 dir) {
+    switch (dir) {
+        case DIRECTION_3::UP: return "UP";
+        case DIRECTION_3::DOWN: return "DOWN";
+        case DIRECTION_3::LEFT: return "LEFT";
+        case DIRECTION_3::RIGHT: return "RIGHT";
+        case DIRECTION_3::FRONT: return "FRONT";
+        case DIRECTION_3::BACK: return "BACK";
+        default: return "NONE";
+    }
+}

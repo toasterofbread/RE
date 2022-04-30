@@ -5,11 +5,16 @@
 #include "common/vector2.h"
 #include "physics/node/collision_shape_3d.h"
 
-#define CHUNK_AMOUNT 5
+#include <json.hpp>
+using json = nlohmann::json;
+
+#define CHUNK_AMOUNT 10
 #define CHUNK_SIZE 16
-#define CHUNK_HEIGHT 16 * 4
+#define CHUNK_HEIGHT 16 * 1
 #define SUBCHUNK_HEIGHT 16
 #define SUBCHUNK_COUNT (CHUNK_HEIGHT / SUBCHUNK_HEIGHT)
+#define TEXTURE_MAP_WIDTH 16.0
+#define TEXTURE_MAP_HEIGHT 16.0
 
 // Forward declarations
 class Player;
@@ -37,7 +42,7 @@ struct SubChunk {
 
     private:
         void generateBoundingBox();
-        void addFace(DIRECTION_3 dir, int x, int y, int z, int face_i);
+        void addFace(DIRECTION_3 face, Block* block, int face_i);
         bool mesh_loaded = false;
         unsigned int allocated_vertices = 0;
 };
@@ -73,20 +78,30 @@ struct Chunk: public Node3D {
 
 struct Block {
 
-    unsigned int x;
-    unsigned int y;
-    unsigned int z;
-    
-    bool transparent = false;
-    bool exists = true;
+    // Chunk-relative coordinates
+    int x; int y; int z;
+
+    // Global coordinates
+    int global_x; int global_y; int global_z;
+
+    enum class TYPE {
+        AIR, GRASS, DIRT, STONE
+    };
+    TYPE type = TYPE::GRASS;
 
     Chunk* chunk;
     SubChunk* subchunk;
-    Block(Chunk* _chunk, unsigned int _x, unsigned int _y, unsigned int _z) {
+    Block(Chunk* _chunk, int _x, int _y, int _z) {
         chunk = _chunk;
         x = _x;
         y = _y;
         z = _z;
+
+        Vector3 chunk_position = chunk->getPosition();
+        global_x = x + chunk_position.x;
+        global_y = y + chunk_position.y;
+        global_z = z + chunk_position.z;
+
     }
 
     Block* get(DIRECTION_3 dir) {
@@ -99,6 +114,62 @@ struct Block {
             case DIRECTION_3::BACK: return getBack();
         }
         return NULL;
+    }
+
+    Vector3 getCenter() {
+        return Vector3(global_x + 0.5f, global_y + 0.5f, global_z + 0.5f);
+    }
+
+    bool isTransparent() {
+        return false;
+    }
+
+    bool isBlock() {
+        return type != TYPE::AIR;
+    }
+
+    TYPE getType() {
+        return type;
+    }
+
+    DIRECTION_3 getNearestFace(Vector3 point) {
+        #define MARGIN 0.00001f
+        OS::dbPrint(point.toString());
+        if (point.x <= global_x + MARGIN) {
+            return DIRECTION_3::LEFT;
+        }
+        else if (point.x >= global_x + 1.0 - MARGIN) {
+            return DIRECTION_3::RIGHT;
+        }
+        else if (point.y <= global_y + MARGIN) {
+            return DIRECTION_3::DOWN;
+        }
+        else if (point.y >= global_y + 1.0 - MARGIN) {
+            return DIRECTION_3::UP;
+        }
+        else if (point.z <= global_z + MARGIN) {
+            return DIRECTION_3::FRONT;
+        }
+        else if (point.z >= global_z + 1.0 - MARGIN) {
+            return DIRECTION_3::BACK;
+        }
+        else {
+            return DIRECTION_3::NONE;
+        }
+    }
+
+    Vector2 getFaceTexcoords(DIRECTION_3 face) {
+        switch (face) {
+            case DIRECTION_3::UP: return Vector2(0, 0);
+            case DIRECTION_3::DOWN: return Vector2(2, 0);
+            default: { // Sides
+                Block* up = getUp();
+                if (up != NULL && up->isBlock()) {
+                    return Vector2(2, 0);
+                }
+                return Vector2(3, 0);
+            }
+        }
     }
 
     void getBoundingBox(BoundingBox* box, Vector3 chunk_position) {
@@ -160,6 +231,8 @@ class World: public Node3D {
         int chunk_count = CHUNK_AMOUNT * CHUNK_AMOUNT;
         Chunk* chunks = NULL;
         Material material;
+
+        json block_data;
 
         SubChunk* starting_chunk = NULL;
 

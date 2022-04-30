@@ -22,5 +22,6 @@ class Player: public Node3D {
 
         World* world;
         Block* looking_at_block = NULL;
+        DIRECTION_3 looking_at_face = DIRECTION_3::NONE;
 
 };

@@ -19,7 +19,7 @@ using json = nlohmann::json;
 
 struct InternalVector3: public Vector3 {
 
-    InternalVector3(): Vector3() {}
+    InternalVector3() {}
     InternalVector3(float _x, float _y, float _z) {x = _x; y = _y; z = _z;}
     InternalVector3(int _x, int _y, int _z) {x = _x; y = _y; z = _z;}
     InternalVector3(unsigned int _x, unsigned int _y, unsigned int _z) {x = _x; y = _y; z = _z;}
