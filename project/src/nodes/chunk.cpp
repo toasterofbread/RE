@@ -3,6 +3,8 @@
 #include "common/draw.h"
 #include "node/types/camera_3d.h"
 
+#include <ode/ode.h>
+
 void SubChunk::addFace(DIRECTION_3 face, Block* block, int face_i) {
 
     const int texcoords[6][2] = {
@@ -12,7 +14,7 @@ void SubChunk::addFace(DIRECTION_3 face, Block* block, int face_i) {
 
     #define ADD_FACE(vertex_data) {\
     const int vertices[6][3] = vertex_data; \
-    const Vector2 block_texcoords = block->getFaceTexcoords(face); \
+    const int* block_texcoords = block->getFaceTexcoords(face); \
     int v = 0; \
     for (int vertex = 0; vertex < 6; vertex++) { \
         int v_i = (face_i * 6 + vertex) * 3; \
@@ -22,8 +24,11 @@ void SubChunk::addFace(DIRECTION_3 face, Block* block, int face_i) {
         mesh.vertices[v_i] = vertices[vertex][0] + block->x; \
         mesh.vertices[v_i + 1] = vertices[vertex][1] + block->y; \
         mesh.vertices[v_i + 2] = vertices[vertex][2] + block->z; \
-        mesh.texcoords[(face_i * 6 + vertex) * 2] = (texcoords[vertex][0] + block_texcoords.x) / TEXTURE_MAP_WIDTH; \
-        mesh.texcoords[(face_i * 6 + vertex) * 2 + 1] = (texcoords[vertex][1] + block_texcoords.y) / TEXTURE_MAP_HEIGHT; \
+        mesh.indices[v_i] = v_i; \
+        mesh.indices[v_i + 1] = v_i + 1; \
+        mesh.indices[v_i + 2] = v_i + 2; \
+        mesh.texcoords[(face_i * 6 + vertex) * 2] = (texcoords[vertex][0] + block_texcoords[0]) / TEXTURE_MAP_WIDTH; \
+        mesh.texcoords[(face_i * 6 + vertex) * 2 + 1] = (texcoords[vertex][1] + block_texcoords[1]) / TEXTURE_MAP_HEIGHT; \
     } \
     break; }
 
@@ -125,7 +130,6 @@ void Chunk::setup(Vector2 grid_pos, Chunk* chunks[CHUNK_AMOUNT][CHUNK_AMOUNT]) {
 
     for (int i = 0; i < SUBCHUNK_COUNT; i++) {
         sub_chunks[i] = new SubChunk(this, i);
-        world->addSubChunk(sub_chunks[i]);
     }
 }
 
@@ -192,9 +196,10 @@ void SubChunk::generateMesh() {
     }
 
     if (mesh.vertices == NULL) {
-        mesh.vertexCount = max(10000, mesh.vertexCount);
+        mesh.vertexCount = max(10002, mesh.vertexCount);
         allocated_vertices = mesh.vertexCount;
         mesh.vertices = (float*)malloc(allocated_vertices * 3 * sizeof(float));
+        mesh.indices = (unsigned short*)malloc(allocated_vertices * 3 * sizeof(unsigned short));
         mesh.texcoords = (float*)malloc(allocated_vertices * 2 * sizeof(float));
         // mesh.normals = (float *)malloc(mesh.vertexCount*3*sizeof(float)); 
     }
@@ -240,6 +245,15 @@ void SubChunk::generateMesh() {
         UpdateMeshBuffer(mesh, 0, mesh.vertices, allocated_vertices * 3 * sizeof(float), 0);
         UpdateMeshBuffer(mesh, 1, mesh.texcoords, allocated_vertices * 2 * sizeof(float), 0);
     }
+
+    int *indices = (int* )malloc(mesh.vertexCount * sizeof(int));
+    for (int i = 0; i < mesh.vertexCount; i++ ) {
+        indices[i] = i;
+    }
+
+    dTriMeshDataID mesh_data = dGeomTriMeshDataCreate();
+    dGeomTriMeshDataBuildSingle(mesh_data, mesh.vertices, 3 * sizeof(float), mesh.vertexCount, indices, mesh.vertexCount, 3 * sizeof(int));
+    dCreateTriMesh(chunk->world->space, mesh_data, NULL, NULL, NULL);
 
     // OS::print("Chunkmesh generation took " + to_string(OS::getTime() - start_time) + " seconds");
 }

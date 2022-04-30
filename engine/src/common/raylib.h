@@ -6,8 +6,6 @@
 #undef Vector2
 #endif
 
-// #include "include/raylib-cpp/raylib-cpp.hpp"
-
 #include "include/raylib/raylib.h"
 #include "include/raylib/utils.h"
 

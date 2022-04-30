@@ -236,7 +236,7 @@ json OS::loadJsonFile(string path) {
 }
 
 char* OS::loadFileText(string path) {
-    return LoadFileText(getResPath(path).c_str());
+    return LoadFileText(path.c_str());
 }
 
 bool OS::shouldClose() {

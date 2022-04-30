@@ -46,7 +46,7 @@ void Player::process(float delta) {
     setPosition(position);
 
     // Zoom camera with mouse wheel (fov)
-    camera->setZoom(min(max(camera->getZoom() + (GetMouseWheelMove() * -0.1f), 0.0f), 1.0f));
+    // camera->setZoom(min(max(camera->getZoom() + (GetMouseWheelMove() * -0.1f), 0.0f), 1.0f));
 
     // !todo move to world process
     Chunk* chunk = world->getChunk(position.x, position.z, false);
@@ -160,7 +160,7 @@ void Player::process(float delta) {
 
         if (INPUT_EVENT_INTERACT.isJustTriggered()) {
             OS::print("Block position: " + Vector3(looking_at_block->x, looking_at_block->y, looking_at_block->z).toString());
-            OS::print("Face: " + getDirectionName(looking_at_face));
+            OS::print("Face: " + directionToString(looking_at_face));
             OS::print("-------------------");
         }
     }

@@ -34,6 +34,11 @@ float constrainAngle(float x) {
     return x - DEG2RAD(180);
 }
 
+string lowerString(string str) {
+    transform(str.begin(), str.end(), str.begin(), [](unsigned char c){ return std::tolower(c); });
+    return str;
+}
+
 Vector2 dir2vector(DIRECTION direction) {
     switch (direction) {
         case DIRECTION::UP: return Vector2::UP();

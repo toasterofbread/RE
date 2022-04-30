@@ -43,6 +43,8 @@ Vector3 dir2vector(DIRECTION_3 direction);
 
 float constrainAngle(float x);
 
+string lowerString(string str);
+
 template <typename Any>
 int sign(Any value) {
     if (value == 0.0f) {
@@ -91,10 +93,15 @@ if (!static_cast<bool>(expr)) {                                        \
     OS::print("Assertion failed at " + string(__FILE__) + ":" + to_string(__LINE__) + " with expression \"" + string(#expr) + "\" | " + string(msg), 3);             \
     throw exception(); \
 }
-#define ASSERT(expr) ASSERT_MSG(expr, "(no message provided)")
+#define ASSERT(expr)						                           \
+if (!static_cast<bool>(expr)) {                                        \
+    print_stacktrace();                                                \
+    OS::print("Assertion failed at " + string(__FILE__) + ":" + to_string(__LINE__) + " with expression \"" + string(#expr) + "\"", 3);             \
+    throw exception(); \
+}
 #define WARN_IF(cond, msg) \
 if (static_cast<bool>(cond)) { \
-    OS::print("Warning at " + string(__FILE__) + ":" + to_string(__LINE__) + " with condition  \"" + string(#cond) + "\" | " + string(msg), 2); \
+    OS::print("Warning triggered at " + string(__FILE__) + ":" + to_string(__LINE__) + " with condition  \"" + string(#cond) + "\" | " + string(msg), 2); \
 }
 
 #else

@@ -22,8 +22,11 @@ DIRECTION_3 invertDirection(DIRECTION_3 base);
 
 DIRECTION_3 relativeDirection(DIRECTION_3 base, DIRECTION_3 offset );
 
-string getDirectionName(DIRECTION dir);
-string getDirectionName(DIRECTION_3 dir);
+string directionToString(DIRECTION dir);
+string directionToString(DIRECTION_3 dir);
+
+DIRECTION stringToDirection(string str);
+DIRECTION_3 stringToDirection3(string str);
 
 enum class AXIS {
     X, Y, Z

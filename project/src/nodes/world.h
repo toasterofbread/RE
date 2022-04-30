@@ -5,8 +5,7 @@
 #include "common/vector2.h"
 #include "physics/node/collision_shape_3d.h"
 
-#include <json.hpp>
-using json = nlohmann::json;
+#include <ode/ode.h>
 
 #define CHUNK_AMOUNT 10
 #define CHUNK_SIZE 16
@@ -87,7 +86,43 @@ struct Block {
     enum class TYPE {
         AIR, GRASS, DIRT, STONE
     };
+    #define BLOCK_TYPE_COUNT ((int)TYPE::STONE + 1)
     TYPE type = TYPE::GRASS;
+
+    struct TypeData {
+        bool populated = false;
+        bool tangible = true;
+        int texcoords[DIRECTION_3_COUNT][2];
+
+        TypeData() {
+            for (int face = 0; face < DIRECTION_3_COUNT; face++) {
+                texcoords[face][0] = -1;
+                texcoords[face][1] = -1;
+            }
+        }
+    };
+    static TypeData type_data[BLOCK_TYPE_COUNT];
+    static void loadTypeData();
+
+    static string getTypeName(TYPE type) {
+        switch (type) {
+            case TYPE::AIR: return "air";
+            case TYPE::GRASS: return "grass";
+            case TYPE::DIRT: return "dirt";
+            case TYPE::STONE: return "stone";
+            default: return "invalid type";
+        }
+    }
+
+    static TYPE getTypeFromString(string name) {
+        name = lowerString(name);
+        for (int type = 0; type < BLOCK_TYPE_COUNT; type++) {
+            if (name == getTypeName((TYPE)type)) {
+                return (TYPE)type;
+            }
+        }
+        return (TYPE)-1;
+    }
 
     Chunk* chunk;
     SubChunk* subchunk;
@@ -158,18 +193,8 @@ struct Block {
         }
     }
 
-    Vector2 getFaceTexcoords(DIRECTION_3 face) {
-        switch (face) {
-            case DIRECTION_3::UP: return Vector2(0, 0);
-            case DIRECTION_3::DOWN: return Vector2(2, 0);
-            default: { // Sides
-                Block* up = getUp();
-                if (up != NULL && up->isBlock()) {
-                    return Vector2(2, 0);
-                }
-                return Vector2(3, 0);
-            }
-        }
+    int* getFaceTexcoords(DIRECTION_3 face) {
+        return type_data[(int)getType()].texcoords[(int)face];
     }
 
     void getBoundingBox(BoundingBox* box, Vector3 chunk_position) {
@@ -232,13 +257,14 @@ class World: public Node3D {
         Chunk* chunks = NULL;
         Material material;
 
-        json block_data;
-
         SubChunk* starting_chunk = NULL;
 
         Chunk* getChunk(int x, int y, bool grid_pos = true);
 
         void addSubChunk(SubChunk* chunk);
+
+        dWorldID world;
+        dSpaceID space;
 
     private:
         Player* player;

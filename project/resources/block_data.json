@@ -1,0 +1,19 @@
+{
+
+    /* 
+        
+        "textures" keys
+        - l: left (X-)
+        - r: right (X+)
+        - u: up (Y+)
+        - d: down (Y-)
+        - f: front (Z-)
+        - b: back (Z+)
+
+    */
+
+    "air": {"tangible": false},
+    "grass": {"textures": {"u": [0, 0], "d": [2, 0], "e": [3, 0]}},
+    "stone": {"textures": [1, 0]}
+
+}

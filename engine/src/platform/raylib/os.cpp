@@ -65,6 +65,10 @@ string OS::getResPath(string path) {
     return plusFile("/home/spectre7/Projects/raylib/RE/", path);
 }
 
+char* OS::loadFileText(string path) {
+    return LoadFileText(path.c_str());
+}
+
 double OS::getTime() {
     return GetTime();
 }
