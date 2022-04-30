@@ -24,12 +24,10 @@ PhysicsServer::PhysicsServer() {
     #endif
 
     #if PHYSICS_3D_ENABLED
-    world_3d = phys_common.createPhysicsWorld();
-    
-    world_3d->setIsDebugRenderingEnabled(true);
-    react::DebugRenderer& debugRenderer = world_3d->getDebugRenderer(); 
-    debugRenderer.setIsDebugItemDisplayed(react::DebugRenderer::DebugItem::COLLISION_SHAPE, true); 
-
+    dInitODE2(0);
+    world_3d = dWorldCreate();
+    main_space = dHashSpaceCreate(NULL);
+    main_group = dJointGroupCreate(0);
     setGravity(Vector3(0.0f, 100.0f, 0.0f));
     #endif
 
@@ -73,6 +71,10 @@ PhysicsServer* PhysicsServer::getSingleton() {
     return singleton;
 }
 
+void nearCallback (void *data, dGeomID o1, dGeomID o2) {
+    OS::print("NEAR");
+}
+
 void PhysicsServer::physicsProcess(float delta) {
 
     if (delta <= 0.0f) {
@@ -83,7 +85,9 @@ void PhysicsServer::physicsProcess(float delta) {
     world_2d.Step(time_step * delta, velocity_iterations, position_iterations);
     #endif
     #if PHYSICS_3D_ENABLED
-    world_3d->update(time_step * delta);
+    dSpaceCollide(main_space, 0, &nearCallback);
+    dWorldQuickStep(world_3d, time_step * delta);
+    dJointGroupEmpty(main_group);
     #endif
 }
 
@@ -108,28 +112,18 @@ void PhysicsServer::destroyBody2(b2Body* body) {
 #if PHYSICS_3D_ENABLED
 void PhysicsServer::setGravity(Vector3 value) {
     gravity_3d.set(value.x, value.y, value.z);
-    world_3d->setGravity(gravity_3d);
+    dWorldSetGravity(world_3d, value.x, value.y, value.z);
 }
 Vector3 PhysicsServer::getGravity3() {
     return gravity_3d;
 }
 
-react::CollisionBody* PhysicsServer::createBody3(react::Transform transform, PhysicsBody3D::TYPE type) {
-    switch (type) {
-        case PhysicsBody3D::TYPE::STATIC: return world_3d->createCollisionBody(transform);
-        case PhysicsBody3D::TYPE::RIGID: return world_3d->createRigidBody(transform);
-        #if DEBUG_ENABLED
-        default: ASSERT(false);
-        #endif
-    }
+dBodyID PhysicsServer::createBody3() {
+    return dBodyCreate(world_3d);
 }
 
-void PhysicsServer::destroyBody3(react::CollisionBody* body) {
-    if (react::RigidBody* rigid = dynamic_cast<react::RigidBody*>(body)) {
-        world_3d->destroyRigidBody(rigid);
-    }
-    else {
-        world_3d->destroyCollisionBody(body);
-    }
+void PhysicsServer::destroyBody3(dBodyID body) {
+    return dBodyDestroy(body);
 }
+
 #endif

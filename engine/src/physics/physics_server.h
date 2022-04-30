@@ -7,8 +7,7 @@
 
 #if PHYSICS_3D_ENABLED
 #include "physics/node/physics_body_3d.h"
-#include <reactphysics3d/reactphysics3d.h> 
-#define react reactphysics3d
+#include <ode/ode.h> 
 #endif
 
 class PhysicsServer {
@@ -41,11 +40,11 @@ class PhysicsServer {
         void setGravity(Vector3 value);
         Vector3 getGravity3();
 
-        react::CollisionBody* createBody3(react::Transform transform, PhysicsBody3D::TYPE type);
-        void destroyBody3(react::CollisionBody* body);
+        dBodyID createBody3();
+        void destroyBody3(dBodyID body);
 
-        static react::PhysicsCommon* getCommon() { return &singleton->phys_common; }
-        static react::PhysicsWorld* getWorld3() { return singleton->world_3d; }
+        static dWorldID getWorld3() { return singleton->world_3d; }
+        static dSpaceID getSpace() { return singleton->main_space; }
         #endif
 
         void physicsProcess(float delta);
@@ -60,10 +59,11 @@ class PhysicsServer {
         #endif
 
         #if PHYSICS_3D_ENABLED
-        react::PhysicsWorld* world_3d;
+        dWorldID world_3d;
+        dSpaceID main_space;
+        dJointGroupID main_group;
         static const float world_scale_3d;
         Vector3 gravity_3d;
-        react::PhysicsCommon phys_common;
         #endif
 
         float time_step;

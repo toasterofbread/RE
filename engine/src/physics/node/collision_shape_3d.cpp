@@ -15,7 +15,7 @@ void CollisionShape3D::ready() {
 void CollisionShape3D::draw() {
     super::draw();
 
-    if (!isGlobalVisible() || collision_shape == NULL) {
+    if (!isGlobalVisible() || shape == NULL) {
         return;
     }
 
@@ -24,7 +24,7 @@ void CollisionShape3D::draw() {
             
     //         b2Body* body = getAttachedFixture()->GetBody();
     //         Vector2 body_position = PhysicsServer::phys2World2(body->GetPosition());
-    //         shared_ptr<b2PolygonShape> shape = reinterpret_pointer_cast<b2PolygonShape>(collision_shape);
+    //         shared_ptr<b2PolygonShape> shape = reinterpret_pointer_cast<b2PolygonShape>(shape);
 
     //         Vector2 scale = Vector2(1, 1);
 
@@ -60,17 +60,17 @@ void CollisionShape3D::enteredTree() {
 
 void CollisionShape3D::scaleChanged(Vector3 old_scale) {
 
-    if (collider == NULL) {
+    if (shape == NULL) {
         return;
     }
 
     base_scale = getGlobalScale();
     Vector3 multiplier = base_scale / (old_scale * getScale());
 
-    switch (collider->getCollisionShape()->getType()) {
+    switch (getType()) {
         // case react::CollisionShapeType::CONCAVE_SHAPE: {
 
-        //     shared_ptr<b2PolygonShape> shape = reinterpret_pointer_cast<b2PolygonShape>(collision_shape);
+        //     shared_ptr<b2PolygonShape> shape = reinterpret_pointer_cast<b2PolygonShape>(shape);
         //     for (int i = 0; i < shape->m_count; i++) {
         //         shape->m_vertices[i].x *= multiplier.x; 
         //         shape->m_vertices[i].y *= multiplier.y; 
@@ -87,77 +87,71 @@ void CollisionShape3D::setBoxShape(Vector3 size) {
 
     base_scale = getGlobalScale();
     size = PhysicsServer::world2Phys3(size) * base_scale;
+    shape = dCreateBox(PhysicsServer::getSpace(), size.x, size.y, size.z);
 
-    collision_shape = PhysicsServer::getCommon()->createBoxShape(size * 0.5);
-    
     SIGNAL_POLYGON_CHANGED.emit();
 }
 
 void CollisionShape3D::setMeshShape(Mesh& mesh, Vector3 scale) {
     freeShape();
 
-    react::TriangleVertexArray* array = 
-    new react::TriangleVertexArray(mesh.vertexCount, &mesh.vertices[0], 3 * sizeof(float), mesh.triangleCount, 
-    &mesh.indices[0], 3 * sizeof(int), 
-    react::TriangleVertexArray::VertexDataType::VERTEX_FLOAT_TYPE, 
-    react::TriangleVertexArray::IndexDataType::INDEX_INTEGER_TYPE);
+    mesh_indices = (int*)malloc(mesh.vertexCount * 3 * sizeof(float));
+    for (int i = 0; i < mesh.vertexCount; i++) {
+        mesh_indices[i] = i;
+    }
 
-    react::TriangleMesh* triangleMesh = PhysicsServer::getCommon()->createTriangleMesh(); 
-    triangleMesh->addSubpart(array);
-    collision_shape = PhysicsServer::getCommon()->createConcaveMeshShape(triangleMesh, scale);
-    
+    mesh_data = dGeomTriMeshDataCreate();
+    dGeomTriMeshDataBuildSingle(mesh_data, mesh.vertices, 3 * sizeof(float), mesh.vertexCount, mesh_indices, mesh.vertexCount, 3 * sizeof(int));
+    shape = dCreateTriMesh(PhysicsServer::getSpace(), mesh_data, NULL, NULL, NULL);
+
     SIGNAL_POLYGON_CHANGED.emit();
 }
 
 void CollisionShape3D::freeShape() {
 
-    if (collision_shape == NULL) {
+    if (shape == NULL) {
         return;
     }
 
+    dGeomDestroy(shape);
+    
     switch (getType()) {
-        case react::CollisionShapeName::TRIANGLE_MESH: {
-            react::ConcaveMeshShape* shape = dynamic_cast<react::ConcaveMeshShape*>(collision_shape);
-            react::TriangleMesh* mesh = shape->mTriangleMesh;
-            for (int i = 0; i < mesh->getNbSubparts(); i++) {
-                delete mesh->getSubpart(i);
-            }
-            PhysicsServer::getCommon()->destroyTriangleMesh(mesh);
-            PhysicsServer::getCommon()->destroyConcaveMeshShape(shape);
+        case dTriMeshClass: {
+            free(mesh_indices);
+            dGeomTriMeshDataDestroy(mesh_data);
             break;
-        }
-        case react::CollisionShapeName::BOX: {
-            PhysicsServer::getCommon()->destroyBoxShape(dynamic_cast<react::BoxShape*>(collision_shape));
         }
     }
 
-    collision_shape = NULL;
+    shape = NULL;
 }
 
 bool CollisionShape3D::hasShape() {
-    return collision_shape != NULL;
+    return shape != NULL;
 }
 
-react::CollisionShape* CollisionShape3D::getShape() {
-    ASSERT(collision_shape != NULL);
-    return collision_shape;
+dGeomID CollisionShape3D::getShape() {
+    ASSERT(shape != NULL);
+    return shape;
 }
 
-react::CollisionShapeName CollisionShape3D::getType() {
-    ASSERT(collision_shape != NULL);
-    return collision_shape->getName();
+int CollisionShape3D::getType() {
+    ASSERT(shape != NULL);
+    return dGeomGetClass(shape);
 }
 
-void CollisionShape3D::attachToBody(PhysicsBody3D* body, react::Collider* _collider) {
+void CollisionShape3D::attachToBody(PhysicsBody3D* body) {
     ASSERT(attached_body == NULL);
+    ASSERT(shape != NULL);
+
     attached_body = body;
-    collider = _collider;
+    dGeomSetBody(shape, body->getBody());
 }
 
 void CollisionShape3D::detachFromBody() {
-    ASSERT(attached_body != NULL && collision_shape != NULL);
+    ASSERT(attached_body != NULL && shape != NULL);
     attached_body = NULL;
-    collision_shape = NULL;
+    dGeomSetBody(shape, 0);
 }
 
 #endif

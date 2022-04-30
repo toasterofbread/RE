@@ -14,7 +14,6 @@ env.Replace(
         "box2d",
         "raylib",
         "ode"
-        # "reactphysics3d"
     ],
     CXX = "g++",
 )

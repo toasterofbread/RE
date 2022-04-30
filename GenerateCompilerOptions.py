@@ -73,7 +73,7 @@ if generate_settings:
 
     data += f"\n\n/* Enable debug mode */\n\n#define DEBUG_ENABLED {str(GetOption('target') == 'debug').lower()}"
 
-    data += "\n\n#define PHYSICS_2D_ENABLED false\n#define PHYSICS_3D_ENABLED false"
+    data += "\n\n#define PHYSICS_2D_ENABLED false\n#define PHYSICS_3D_ENABLED true"
 
     data += "\n\n#endif\n"
 

@@ -30,9 +30,9 @@ void World::init() {
     dInitODE2(0);
     world = dWorldCreate();
     space = dHashSpaceCreate(NULL);
-    dJointGroupID contactgroup = dJointGroupCreate(0);
-    dWorldSetGravity(world, 0, -9.8, 0);    // gravity
-    dCreatePlane (space,0,1,0,0);
+    contact_group = dJointGroupCreate(0);
+    dWorldSetGravity(world, 0, -9.8, 0);
+    // dCreatePlane (space,0,1,0,0);
 
     // Create initial chunks
     chunks = new Chunk;

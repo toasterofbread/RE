@@ -13,8 +13,7 @@ using namespace std;
 using json = nlohmann::json;
 
 #if PHYSICS_3D_ENABLED
-#include <reactphysics3d/reactphysics3d.h> 
-#define react reactphysics3d
+#include <ode/ode.h>
 #endif
 
 struct InternalVector3: public Vector3 {
@@ -29,6 +28,7 @@ struct InternalVector3: public Vector3 {
     InternalVector3(int _x, int _y, float _z) {x = _x; y = _y; z = _z;}
     InternalVector3(int _x, float _y, int _z) {x = _x; y = _y; z = _z;}
     InternalVector3(Vector3 vector) {x = vector.x; y = vector.y; z = vector.z;}
+    InternalVector3(const float* vector) {x = vector[0]; y = vector[1]; z = vector[2];}
 
     static InternalVector3 fromJson(json data);
 
@@ -207,25 +207,25 @@ struct InternalVector3: public Vector3 {
     }
 
     #if PHYSICS_3D_ENABLED
-    operator react::Vector3() {
-        return react::Vector3(x, y, z);
-    }
-    InternalVector3(react::Vector3 vector) {
-        x = vector.x;
-        y = vector.y;
-        z = vector.z;
-    }
-    InternalVector3(react::Quaternion quat) {
-        x = std::atan2(2 * (quat.w * quat.x + quat.y * quat.z), 1 - 2 * (quat.x * quat.x + quat.y * quat.y));
+    // operator dVector3() {
+    //     return dVector3(x, y, z);
+    // }
+    // InternalVector3(dVector3 vector) {
+    //     x = vector.x;
+    //     y = vector.y;
+    //     z = vector.z;
+    // }
+    // InternalVector3(Quaternion quat) {
+    //     x = std::atan2(2 * (quat.w * quat.x + quat.y * quat.z), 1 - 2 * (quat.x * quat.x + quat.y * quat.y));
 
-        double sinp = 2 * (quat.w * quat.y - quat.z * quat.x);
-        if (std::abs(sinp) >= 1)
-            y = std::copysign(PI / 2, sinp);
-        else
-            y = std::asin(sinp);
+    //     double sinp = 2 * (quat.w * quat.y - quat.z * quat.x);
+    //     if (std::abs(sinp) >= 1)
+    //         y = std::copysign(PI / 2, sinp);
+    //     else
+    //         y = std::asin(sinp);
 
-        z = std::atan2(2 * (quat.w * quat.z + quat.x * quat.y), 1 - 2 * (quat.y * quat.y + quat.z * quat.z));
-    }
+    //     z = std::atan2(2 * (quat.w * quat.z + quat.x * quat.y), 1 - 2 * (quat.y * quat.y + quat.z * quat.z));
+    // }
     #endif
 
 };

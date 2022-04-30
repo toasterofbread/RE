@@ -10,7 +10,6 @@
 
 #define FLOOR_ANGLE_THRESHOLD 0.01
 #define p_floor_max_angle DEG2RAD(45.0f)
-#define RIGID_BODY dynamic_cast<react::RigidBody*>(body)
 
 void PhysicsBody3D::physicsProcess(float delta) {
     super::physicsProcess(delta);
@@ -19,20 +18,21 @@ void PhysicsBody3D::physicsProcess(float delta) {
     on_wall = false;
     on_ceiling = false;
 
-    if (type != TYPE::RIGID || RIGID_BODY->isSleeping()) {
+    if (isKinematic()) {
         return;
     }
 
     updating_position = true;
 
-    setGlobalPosition(PhysicsServer::phys2World3(Vector3(body->getTransform().getPosition())));
-    setGlobalRotation(body->getTransform().getOrientation());
+    const float* body_pos = dBodyGetPosition(body);
+    setGlobalPosition(PhysicsServer::phys2World3(Vector3(body_pos[0], body_pos[1], body_pos[2])));
+    setGlobalRotation(dBodyGetRotation(body));
+
     updating_position = false;
 
     vector<PhysicsBody3D*> collisions;
 
     string collisions_text = "Colliding with: ";
-
 
     // Vector3 linear_velocity = body->GetLinearVelocity();// + getFinalGravity();
     // b2WorldManifold manifold;
@@ -126,9 +126,7 @@ void PhysicsBody3D::setPosition(Vector3 value) {
     }
     
     if (body) {
-        react::Transform transform = body->getTransform();
-        transform.setPosition(PhysicsServer::world2Phys3(getGlobalPosition()));
-        body->setTransform(transform);
+        dBodySetPosition(body, PhysicsServer::world2Phys3(value.x), PhysicsServer::world2Phys3(value.y), PhysicsServer::world2Phys3(value.z));
     }
 }
 
@@ -140,9 +138,9 @@ void PhysicsBody3D::setRotation(Vector3 value) {
     }
     
     if (body) {
-        react::Transform transform = body->getTransform();
-        transform.setOrientation(react::Quaternion::fromEulerAngles(getGlobalRotation()));
-        body->setTransform(transform);
+        float rot[4 * 3];
+        Matrix(MatrixRotateXYZ(getGlobalRotation())).populateArray(rot);
+        dBodySetRotation(body, rot);
     }
 }
 
@@ -159,29 +157,31 @@ bool PhysicsBody3D::isOnCeiling() {
 }
 
 void PhysicsBody3D::setLinearVelocity(Vector3 value) {
-    ASSERT(getType() == TYPE::RIGID);
-    RIGID_BODY->setLinearVelocity(PhysicsServer::world2Phys3(value));
+    ASSERT(!isKinematic());
+    dBodySetLinearVel(body, PhysicsServer::world2Phys3(value.x), PhysicsServer::world2Phys3(value.y), PhysicsServer::world2Phys3(value.z));
 }
 
 Vector3 PhysicsBody3D::getLinearVelocity() {
-    ASSERT(getType() == TYPE::RIGID);
-    return PhysicsServer::phys2World3(RIGID_BODY->getLinearVelocity());
+    ASSERT(!isKinematic());
+    return dBodyGetLinearVel(body);
 }
 
 void PhysicsBody3D::setFixedRotation(bool value) {
-    ASSERT(getType() == TYPE::RIGID);
-    RIGID_BODY->setAngularLockAxisFactor(value ? Vector3::ZERO() : Vector3::ONE());
+    ASSERT(!isKinematic());
+    // !todo
+    // RIGID_BODY->setAngularLockAxisFactor(value ? Vector3::ZERO() : Vector3::ONE());
 }
 
 bool PhysicsBody3D::isFixedRotation() {
-    ASSERT(getType() == TYPE::RIGID);
-    return ((Vector3)RIGID_BODY->getAngularLockAxisFactor()).isZero();
+    ASSERT(!isKinematic());
+    // !todo
+    return false;
 }
 
 void PhysicsBody3D::setApplyGravity(bool value) {
-    ASSERT(getType() == TYPE::RIGID);
+    ASSERT(!isKinematic());
     apply_gravity = value;
-    RIGID_BODY->enableGravity(apply_gravity);
+    dBodySetGravityMode(body, apply_gravity);
 }
 
 bool PhysicsBody3D::isApplyGravity() {
@@ -256,26 +256,29 @@ void PhysicsBody3D::removeShape(CollisionShape3D* shape) {
     SIGNAL_SHAPE_REMOVED.emit(shape);
 }
 
-void PhysicsBody3D::setType(TYPE value) {
-    if (type == value) {
+void PhysicsBody3D::setKinematic(bool value) {
+    if (isKinematic() == value) {
         return;
     }
 
-    type = value;
-    if (body != NULL) {
-        destroyBody();
-        createBody();
+    if (body) {
+        if (value) {
+            dBodySetKinematic(body);
+        }
+        else {
+            dBodySetDynamic(body);
+        }
     }
 }
 
-PhysicsBody3D::TYPE PhysicsBody3D::getType() {
-    return type;
+bool PhysicsBody3D::isKinematic() {
+    return dBodyIsKinematic(body);
 }
 
 void PhysicsBody3D::createBody() {
     ASSERT(body == NULL);
 
-    body = PhysicsServer::getSingleton()->createBody3(react::Transform{getGlobalPosition(), react::Quaternion::fromEulerAngles(getGlobalRotation())}, type);
+    body = PhysicsServer::getSingleton()->createBody3();
     for (CollisionShape3D* shape : added_shapes) {
         createShapeCollider(shape);
     }
@@ -293,25 +296,24 @@ void PhysicsBody3D::onShapePolygonChanged(CollisionShape3D* shape) {
         return;
     }
 
-    if (shape->isAttachedToBody() && shape->getCollider() != NULL) {
-        destroyShapeCollider(shape);
-    }
+    // if (shape->isAttachedToBody() && shape->getCollider() != NULL) {
+    //     destroyShapeCollider(shape);
+    // }
 
-    if (shape->hasShape()) {
-        createShapeCollider(shape);
-    }
+    // if (shape->hasShape()) {
+    //     createShapeCollider(shape);
+    // }
 }
 
 void PhysicsBody3D::createShapeCollider(CollisionShape3D* shape) {
     ASSERT(body != NULL);
     ASSERT(shape->hasShape());
 
-    shape->attachToBody(this, body->addCollider(shape->getShape(), react::Transform::identity()));
+    shape->attachToBody(this);
 }
 
 void PhysicsBody3D::destroyShapeCollider(CollisionShape3D* shape) {
     ASSERT(body != NULL);
-    body->removeCollider(shape->getCollider());
     shape->SIGNAL_POLYGON_CHANGED.disconnect(this);
     shape->detachFromBody();
 }
@@ -320,9 +322,8 @@ void PhysicsBody3D::onParentGlobalPositionChanged(Vector3 old_global_position) {
     super::onParentGlobalPositionChanged(old_global_position);
 
     if (body) {
-        react::Transform transform = body->getTransform();
-        transform.setPosition(PhysicsServer::world2Phys3(getGlobalPosition()));
-        body->setTransform(transform);
+        Vector3 position = PhysicsServer::world2Phys3(getGlobalPosition());
+        dBodySetPosition(body, position.x, position.y, position.z);
     }
 }
 

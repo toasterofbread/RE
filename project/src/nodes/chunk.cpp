@@ -24,9 +24,6 @@ void SubChunk::addFace(DIRECTION_3 face, Block* block, int face_i) {
         mesh.vertices[v_i] = vertices[vertex][0] + block->x; \
         mesh.vertices[v_i + 1] = vertices[vertex][1] + block->y; \
         mesh.vertices[v_i + 2] = vertices[vertex][2] + block->z; \
-        mesh.indices[v_i] = v_i; \
-        mesh.indices[v_i + 1] = v_i + 1; \
-        mesh.indices[v_i + 2] = v_i + 2; \
         mesh.texcoords[(face_i * 6 + vertex) * 2] = (texcoords[vertex][0] + block_texcoords[0]) / TEXTURE_MAP_WIDTH; \
         mesh.texcoords[(face_i * 6 + vertex) * 2 + 1] = (texcoords[vertex][1] + block_texcoords[1]) / TEXTURE_MAP_HEIGHT; \
     } \
@@ -199,7 +196,6 @@ void SubChunk::generateMesh() {
         mesh.vertexCount = max(10002, mesh.vertexCount);
         allocated_vertices = mesh.vertexCount;
         mesh.vertices = (float*)malloc(allocated_vertices * 3 * sizeof(float));
-        mesh.indices = (unsigned short*)malloc(allocated_vertices * 3 * sizeof(unsigned short));
         mesh.texcoords = (float*)malloc(allocated_vertices * 2 * sizeof(float));
         // mesh.normals = (float *)malloc(mesh.vertexCount*3*sizeof(float)); 
     }

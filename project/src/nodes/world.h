@@ -169,7 +169,6 @@ struct Block {
 
     DIRECTION_3 getNearestFace(Vector3 point) {
         #define MARGIN 0.00001f
-        OS::dbPrint(point.toString());
         if (point.x <= global_x + MARGIN) {
             return DIRECTION_3::LEFT;
         }
@@ -265,6 +264,7 @@ class World: public Node3D {
 
         dWorldID world;
         dSpaceID space;
+        dJointGroupID contact_group;
 
     private:
         Player* player;

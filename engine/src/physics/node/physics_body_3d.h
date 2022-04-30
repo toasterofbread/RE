@@ -8,8 +8,7 @@
 #include "engine/src/node/types/node_3d.h"
 #include "engine/src/core/signal.h"
 
-#include <reactphysics3d/reactphysics3d.h> 
-#define react reactphysics3d
+#include <ode/ode.h> 
 
 // Forward declarations
 class CollisionShape3D;
@@ -19,7 +18,7 @@ class PhysicsBody3D: public Node3D {
     public:
     
         REGISTER_NODE(PhysicsBody3D, Node3D, {
-            c->template registerProperty<TYPE>("type", &NodeType::setType)
+            c->template registerProperty<bool>("type", &NodeType::setKinematic)
             ->template registerProperty<Vector3>("linear_velocity", &NodeType::setLinearVelocity)
             ->template registerProperty<bool>("fixed_rotation", &NodeType::setFixedRotation)
             ->template registerProperty<bool>("apply_gravity", &NodeType::setApplyGravity)
@@ -48,11 +47,9 @@ class PhysicsBody3D: public Node3D {
         bool isOnWall();
         bool isOnCeiling();
 
-        enum class TYPE { STATIC, RIGID };
-
         // Physics parameters
-        void setType(TYPE type);
-        TYPE getType();
+        void setKinematic(bool value);
+        bool isKinematic();
 
         void setLinearVelocity(Vector3 value);
         Vector3 getLinearVelocity();
@@ -68,10 +65,10 @@ class PhysicsBody3D: public Node3D {
         void setUpDirection(Vector3 value);
         Vector3 getUpDirection();
 
-        react::CollisionBody* getBody() { return body; }
+        dBodyID getBody() { return body; }
 
     private:
-        react::CollisionBody* body = NULL;
+        dBodyID body = NULL;
 
         void addShape(CollisionShape3D* shape);
         void removeShape(CollisionShape3D* shape);
@@ -98,7 +95,6 @@ class PhysicsBody3D: public Node3D {
         // Physics parameters
         bool apply_gravity = true;
         Vector3 up_direction = Vector3(0.0f, 1.0f, 0.0f);
-        TYPE type = TYPE::STATIC;
 };
 
 #endif

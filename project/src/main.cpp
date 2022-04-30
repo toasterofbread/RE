@@ -87,7 +87,7 @@ int main() {
     Engine::print_disabled = true;
 
     project.init();
-    DisableCursor();
+    // DisableCursor();
 
     while (!OS::shouldClose() && !Engine::fatal_error_occurred && !close) {
 
