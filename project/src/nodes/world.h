@@ -4,6 +4,7 @@
 #include "node/types/node_3d.h"
 #include "common/vector2.h"
 #include "physics/node/collision_shape_3d.h"
+#include "physics/node/physics_body_3d.h"
 
 #include <ode/ode.h>
 
@@ -21,14 +22,17 @@ class World;
 class Block;
 class Chunk;
 
-struct SubChunk {
+struct SubChunk: public CollisionShape3D  {
+
+    REGISTER_NODE(SubChunk, CollisionShape3D, {});
+
     Chunk* chunk;
     int index;
     Mesh mesh;
 
     bool drawn = false;
 
-    SubChunk(Chunk* _chunk, int _index);
+    void init(Chunk* _chunk, int _index);
     bool isVisible(Camera3D* camera, Vector3 chunk_position);
 
     bool isAxisOpaque(AXIS axis);
@@ -242,10 +246,10 @@ struct Block {
     }
 };
 
-class World: public Node3D {
+class World: public PhysicsBody3D {
 
     public:
-        REGISTER_NODE_WITH_CONSTRUCTOR(World, Node3D, {}, init());
+        REGISTER_NODE_WITH_CONSTRUCTOR(World, PhysicsBody3D, {}, init());
 
         void draw();
 

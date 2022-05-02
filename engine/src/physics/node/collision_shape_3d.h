@@ -24,6 +24,8 @@ class CollisionShape3D: public Node3D {
         void ready();
         void draw();
     
+        void setPosition(Vector3 value);
+
         bool hasShape();
         dGeomID getShape();
 
@@ -44,7 +46,7 @@ class CollisionShape3D: public Node3D {
         int getType();
 
         void setBoxShape(Vector3 size);
-        void setMeshShape(Mesh& mesh, Vector3 scale = Vector3::ONE());
+        void setMeshShape(Mesh& mesh);
 
     protected:
 
@@ -52,6 +54,11 @@ class CollisionShape3D: public Node3D {
         void enteredTree();
 
     private:
+    
+        typedef struct PlaneBody {
+            dGeomID geom;
+            int * indexes;
+        } PlaneGeom;
 
         friend class PhysicsBody3D;
         
@@ -67,9 +74,6 @@ class CollisionShape3D: public Node3D {
         // Mesh shape
         dTriMeshDataID mesh_data;
         int* mesh_indices = NULL;
-
-        // react::Collider* getCollider() { return collider; }
-        // react::Collider* collider = NULL;
 
         void onScaleChanged(Vector3 old_scale);
 

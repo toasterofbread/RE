@@ -12,6 +12,18 @@ Camera3D* camera;
 void Player::ready() {
     super::ready();
  
+    // setKinematic(true);
+    // setApplyGravity(false);
+
+    setPosition(getPosition() + Vector3(0, 100, 0));
+    // setLinearVelocity(Vector3(0, -20, 0));
+
+    CollisionShape3D* shape = new CollisionShape3D;
+    shape->setBoxShape(Vector3(1, 2, 1));
+    addChild(shape);
+    dGeomSetCollideBits(shape->getShape(), 0x0002);
+    dGeomSetCategoryBits(shape->getShape(), 0x0001);
+
     camera = new Camera3D;
     addChild(camera);
     camera->enable();
@@ -28,6 +40,8 @@ void Player::process(float delta) {
     Vector3 rotation = getRotation();
     rotation = (rotation + (Vector3(rotation_delta.x, rotation_delta.y, 0.0f) * MOUSE_SENSITIVITY * 0.001f * (camera->getCamera()->fovy / 45.0f))).clampAngle();
     setRotation(rotation);
+
+    OS::dbPrint("Player rotation: " + rotation.toString());
    
     Vector3 position = getPosition();
 
@@ -43,7 +57,11 @@ void Player::process(float delta) {
     position.y += v_movement * delta * 20.0f;
 
     // Apply final position
-    setPosition(position);
+    // setPosition(position);
+
+    const float* body_pos = dGeomGetPosition(((CollisionShape3D*)getChild("CollisionShape3D"))->getShape());
+    OS::dbPrint("Player pos: " + Vector3(body_pos[0], body_pos[1], body_pos[2]).toString());
+
 
     // Zoom camera with mouse wheel (fov)
     // camera->setZoom(min(max(camera->getZoom() + (GetMouseWheelMove() * -0.1f), 0.0f), 1.0f));
@@ -161,6 +179,12 @@ void Player::process(float delta) {
         if (INPUT_EVENT_INTERACT.isJustTriggered()) {
             OS::print("Block position: " + Vector3(looking_at_block->x, looking_at_block->y, looking_at_block->z).toString());
             OS::print("Face: " + directionToString(looking_at_face));
+
+            const float* pos = dGeomGetPosition(looking_at_block->subchunk->getShape());
+            const float* off = dGeomGetOffsetPosition(looking_at_block->subchunk->getShape());
+
+            OS::print("Geom pos: " + Vector3(pos[0] + off[0], pos[1] + off[1], pos[2] + off[2]).toString());
+            OS::print("Subchunk pos: " + looking_at_block->subchunk->getGlobalPosition().toString());
             OS::print("-------------------");
         }
     }

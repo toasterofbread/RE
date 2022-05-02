@@ -28,7 +28,6 @@ struct InternalVector3: public Vector3 {
     InternalVector3(int _x, int _y, float _z) {x = _x; y = _y; z = _z;}
     InternalVector3(int _x, float _y, int _z) {x = _x; y = _y; z = _z;}
     InternalVector3(Vector3 vector) {x = vector.x; y = vector.y; z = vector.z;}
-    InternalVector3(const float* vector) {x = vector[0]; y = vector[1]; z = vector[2];}
 
     static InternalVector3 fromJson(json data);
 
@@ -66,6 +65,10 @@ struct InternalVector3: public Vector3 {
 
     void normalise();
     InternalVector3 normalised() const;
+
+    bool isValid() {
+        return !isnan(x) && !isnan(y) && !isnan(z);
+    }
 
     bool isZero() {
         return x == 0.0f && y == 0.0f && z == 0.0f;

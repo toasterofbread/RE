@@ -45,6 +45,7 @@ class PhysicsServer {
 
         static dWorldID getWorld3() { return singleton->world_3d; }
         static dSpaceID getSpace() { return singleton->main_space; }
+        void nearCallback(void *data, dGeomID o1, dGeomID o2);
         #endif
 
         void physicsProcess(float delta);

@@ -11,6 +11,27 @@
 #define FLOOR_ANGLE_THRESHOLD 0.01
 #define p_floor_max_angle DEG2RAD(45.0f)
 
+Matrix getTransform(const float pos[3], const float R[12]) {
+    Matrix ret;
+    ret.m0 = R[0];
+    ret.m1 = R[4];
+    ret.m2 = R[8];
+    ret.m3 = 0;
+    ret.m4 = R[1];
+    ret.m5 = R[5];
+    ret.m6 = R[9];
+    ret.m7 = 0;
+    ret.m8 = R[2];
+    ret.m9 = R[6];
+    ret.m10 = R[10];
+    ret.m11 = 0;
+    ret.m12 = pos[0];
+    ret.m13 = pos[1];
+    ret.m14 = pos[2];
+    ret.m15 = 1;
+    return ret;
+}
+
 void PhysicsBody3D::physicsProcess(float delta) {
     super::physicsProcess(delta);
 
@@ -18,21 +39,65 @@ void PhysicsBody3D::physicsProcess(float delta) {
     on_wall = false;
     on_ceiling = false;
 
-    if (isKinematic()) {
-        return;
-    }
+    // if (isKinematic()) {
+    //     return;
+    // }
 
     updating_position = true;
 
-    const float* body_pos = dBodyGetPosition(body);
-    setGlobalPosition(PhysicsServer::phys2World3(Vector3(body_pos[0], body_pos[1], body_pos[2])));
-    setGlobalRotation(dBodyGetRotation(body));
+    // matrix->m0 = R[0];
+    // matrix->m1 = R[4];
+    // matrix->m2 = R[8];
+
+    // matrix->m4 = R[1];
+    // matrix->m5 = R[5];
+    // matrix->m6 = R[9];
+
+    // matrix->m8 = R[2];
+    // matrix->m9 = R[6];
+    // matrix->m10 = R[10];
+
+    // matrix->m12 = pos[0];
+    // matrix->m13 = pos[1];
+    // matrix->m14 = pos[2];
+
+    // const float* body_pos = dBodyGetPosition(body);
+    // setGlobalPosition(PhysicsServer::phys2World3(Vector3(body_pos[0], body_pos[1], body_pos[2])));
+
+    // const float* rot = dBodyGetRotation(body);
+
+    Matrix mat = getTransform(dBodyGetPosition(body), dBodyGetRotation(body));
+    setGlobalPosition(Vector3Transform(Vector3::ZERO(), mat));
+    // setGlobalRotation(QuaternionToEuler(QuaternionFromMatrix(mat)));
+
+    // mat.m0 = rot[0];
+    // mat.m1 = rot[4];
+    // mat.m2 = rot[8];
+    // mat.m4 = rot[1];
+    // mat.m5 = rot[5];
+    // mat.m6 = rot[9];
+    // mat.m8 = rot[2];
+    // mat.m9 = rot[6];
+    // mat.m10 = rot[10];
+
+    // Quaternion a = QuaternionFromMatrix(mat);
+    // Vector3 b = QuaternionToEuler(a);
+
+    // setGlobalRotation(b);
+
+    // const float* q1 = dBodyGetQuaternion(body);
+    // Quaternion q2;
+    // q2.x = q1[1];
+    // q2.y = q1[2];
+    // q2.z = q1[3];
+    // q2.w = q1[0];
+    // setGlobalRotation(QuaternionToEuler(q2));
 
     updating_position = false;
 
-    vector<PhysicsBody3D*> collisions;
+    // vector<PhysicsBody3D*> collisions;
 
-    string collisions_text = "Colliding with: ";
+    // string collisions_text = "Colliding with: ";
 
     // Vector3 linear_velocity = body->GetLinearVelocity();// + getFinalGravity();
     // b2WorldManifold manifold;
@@ -126,7 +191,7 @@ void PhysicsBody3D::setPosition(Vector3 value) {
     }
     
     if (body) {
-        dBodySetPosition(body, PhysicsServer::world2Phys3(value.x), PhysicsServer::world2Phys3(value.y), PhysicsServer::world2Phys3(value.z));
+        setBodyPosition(PhysicsServer::world2Phys3(getGlobalPosition()));
     }
 }
 
@@ -138,9 +203,33 @@ void PhysicsBody3D::setRotation(Vector3 value) {
     }
     
     if (body) {
-        float rot[4 * 3];
-        Matrix(MatrixRotateXYZ(getGlobalRotation())).populateArray(rot);
-        dBodySetRotation(body, rot);
+
+        Vector3 v = getGlobalRotation();
+        Matrix rotation = MatrixRotateXYZ(getGlobalRotation());
+        dMatrix3 matrix;
+
+        matrix[0] = rotation.m0;
+        matrix[4] = rotation.m1;
+        matrix[8] = rotation.m2;
+        matrix[1] = rotation.m4;
+        matrix[5] = rotation.m5;
+        matrix[9] = rotation.m6;
+        matrix[2] = rotation.m8;
+        matrix[6] = rotation.m9;
+        matrix[10] = rotation.m10;
+
+        dBodySetRotation(body, matrix);
+
+        // Vector3 rotation = getGlobalRotation();
+        // Quaternion source = QuaternionFromEuler(rotation.z, rotation.y, rotation.x);
+        
+        // dQuaternion dest;
+        // dest[1] = source.x;
+        // dest[2] = source.y;
+        // dest[3] = source.z;
+        // dest[0] = source.w;
+
+        // dBodySetQuaternion(body, dest);
     }
 }
 
@@ -157,13 +246,15 @@ bool PhysicsBody3D::isOnCeiling() {
 }
 
 void PhysicsBody3D::setLinearVelocity(Vector3 value) {
-    ASSERT(!isKinematic());
+    ASSERT(body);
     dBodySetLinearVel(body, PhysicsServer::world2Phys3(value.x), PhysicsServer::world2Phys3(value.y), PhysicsServer::world2Phys3(value.z));
 }
 
 Vector3 PhysicsBody3D::getLinearVelocity() {
-    ASSERT(!isKinematic());
-    return dBodyGetLinearVel(body);
+    ASSERT(body);
+    
+    const float* vel = dBodyGetLinearVel(body);
+    return Vector3(vel[0], vel[1], vel[2]);
 }
 
 void PhysicsBody3D::setFixedRotation(bool value) {
@@ -179,9 +270,11 @@ bool PhysicsBody3D::isFixedRotation() {
 }
 
 void PhysicsBody3D::setApplyGravity(bool value) {
-    ASSERT(!isKinematic());
     apply_gravity = value;
-    dBodySetGravityMode(body, apply_gravity);
+
+    if (body) {
+        dBodySetGravityMode(body, apply_gravity);
+    }
 }
 
 bool PhysicsBody3D::isApplyGravity() {
@@ -233,7 +326,7 @@ void PhysicsBody3D::addShape(CollisionShape3D* shape) {
     ASSERT(!shape->isAttachedToBody());
     
     if (body != NULL && shape->hasShape()) {
-        createShapeCollider(shape);
+        shape->attachToBody(this);
     }
 
     shape->SIGNAL_POLYGON_CHANGED.connect(&PhysicsBody3D::onShapePolygonChanged, this, false, shape);
@@ -248,21 +341,20 @@ void PhysicsBody3D::removeShape(CollisionShape3D* shape) {
     ASSERT(vectorContainsValue(added_shapes, shape));
     ASSERT(shape->isAttachedToBody());
 
-    if (isInsideTree()) {
-        destroyShapeCollider(shape);
-    }
-
+    shape->detachFromBody();
     vectorRemoveValue(&added_shapes, shape);
     SIGNAL_SHAPE_REMOVED.emit(shape);
 }
 
 void PhysicsBody3D::setKinematic(bool value) {
-    if (isKinematic() == value) {
+    if (kinematic == value) {
         return;
     }
 
+    kinematic = value;
+
     if (body) {
-        if (value) {
+        if (kinematic) {
             dBodySetKinematic(body);
         }
         else {
@@ -272,23 +364,57 @@ void PhysicsBody3D::setKinematic(bool value) {
 }
 
 bool PhysicsBody3D::isKinematic() {
-    return dBodyIsKinematic(body);
+    return kinematic;
 }
 
 void PhysicsBody3D::createBody() {
     ASSERT(body == NULL);
 
     body = PhysicsServer::getSingleton()->createBody3();
+    dBodySetGravityMode(body, apply_gravity);
+
+    Vector3 position = PhysicsServer::world2Phys3(getGlobalPosition());
+    dBodySetPosition(body, position.x, position.y, position.z);
+
+    if (kinematic) {
+        dBodySetKinematic(body);
+    }
+    else {
+        dBodySetDynamic(body);
+    }
+
     for (CollisionShape3D* shape : added_shapes) {
-        createShapeCollider(shape);
+        if (shape->hasShape()) {
+            shape->attachToBody(this);
+        }
     }
 }
 
 void PhysicsBody3D::destroyBody() {
+
+    for (CollisionShape3D* shape : added_shapes) {
+        if (shape->isAttachedToBody()) {
+            shape->detachFromBody();
+        }
+    }
+
     PhysicsServer::getSingleton()->destroyBody3(body);
     body = NULL;
 }
 
+void PhysicsBody3D::setBodyPosition(Vector3 position) {
+    if (body == NULL) {
+        return;
+    }
+
+    dBodySetPosition(body, position.x, position.y, position.z);
+
+    // dGeomID shape = dBodyGetFirstGeom(body);
+    // while (shape) {
+    //     dGeomSetPosition(shape, position.x, position.y, position.z);
+    //     shape = dBodyGetNextGeom(shape);
+    // }
+}
 
 void PhysicsBody3D::onShapePolygonChanged(CollisionShape3D* shape) {
 
@@ -296,34 +422,14 @@ void PhysicsBody3D::onShapePolygonChanged(CollisionShape3D* shape) {
         return;
     }
 
-    // if (shape->isAttachedToBody() && shape->getCollider() != NULL) {
-    //     destroyShapeCollider(shape);
-    // }
-
-    // if (shape->hasShape()) {
-    //     createShapeCollider(shape);
-    // }
 }
 
-void PhysicsBody3D::createShapeCollider(CollisionShape3D* shape) {
-    ASSERT(body != NULL);
-    ASSERT(shape->hasShape());
-
-    shape->attachToBody(this);
-}
-
-void PhysicsBody3D::destroyShapeCollider(CollisionShape3D* shape) {
-    ASSERT(body != NULL);
-    shape->SIGNAL_POLYGON_CHANGED.disconnect(this);
-    shape->detachFromBody();
-}
 
 void PhysicsBody3D::onParentGlobalPositionChanged(Vector3 old_global_position) {
     super::onParentGlobalPositionChanged(old_global_position);
 
     if (body) {
-        Vector3 position = PhysicsServer::world2Phys3(getGlobalPosition());
-        dBodySetPosition(body, position.x, position.y, position.z);
+        setBodyPosition(PhysicsServer::world2Phys3(getGlobalPosition()));
     }
 }
 

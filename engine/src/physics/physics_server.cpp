@@ -28,7 +28,7 @@ PhysicsServer::PhysicsServer() {
     world_3d = dWorldCreate();
     main_space = dHashSpaceCreate(NULL);
     main_group = dJointGroupCreate(0);
-    setGravity(Vector3(0.0f, 100.0f, 0.0f));
+    setGravity(Vector3(0.0f, -100.0f, 0.0f));
     #endif
 
     time_step = 1.0f;
@@ -71,8 +71,44 @@ PhysicsServer* PhysicsServer::getSingleton() {
     return singleton;
 }
 
-void nearCallback (void *data, dGeomID o1, dGeomID o2) {
-    OS::print("NEAR");
+#define MAX_CONTACTS 8
+
+void callNearCallback(void *data, dGeomID o1, dGeomID o2) {
+    PhysicsServer::getSingleton()->nearCallback(data, o1, o2);
+}
+
+void PhysicsServer::nearCallback(void *data, dGeomID o1, dGeomID o2) {
+    OS::print(to_string(OS::getTime()) + " COLLISION");
+
+    (void)data;
+    int i;
+    // if (o1->body && o2->body) return;
+
+    // exit without doing anything if the two bodies are connected by a joint
+    dBodyID b1 = dGeomGetBody(o1);
+    dBodyID b2 = dGeomGetBody(o2);
+    if (b1 && b2 && dAreConnectedExcluding(b1, b2, dJointTypeContact))
+        return;
+
+    dContact contact[MAX_CONTACTS]; // up to MAX_CONTACTS contacts per body-body
+    for (i = 0; i < MAX_CONTACTS; i++) {
+        /*contact[i].surface.mode = dContactBounce | dContactSoftCFM | dContactApprox1;*/
+        contact[i].surface.mode = dContactBounce;
+        contact[i].surface.mu = dInfinity;
+        contact[i].surface.bounce = 0.0;
+        contact[i].surface.bounce_vel = 0.1;
+        /*contact[i].surface.soft_cfm = 0.01;*/
+    }
+    int numc = dCollide(o1, o2, MAX_CONTACTS, &contact[0].geom,
+                        sizeof(dContact));
+    if (numc) {
+        dMatrix3 RI;
+        dRSetIdentity(RI);
+        for (i = 0; i < numc; i++) {
+            dJointID c = dJointCreateContact(world_3d, main_group, contact + i);
+            dJointAttach(c, b1, b2);
+        }
+    }
 }
 
 void PhysicsServer::physicsProcess(float delta) {
@@ -85,7 +121,7 @@ void PhysicsServer::physicsProcess(float delta) {
     world_2d.Step(time_step * delta, velocity_iterations, position_iterations);
     #endif
     #if PHYSICS_3D_ENABLED
-    dSpaceCollide(main_space, 0, &nearCallback);
+    dSpaceCollide(main_space, 0, &callNearCallback);
     dWorldQuickStep(world_3d, time_step * delta);
     dJointGroupEmpty(main_group);
     #endif

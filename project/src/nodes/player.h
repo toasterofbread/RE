@@ -4,12 +4,13 @@
 #include "input/macro.h"
 #include "common/input.h"
 #include "world.h"
+#include "physics/node/physics_body_3d.h"
 
-class Player: public Node3D {
+class Player: public PhysicsBody3D {
 
     public:
 
-        REGISTER_NODE(Player, Node3D, {});
+        REGISTER_NODE(Player, PhysicsBody3D, {});
 
         InputEvent INPUT_EVENT_JUMP = InputEvent({Macro::create()->setKb({Input::KEY_SPACE}), Macro::create()->setPad({Input::FACE_RIGHT})});
         InputEvent INPUT_EVENT_CROUCH = InputEvent({Macro::create()->setKb({Input::KEY_LSHIFT}), Macro::create()->setPad({Input::FACE_DOWN})});

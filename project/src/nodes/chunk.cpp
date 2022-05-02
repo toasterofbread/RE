@@ -83,7 +83,7 @@ void SubChunk::addFace(DIRECTION_3 face, Block* block, int face_i) {
     }
 }
 
-SubChunk::SubChunk(Chunk* _chunk, int _index) {
+void SubChunk::init(Chunk* _chunk, int _index) {
     chunk = _chunk;
     index = _index;
     mesh = { 0 };
@@ -125,8 +125,16 @@ void Chunk::setup(Vector2 grid_pos, Chunk* chunks[CHUNK_AMOUNT][CHUNK_AMOUNT]) {
         }
     }
 
+    Vector3 position = getPosition();
     for (int i = 0; i < SUBCHUNK_COUNT; i++) {
-        sub_chunks[i] = new SubChunk(this, i);
+        SubChunk* sub = new SubChunk;
+        sub->init(this, i);
+
+        // !todo y pos
+        sub->setPosition(Vector3(position.x, position.y + i * SUBCHUNK_HEIGHT, position.z));
+
+        world->addChild(sub);
+        sub_chunks[i] = sub;
     }
 }
 
@@ -247,9 +255,13 @@ void SubChunk::generateMesh() {
         indices[i] = i;
     }
 
-    dTriMeshDataID mesh_data = dGeomTriMeshDataCreate();
-    dGeomTriMeshDataBuildSingle(mesh_data, mesh.vertices, 3 * sizeof(float), mesh.vertexCount, indices, mesh.vertexCount, 3 * sizeof(int));
-    dCreateTriMesh(chunk->world->space, mesh_data, NULL, NULL, NULL);
+    setMeshShape(mesh);
+    // dGeomSetCollideBits(getShape(), 0x0001);
+    // dGeomSetCategoryBits(getShape(), 0x0002);
+
+    // dTriMeshDataID mesh_data = dGeomTriMeshDataCreate();
+    // dGeomTriMeshDataBuildSingle(mesh_data, mesh.vertices, 3 * sizeof(float), mesh.vertexCount, indices, mesh.vertexCount, 3 * sizeof(int));
+    // dCreateTriMesh(chunk->world->space, mesh_data, NULL, NULL, NULL);
 
     // OS::print("Chunkmesh generation took " + to_string(OS::getTime() - start_time) + " seconds");
 }

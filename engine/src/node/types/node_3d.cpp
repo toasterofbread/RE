@@ -221,6 +221,10 @@ Vector3 Node3D::getGlobalRotation() {
 void Node3D::setGlobalRotation(Vector3 value) {
     ASSERT(isInsideTree());
 
+    if (!value.isValid()) {
+        return;
+    }
+
     if (!rotation_relative_to_parent) {
         setRotation(value);
         return;

@@ -30,7 +30,6 @@ struct Project {
     void init() {
         Node* main_scene = SceneLoader::loadSceneFromFile("project/resources/main.rescn");
         engine->getTree()->addNode(main_scene);
-        // engine->getTree()->getRoot()->printTree();
     }
 
     void toggle() {

@@ -76,9 +76,9 @@ class PhysicsBody3D: public Node3D {
         void createBody();
         void destroyBody();
 
+        void setBodyPosition(Vector3 position);
+
         void onShapePolygonChanged(CollisionShape3D* shape);
-        void createShapeCollider(CollisionShape3D* shape);
-        void destroyShapeCollider(CollisionShape3D* shape);
 
         void onParentGlobalPositionChanged(Vector3 old_global_position);
 
@@ -95,6 +95,7 @@ class PhysicsBody3D: public Node3D {
         // Physics parameters
         bool apply_gravity = true;
         Vector3 up_direction = Vector3(0.0f, 1.0f, 0.0f);
+        bool kinematic = false;
 };
 
 #endif

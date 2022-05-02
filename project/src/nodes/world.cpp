@@ -12,6 +12,9 @@ using json = nlohmann::json;
 Block::TypeData Block::type_data[BLOCK_TYPE_COUNT];
 
 void World::init() {
+    setApplyGravity(false);
+    // setKinematic(true);
+
     player = new Player;
     player->world = this;
 
@@ -25,14 +28,6 @@ void World::init() {
 
     // Load block data
     Block::loadTypeData();
-
-    // ODE (temp)
-    dInitODE2(0);
-    world = dWorldCreate();
-    space = dHashSpaceCreate(NULL);
-    contact_group = dJointGroupCreate(0);
-    dWorldSetGravity(world, 0, -9.8, 0);
-    // dCreatePlane (space,0,1,0,0);
 
     // Create initial chunks
     chunks = new Chunk;
