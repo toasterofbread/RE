@@ -167,12 +167,14 @@ void drawMeshInstanced(Mesh mesh, Material material, Matrix *transforms, int ins
 }
 
 void Draw::drawModel(Model model, Vector3 position, float scale, Color tint, bool wires) {
-    if (wires) {
-        DrawModelWires(model, position, scale, tint);
-    }
-    else {
-        DrawModel(model, position, scale, tint);
-    }
+    DRAW_3D(
+        if (wires) {
+            DrawModelWires(model, position, scale, tint);
+        }
+        else {
+            DrawModel(model, position, scale, tint);
+        }
+    );
 }
 
 void Draw::drawGrid(int slices, float spacing) {

@@ -202,6 +202,15 @@ Node* Node::getChildAtPath(string child_path) {
     return current_node;
 }
 
+Node* Node::getChildWithID(int child_id) {
+    for (Node* child : children) {
+        if (child->getId() == child_id) {
+            return child;
+        }
+    }
+    return NULL;
+}
+
 bool Node::hasChild(int child_idx) {
     return child_idx < getChildCount();
 }

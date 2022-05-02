@@ -12,8 +12,7 @@ using json = nlohmann::json;
 Block::TypeData Block::type_data[BLOCK_TYPE_COUNT];
 
 void World::init() {
-    setApplyGravity(false);
-    // setKinematic(true);
+    setKinematic(true);
 
     player = new Player;
     player->world = this;

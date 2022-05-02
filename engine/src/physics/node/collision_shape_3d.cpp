@@ -91,16 +91,6 @@ void CollisionShape3D::scaleChanged(Vector3 old_scale) {
     }
 }
 
-void CollisionShape3D::setBoxShape(Vector3 size) {
-    freeShape();
-
-    base_scale = getGlobalScale();
-    size = PhysicsServer::world2Phys3(size) * base_scale;
-    shape = dCreateBox(PhysicsServer::getSpace(), size.x, size.y, size.z);
-
-    SIGNAL_POLYGON_CHANGED.emit();
-}
-
 enum INDEX
 {
   PLANE = 0,
@@ -120,6 +110,21 @@ const int catBits[LAST_INDEX_CNT] =
     ~0L     ///< All categories >          11111111111111111111111111111111
 };
 
+void CollisionShape3D::setBoxShape(Vector3 size) {
+    freeShape();
+
+    base_scale = getGlobalScale();
+    size = PhysicsServer::world2Phys3(size) * base_scale;
+
+    shape = dCreateBox(PhysicsServer::getSpace(), size.x, size.y, size.z);
+    dGeomSetData(shape, this);
+
+    dGeomSetCategoryBits (shape, catBits[PLAYER]);
+    dGeomSetCollideBits (shape, catBits[PLANE]);
+
+    SIGNAL_POLYGON_CHANGED.emit();
+}
+
 void CollisionShape3D::setMeshShape(Mesh& mesh) {
     freeShape();
 
@@ -131,8 +136,9 @@ void CollisionShape3D::setMeshShape(Mesh& mesh) {
     mesh_data = dGeomTriMeshDataCreate();
     dGeomTriMeshDataBuildSingle(mesh_data, mesh.vertices, 3 * sizeof(float), mesh.vertexCount, mesh_indices, mesh.vertexCount, 3 * sizeof(int));
     shape = dCreateTriMesh(PhysicsServer::getSpace(), mesh_data, NULL, NULL, NULL);
-    dGeomSetCategoryBits(shape, catBits[PLANE]);
-    dGeomSetCollideBits(shape, catBits[ALL]);
+    dGeomSetCategoryBits (shape, catBits[PLANE]);
+    dGeomSetCollideBits (shape, catBits[ALL]);
+    dGeomSetData(shape, NULL);
 
     // return (PlaneGeom){.geom = planeGeom, .indexes = groundInd};
 

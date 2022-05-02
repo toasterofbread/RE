@@ -283,6 +283,9 @@ void SubChunk::draw() {
 
     // rlDisableBackfaceCulling();
 
+    const float* pos = dGeomGetPosition(getShape());
+    Draw::drawCube(Vector3(pos[0], pos[1], pos[2]), Vector3::ONE(), Colour::GREEN());
+
     if (!isVisible(chunk->getTree()->getEnabledCamera3D(), position)) {
         return;
     }
@@ -291,7 +294,7 @@ void SubChunk::draw() {
         Draw::drawCube(getCenter() + Vector3(0.0f, CHUNK_SIZE * 0.5f, 0.0f), Vector3::ONE(), Colour::RED());
     }
 
-    Draw::drawMesh(mesh, chunk->world->material, MatrixTranslate(position.x, position.y - (SUBCHUNK_HEIGHT * (index)) + 1, position.z));
+    Draw::drawMesh(mesh, chunk->world->material, MatrixTranslate(position.x, position.y - (SUBCHUNK_HEIGHT * (index)), position.z));
 }
 
 bool SubChunk::isVisible(Camera3D* camera, Vector3 chunk_position) {

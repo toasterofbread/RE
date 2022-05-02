@@ -108,6 +108,7 @@ class Node {
         Node* getChild(int child_idx);
         Node* getChild(string child_name);
         Node* getChildAtPath(string child_path);
+        Node* getChildWithID(int child_id);
         
         bool hasChild(int child_idx);
         bool hasChild(string child_name);

@@ -30,6 +30,7 @@ class SceneTree {
         void process(float delta);
         void addNode(Node* node);
         void queueNodeKill(Node* node);
+        Node* getNodeByID(int node_id);
 
         Node* getRoot() { return root_node; }
 

@@ -25,6 +25,8 @@ void SceneTree::process(float delta) {
 
     current_state = STATE::PROCESS;
 
+    delta = 1.0f / 60.0f;
+
     for (auto i = root_node->getChildren()->begin(); i != root_node->getChildren()->end(); ++i) {
         // !todo proper idle / physics frame implementation
         (*i)->process(delta);
@@ -72,6 +74,28 @@ void SceneTree::queueNodeKill(Node* node) {
         }
     }
     kill_queue.push_back(node);
+}
+
+Node* SceneTree::getNodeByID(int node_id) {
+    if (node_id == root_node->getId()) {
+        return root_node;
+    }
+
+    vector<Node*> pool = {root_node};
+    while (!pool.empty()) {
+
+        Node* node = pool.back();
+        pool.pop_back();
+
+        for (Node* child : *node->getChildren()) {
+            if (child->getId() == node_id) {
+                return child;
+            }
+            pool.push_back(child);
+        }
+    }
+    
+    return NULL;
 }
 
 void SceneTree::onNodeAddedToTree(Node* node) {

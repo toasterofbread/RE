@@ -45,29 +45,38 @@ void PhysicsBody3D::physicsProcess(float delta) {
 
     updating_position = true;
 
-    // matrix->m0 = R[0];
-    // matrix->m1 = R[4];
-    // matrix->m2 = R[8];
+    const float* rot = dBodyGetRotation(body);
+    const float* pos = dBodyGetPosition(body);
 
-    // matrix->m4 = R[1];
-    // matrix->m5 = R[5];
-    // matrix->m6 = R[9];
 
-    // matrix->m8 = R[2];
-    // matrix->m9 = R[6];
-    // matrix->m10 = R[10];
+    Matrix mat;
+    mat.m0 = rot[0];
+    mat.m1 = rot[4];
+    mat.m2 = rot[8];
+    mat.m4 = rot[1];
+    mat.m5 = rot[5];
+    mat.m6 = rot[9];
+    mat.m8 = rot[2];
+    mat.m9 = rot[6];
+    mat.m10 = rot[10];
+    
+    mat.m12 = pos[0];
+    mat.m13 = pos[1];
+    mat.m14 = pos[2];
 
-    // matrix->m12 = pos[0];
-    // matrix->m13 = pos[1];
-    // matrix->m14 = pos[2];
+    mat.m3 = 0;
+    mat.m7 = 0;
+    mat.m11 = 0;
+    mat.m15 = 1;
 
-    // const float* body_pos = dBodyGetPosition(body);
+    setGlobalPosition(PhysicsServer::phys2World3(Vector3Transform(Vector3::ZERO(), mat)));
+    setGlobalRotation(QuaternionToEuler(QuaternionFromMatrix(mat)));
+
     // setGlobalPosition(PhysicsServer::phys2World3(Vector3(body_pos[0], body_pos[1], body_pos[2])));
 
-    // const float* rot = dBodyGetRotation(body);
 
-    Matrix mat = getTransform(dBodyGetPosition(body), dBodyGetRotation(body));
-    setGlobalPosition(Vector3Transform(Vector3::ZERO(), mat));
+    // Matrix mat = getTransform(dBodyGetPosition(body), dBodyGetRotation(body));
+    // setGlobalPosition(Vector3Transform(Vector3::ZERO(), mat));
     // setGlobalRotation(QuaternionToEuler(QuaternionFromMatrix(mat)));
 
     // mat.m0 = rot[0];
@@ -259,14 +268,12 @@ Vector3 PhysicsBody3D::getLinearVelocity() {
 
 void PhysicsBody3D::setFixedRotation(bool value) {
     ASSERT(!isKinematic());
-    // !todo
-    // RIGID_BODY->setAngularLockAxisFactor(value ? Vector3::ZERO() : Vector3::ONE());
+    dBodySetMaxAngularSpeed(body, value ? 0.0f : dInfinity);
 }
 
 bool PhysicsBody3D::isFixedRotation() {
     ASSERT(!isKinematic());
-    // !todo
-    return false;
+    return dBodyGetMaxAngularSpeed(body) == 0.0f;
 }
 
 void PhysicsBody3D::setApplyGravity(bool value) {
@@ -422,6 +429,8 @@ void PhysicsBody3D::onShapePolygonChanged(CollisionShape3D* shape) {
         return;
     }
 
+    shape->detachFromBody();
+    shape->attachToBody(this);
 }
 
 

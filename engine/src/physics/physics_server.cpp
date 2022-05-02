@@ -28,7 +28,7 @@ PhysicsServer::PhysicsServer() {
     world_3d = dWorldCreate();
     main_space = dHashSpaceCreate(NULL);
     main_group = dJointGroupCreate(0);
-    setGravity(Vector3(0.0f, -100.0f, 0.0f));
+    setGravity(Vector3(0.0f, -9.8f, 0.0f));
     #endif
 
     time_step = 1.0f;
@@ -78,7 +78,19 @@ void callNearCallback(void *data, dGeomID o1, dGeomID o2) {
 }
 
 void PhysicsServer::nearCallback(void *data, dGeomID o1, dGeomID o2) {
-    OS::print(to_string(OS::getTime()) + " COLLISION");
+
+    // if (string((const char*)dGeomGetData(o2)) != "Bruh") {
+    //     OS::print(to_string(OS::getTime()) + " COLLISION");
+    //     // OS::print(((Node*)dGeomGetData(o1))->getName());
+    //     // OS::print(((Node*)dGeomGetData(o2))->getName());
+    // }
+    // else {
+    //     // OS::print(to_string(OS::getTime()) + " Floor");
+    // }
+
+    if (int(dGeomGetData(o1) == NULL) + int(dGeomGetData(o2) == NULL) != 1) {
+        return;
+    }
 
     (void)data;
     int i;
@@ -155,7 +167,9 @@ Vector3 PhysicsServer::getGravity3() {
 }
 
 dBodyID PhysicsServer::createBody3() {
-    return dBodyCreate(world_3d);
+    dBodyID ret = dBodyCreate(world_3d);
+    dBodySetMaxAngularSpeed(ret, 0);
+    return ret;
 }
 
 void PhysicsServer::destroyBody3(dBodyID body) {

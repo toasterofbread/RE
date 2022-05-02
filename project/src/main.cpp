@@ -9,6 +9,7 @@
 #include "node/types/camera_3d.h"
 #include "node/scene_loader.h"
 #include "input/macro.h"
+#include "physics/physics_server.h"
 
 #include "project/src/nodes/player.h"
 #include "project/src/nodes/world.h"
@@ -23,8 +24,55 @@ Macro* reset_macro = Macro::create()->setKb({Input::KEY_F1})->setPad({Input::SEL
 Macro* tree_macro = Macro::create()->setKb({Input::KEY_TAB});
 Macro* toggle_mouse_capture_macro = Macro::create()->setKb({Input::KEY_TILDE});
 
+enum INDEX
+{
+  PLANE = 0,
+  PLAYER,
+  OBJS,
+  PLAYER_BULLET,
+  ALL,
+  LAST_INDEX_CNT
+};
+
+const int catBits[LAST_INDEX_CNT] =
+{
+    0x0001, ///< Plane category >          0001
+    0x0002, ///< Player category >         0010
+    0x0004, ///< Objects category >        0100
+    0x0008, ///< Player bullets category > 1000
+    ~0L     ///< All categories >          11111111111111111111111111111111
+};
+
+typedef struct PlaneBody {
+    dGeomID geom;
+    int * indexes;
+} PlaneGeom;
+
+PlaneGeom createStaticPlane(dSpaceID space, Model plane) {
+    int nV = plane.meshes[0].vertexCount;
+    int *groundInd = (int*)malloc(nV*sizeof(int));
+    for (int i = 0; i<nV; i++ ) {
+        groundInd[i] = i;
+    }
+
+    dTriMeshDataID triData = dGeomTriMeshDataCreate();
+    dGeomTriMeshDataBuildSingle(triData, plane.meshes[0].vertices,
+                            3 * sizeof(float), nV,
+                            groundInd, nV,
+                            3 * sizeof(int));
+    dGeomID planeGeom = dCreateTriMesh(space, triData, NULL, NULL, NULL);
+    dGeomSetData(planeGeom, NULL);
+    dGeomSetCategoryBits (planeGeom, catBits[PLANE]);
+    dGeomSetCollideBits (planeGeom, catBits[ALL]);
+
+    return (PlaneGeom){.geom = planeGeom, .indexes = groundInd};
+}
+
+
 struct Project {
 
+    Model plane;
+    Model chonk;
     bool on = true;
 
     void init() {
@@ -95,6 +143,8 @@ int main() {
         Draw::beginDrawing();
 
         mainLoop(delta);
+        Draw::drawModel(project.plane, Vector3(0, 0, 0), 1.0f, Colour::WHITE());
+        Draw::drawModel(project.chonk, Vector3(0, 0, 0), 1.0f, Colour::WHITE());
 
         int i = 0;
         dbPrint("Draw calls: " + to_string(Draw::getDrawCallCount()), i++);

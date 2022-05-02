@@ -13,10 +13,10 @@ void Player::ready() {
     super::ready();
  
     // setKinematic(true);
-    // setApplyGravity(false);
+    setApplyGravity(false);
 
-    setPosition(getPosition() + Vector3(0, 100, 0));
-    // setLinearVelocity(Vector3(0, -20, 0));
+    setPosition(Vector3(-62, 10, 15));
+    setLinearVelocity(Vector3(0, 0, 0));
 
     CollisionShape3D* shape = new CollisionShape3D;
     shape->setBoxShape(Vector3(1, 2, 1));
@@ -44,24 +44,24 @@ void Player::process(float delta) {
     OS::dbPrint("Player rotation: " + rotation.toString());
    
     Vector3 position = getPosition();
+    Vector3 velocity = Vector3::ZERO();
 
     // Apply DPad or joystick value to movement
     Vector2 h_movement = Input::getPadVector();
     if (h_movement.isZero()) {
         h_movement = Input::getAnalogPadVector(SIDE::LEFT);
     }
-    position = position.move(h_movement, getGlobalRotation(), 25.0f * delta);
+    velocity = velocity.move(h_movement, getGlobalRotation(), 500.0f * delta);
 
     // Vertical movement
     int v_movement = INPUT_EVENT_JUMP.isTriggered() - INPUT_EVENT_CROUCH.isTriggered();
-    position.y += v_movement * delta * 20.0f;
+    velocity.y += v_movement * delta * 400.0f;
 
-    // Apply final position
-    // setPosition(position);
+    // Apply final velocity
+    setLinearVelocity(velocity);
 
     const float* body_pos = dGeomGetPosition(((CollisionShape3D*)getChild("CollisionShape3D"))->getShape());
     OS::dbPrint("Player pos: " + Vector3(body_pos[0], body_pos[1], body_pos[2]).toString());
-
 
     // Zoom camera with mouse wheel (fov)
     // camera->setZoom(min(max(camera->getZoom() + (GetMouseWheelMove() * -0.1f), 0.0f), 1.0f));
@@ -185,6 +185,7 @@ void Player::process(float delta) {
 
             OS::print("Geom pos: " + Vector3(pos[0] + off[0], pos[1] + off[1], pos[2] + off[2]).toString());
             OS::print("Subchunk pos: " + looking_at_block->subchunk->getGlobalPosition().toString());
+            OS::print("Subchunk id: " + to_string(looking_at_block->subchunk->getId()));
             OS::print("-------------------");
         }
     }
