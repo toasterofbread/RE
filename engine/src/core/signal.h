@@ -37,7 +37,7 @@ class Signal {
         }
 
         template<typename ObjectType, typename... BindArguments, typename MethodReturnType = void>
-        void connect(MethodReturnType (ObjectType::*callback)(CallbackArgs..., BindArguments...), ObjectType* object, bool one_shot = false, BindArguments... binds) {
+        void connect(ObjectType* object, MethodReturnType(ObjectType::*callback)(CallbackArgs..., BindArguments...), bool one_shot = false, BindArguments... binds) {
 
             auto connection = make_shared<Connection<ObjectType, MethodReturnType, BindArguments...>>(one_shot, binds...);
             connection->setup(callback, object);
@@ -59,7 +59,7 @@ class Signal {
         }
 
         template<typename ObjectType, typename... BindArguments, typename MethodReturnType = void>
-        void connectWithoutArgs(MethodReturnType (ObjectType::*callback)(BindArguments...), ObjectType* object, bool one_shot = false, BindArguments... binds) {
+        void connectWithoutArgs(ObjectType* object, MethodReturnType(ObjectType::*callback)(BindArguments...), bool one_shot = false, BindArguments... binds) {
 
             auto connection = make_shared<Connection<ObjectType, MethodReturnType, BindArguments...>>(one_shot, binds...);
             connection->setupWithoutArgs(callback, object);
@@ -136,8 +136,8 @@ class Signal {
         class Connection: public BaseConnection {
             private:
                 ObjectType* object;
-                MethodReturnType (ObjectType::*callback)(CallbackArgs..., BindArguments...);
-                MethodReturnType (ObjectType::*callback_noargs)(BindArguments...);
+                MethodReturnType(ObjectType::*callback)(CallbackArgs..., BindArguments...);
+                MethodReturnType(ObjectType::*callback_noargs)(BindArguments...);
                 tuple<BindArguments...> binds;
                 bool one_shot;
 

@@ -4,7 +4,8 @@ from spectre7 import utils
 import os
 from os.path import join
 import sys
-import zipfile, json
+import zipfile
+import pyjson5 as json
 from PIL import Image
 import io
 from ftplib import FTP, error_perm

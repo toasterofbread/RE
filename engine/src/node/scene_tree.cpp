@@ -25,8 +25,6 @@ void SceneTree::process(float delta) {
 
     current_state = STATE::PROCESS;
 
-    delta = 1.0f / 60.0f;
-
     for (auto i = root_node->getChildren()->begin(); i != root_node->getChildren()->end(); ++i) {
         // !todo proper idle / physics frame implementation
         (*i)->process(delta);
@@ -101,13 +99,13 @@ Node* SceneTree::getNodeByID(int node_id) {
 void SceneTree::onNodeAddedToTree(Node* node) {
     if (Node2D* converted = dynamic_cast<Node2D*>(node)) {
         drawable_nodes[converted->getGlobalDrawLayer() - MIN_DRAW_LAYER].push_back(new Drawable(converted));
-        converted->SIGNAL_DRAW_LAYER_CHANGED.connect(&SceneTree::onDrawableNodeLayerChanged, this, false, converted);
-        converted->SIGNAL_KILLED.connect(&SceneTree::onNodeRemovedFromTree, this, false, node);
+        converted->SIGNAL_DRAW_LAYER_CHANGED.connect(this, &SceneTree::onDrawableNodeLayerChanged, false, converted);
+        converted->SIGNAL_KILLED.connect(this, &SceneTree::onNodeRemovedFromTree, false, node);
     }
     else if (Node3D* converted = dynamic_cast<Node3D*>(node)) {
         drawable_nodes[converted->getGlobalDrawLayer() - MIN_DRAW_LAYER].push_back(new Drawable(converted));
-        converted->SIGNAL_DRAW_LAYER_CHANGED.connect(&SceneTree::onDrawableNodeLayerChanged, this, false, converted);
-        converted->SIGNAL_KILLED.connect(&SceneTree::onNodeRemovedFromTree, this, false, node);
+        converted->SIGNAL_DRAW_LAYER_CHANGED.connect(this, &SceneTree::onDrawableNodeLayerChanged, false, converted);
+        converted->SIGNAL_KILLED.connect(this, &SceneTree::onNodeRemovedFromTree, false, node);
     }
 }
 
@@ -139,7 +137,7 @@ Timer* SceneTree::createTimer(float duration, bool free_on_timeout) {
     root_node->addChild(timer);
 
     if (free_on_timeout) {
-        timer->SIGNAL_TIMEOUT.connect<Node>(&Timer::queueKill, timer);
+        timer->SIGNAL_TIMEOUT.connect<Node>(timer, &Timer::queueKill);
     }
 
     timer->start(duration);

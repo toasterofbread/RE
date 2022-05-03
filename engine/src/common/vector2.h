@@ -69,6 +69,20 @@ struct InternalVector2: public b2Vec2 {
         return ret;
     }
 
+    void normalise() {
+        float length = sqrtf((x*x) + (y*y));
+        if (length > 0) {
+            x = x * 1.0f / length;
+            y = y * 1.0f / length;
+        }
+    }
+
+    InternalVector2 normalised() {
+        InternalVector2 ret = InternalVector2(x, y);
+        ret.normalise();
+        return ret;
+    }
+
     bool isZero() {
         return x == 0.0f && y == 0.0f;
     }

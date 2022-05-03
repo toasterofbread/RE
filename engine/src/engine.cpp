@@ -60,9 +60,9 @@ Engine* Engine::getSingleton() {
 
 void Engine::process(float delta) {
     
-    PhysicsServer::getSingleton()->physicsProcess(delta); // !Temp 
-
     SIGNAL_PROCESS.emit(delta);
+
+    PhysicsServer::getSingleton()->physicsProcess(delta); // !Temp 
 
     scene_tree_singleton->process(delta);
 
@@ -97,7 +97,7 @@ shared_ptr<EngineTexture> Engine::loadTexture(string file_path) {
     }
     else {
         ret = EngineTexture::create(OS::loadTexture(file_path), file_path);
-        ret->SIGNAL_DELETED.connect(&Engine::onTextureContainerDeleted, this);
+        ret->SIGNAL_DELETED.connect(this, &Engine::onTextureContainerDeleted);
         loaded_textures.insert(make_pair<string, weak_ptr<EngineTexture>>(string(file_path), ret));
     }
     return ret;
@@ -115,7 +115,7 @@ void Engine::onTextureContainerDeleted(string file_path, TEXTURE_TYPE texture) {
 // - Resource management -
 void Engine::resourceCreated(Resource* resource) {
     all_resources.push_back(resource);
-    resource->SIGNAL_DELETED.connect(&Engine::resourceDeleted, this, false, resource);
+    resource->SIGNAL_DELETED.connect(this, &Engine::resourceDeleted, false, resource);
 }
 void Engine::resourceDeleted(Resource* resource) {
     vectorRemoveValue(&all_resources, resource);

@@ -28,7 +28,7 @@ TEST_CASE( "Signal" ) {
     TestClass object;
 
     // Connect signal to object method
-    SIGNAL.connect<TestClass, int&, int>(&TestClass::signalCallback, &object, false, connection_reference, 2);
+    SIGNAL.connect<TestClass, int&, int>(&object, &TestClass::signalCallback, false, connection_reference, 2);
     REQUIRE(SIGNAL.getConnectionCount() == 1);
 
     // Test signal emission with arguments and binds
@@ -45,7 +45,7 @@ TEST_CASE( "Signal" ) {
     // Connect signal to object method (without arguments), as one-shot
     int value = 0;
     int& reference = value;
-    SIGNAL.connectWithoutArgs<TestClass, int&, int>(&TestClass::signalCallbackNoArgs, &object, true, reference, 3);
+    SIGNAL.connectWithoutArgs<TestClass, int&, int>(&object, &TestClass::signalCallbackNoArgs, true, reference, 3);
     REQUIRE(SIGNAL.getConnectionCount() == 1);
 
     // Test signal emission with binds, without arguments

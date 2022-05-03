@@ -6,8 +6,10 @@
 #include "node/types/camera_3d.h"
 
 #define MOUSE_SENSITIVITY 1.5f
+#define MOVEMENT_SPEED 9.0f
 
 Camera3D* camera;
+CollisionShape3D* shape;
 
 void Player::ready() {
     super::ready();
@@ -15,20 +17,28 @@ void Player::ready() {
     // setKinematic(true);
     setApplyGravity(false);
 
-    setPosition(Vector3(-62, 10, 15));
+    setPosition(Vector3(-0, 10, 0));
     setLinearVelocity(Vector3(0, 0, 0));
 
-    CollisionShape3D* shape = new CollisionShape3D;
-    shape->setBoxShape(Vector3(1, 2, 1));
+    setFixedRotation(true);
+
+    shape = new CollisionShape3D;
+    shape->setBoxShape(Vector3(0.5f, 1.8f, 0.5f));
     addChild(shape);
+
     dGeomSetCollideBits(shape->getShape(), 0x0002);
     dGeomSetCategoryBits(shape->getShape(), 0x0001);
+
+    dMatrix3 R;
+    dRFromAxisAndAngle(R, 1.0f, 0, 0, DEG2RAD(90.0f));
+    dBodySetRotation(getBody(), R);
 
     camera = new Camera3D;
     addChild(camera);
     camera->enable();
 }
 
+Vector3 angle;
 void Player::process(float delta) {
     super::process(delta);
 
@@ -44,14 +54,28 @@ void Player::process(float delta) {
     OS::dbPrint("Player rotation: " + rotation.toString());
    
     Vector3 position = getPosition();
-    Vector3 velocity = Vector3::ZERO();
 
     // Apply DPad or joystick value to movement
     Vector2 h_movement = Input::getPadVector();
     if (h_movement.isZero()) {
         h_movement = Input::getAnalogPadVector(SIDE::LEFT);
     }
-    velocity = velocity.move(h_movement, getGlobalRotation(), 500.0f * delta);
+    h_movement.normalise();
+
+    Vector3 velocity = Vector3::ZERO().move(h_movement, getGlobalRotation(), MOVEMENT_SPEED);
+
+    #define APPREQ(a, b) (abs(a - b) < 0.00001)
+    for (CollisionShape3D::Contact* contact : shape->contacts) {
+        Vector3 normal = contact->getNormal();
+        for (int i = 0; i < 3; i++) {
+            if (!APPREQ(normal[i], 0.0) && sign(normal[i]) != sign(velocity[i])) {
+                velocity[i] = 0;
+            }
+        }
+    }
+
+    OS::dbPrint("Player contacts: " + to_string(shape->contacts.size()));
+    OS::dbPrint("Player velocity: " + velocity.toString());
 
     // Vertical movement
     int v_movement = INPUT_EVENT_JUMP.isTriggered() - INPUT_EVENT_CROUCH.isTriggered();
@@ -59,6 +83,17 @@ void Player::process(float delta) {
 
     // Apply final velocity
     setLinearVelocity(velocity);
+
+    // Quaternion rot = QuaternionFromMatrix(MatrixAdd(MatrixLookAt(Vector3::ZERO(), velocity, Vector3::UP()), MatrixRotateY(DEG2RAD(180))));
+    // OS::dbPrint("Rot: " + Vector3(QuaternionToEuler(rot)).toString());
+    // if (!velocity.isZero()) {
+    //     float quat[4];
+    //     quat[1] = rot.x;
+    //     quat[2] = rot.y;
+    //     quat[3] = rot.z;
+    //     quat[0] = rot.w;
+    //     dBodySetQuaternion(getBody(), quat);
+    // }
 
     const float* body_pos = dGeomGetPosition(((CollisionShape3D*)getChild("CollisionShape3D"))->getShape());
     OS::dbPrint("Player pos: " + Vector3(body_pos[0], body_pos[1], body_pos[2]).toString());
@@ -171,9 +206,9 @@ void Player::process(float delta) {
 
     if (looking_at_block != NULL) {
 
-        if (INPUT_EVENT_ATTACK.isTriggered()) {
+        if (INPUT_EVENT_ATTACK.isJustTriggered()) {
             looking_at_block->type = Block::TYPE::AIR;
-            looking_at_block->subchunk->generateMesh();
+            looking_at_block->subchunk->requestMeshGeneration();
         }
 
         if (INPUT_EVENT_INTERACT.isJustTriggered()) {
@@ -195,7 +230,7 @@ void Player::process(float delta) {
 void Player::draw() {
     if (looking_at_block) {
         #define SIZE 1.01f
-        Draw::drawBoundingBox(looking_at_block->getBoundingBox(), Colour(0.9, 0.9, 0.9), Vector3::ZERO(), Vector3(SIZE, SIZE, SIZE));
+        // Draw::drawBoundingBox(looking_at_block->getBoundingBox(), Colour(0.9, 0.9, 0.9), Vector3::ZERO(), Vector3(SIZE, SIZE, SIZE));
     }
 
     #define CROSSHAIR_SIZE 10

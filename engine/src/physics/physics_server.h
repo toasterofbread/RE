@@ -1,11 +1,11 @@
 #include "common/utils.h"
 
-
 #if PHYSICS_2D_ENABLED
 #include <box2d/box2d.h>
 #endif
 
 #if PHYSICS_3D_ENABLED
+#define MAX_CONTACTS 8
 #include "physics/node/physics_body_3d.h"
 #include <ode/ode.h> 
 #endif
@@ -65,6 +65,7 @@ class PhysicsServer {
         dJointGroupID main_group;
         static const float world_scale_3d;
         Vector3 gravity_3d;
+        vector<dContact*> contact_pool;
         #endif
 
         float time_step;

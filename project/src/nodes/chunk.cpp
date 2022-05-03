@@ -97,8 +97,10 @@ void SubChunk::init(Chunk* _chunk, int _index) {
         }
     }
 
+    Draw::loadStep("Generating chunkmeshes...");
     generateBoundingBox();
     generateMesh();
+    onMeshGenerationFinished();
 }
 
 Vector3 SubChunk::getCenter() {
@@ -117,6 +119,20 @@ void Chunk::setup(Vector2 grid_pos, Chunk* chunks[CHUNK_AMOUNT][CHUNK_AMOUNT]) {
     bounding_box.min = Vector3(grid_position.x * CHUNK_SIZE, 0.0f, grid_position.y * CHUNK_SIZE);
     bounding_box.max = Vector3((grid_position.x + 1) * CHUNK_SIZE, CHUNK_HEIGHT, (grid_position.y + 1) * CHUNK_SIZE);
 
+    Vector3 position = getPosition();
+    for (int i = 0; i < SUBCHUNK_COUNT; i++) {
+        SubChunk* sub = new SubChunk;
+        sub->setPosition(Vector3(position.x, position.y + i * SUBCHUNK_HEIGHT, position.z));
+        world->addChild(sub);
+        sub_chunks[i] = sub;
+    }
+
+    for (int i = 0; i < SUBCHUNK_COUNT; i++) {
+        sub_chunks[i]->init(this, i);
+    }
+}
+
+void Chunk::createBlocks() {
     for (int x = 0; x < CHUNK_SIZE; x++) {
         for (int y = 0; y < CHUNK_HEIGHT; y++) {
             for (int z = 0; z < CHUNK_SIZE; z++) {
@@ -124,31 +140,21 @@ void Chunk::setup(Vector2 grid_pos, Chunk* chunks[CHUNK_AMOUNT][CHUNK_AMOUNT]) {
             }
         }
     }
-
-    Vector3 position = getPosition();
-    for (int i = 0; i < SUBCHUNK_COUNT; i++) {
-        SubChunk* sub = new SubChunk;
-        sub->init(this, i);
-
-        // !todo y pos
-        sub->setPosition(Vector3(position.x, position.y + i * SUBCHUNK_HEIGHT, position.z));
-
-        world->addChild(sub);
-        sub_chunks[i] = sub;
-    }
 }
 
 Block* Chunk::getBlock(int x, int y, int z, bool allow_nonexistent) {
     Block* ret = blocks[x][y][z];
-    if (allow_nonexistent || ret->isBlock()) {
+    if (ret != NULL && (allow_nonexistent || ret->isBlock())) {
         return ret;
     }
     return NULL;
 }
 
-void SubChunk::generateMesh() {
+void SubChunk::requestMeshGeneration() {
+    chunk->world->requestSubChunkMeshGeneration(this);
+}
 
-    double start_time = OS::getTime();
+void SubChunk::generateMesh() {
 
     #define ITERATE_BLOCKS(code) \
     for (int x = 0; x < CHUNK_SIZE; x++) { \
@@ -159,36 +165,28 @@ void SubChunk::generateMesh() {
         } \
     }
 
-
     mesh.triangleCount = 0;
     ITERATE_BLOCKS({
         Block* block = chunk->getBlock(x, y, z);
-        if (block == NULL) {
-            continue;
-        }
-
-        for (int dir = 0; dir < DIRECTION_3_COUNT; dir++) {
-            if (block->get((DIRECTION_3)dir) == NULL) {
-                mesh.triangleCount += 2;
+        if (block) {
+            for (int dir = 0; dir < DIRECTION_3_COUNT; dir++) {
+                if (block->get((DIRECTION_3)dir) == NULL) {
+                    mesh.triangleCount += 2;
+                }
             }
-
-            // if (block->get((DIRECTION_3)dir) == NULL) {
-            //     for (int offset = 0; offset < DIRECTION_COUNT; offset++) {
-            //         Block* neighbour = block->get(relativeDirection((DIRECTION_3)dir, (DIRECTION_3)offset));
-            //         if (neighbour == NULL || neighbour->get((DIRECTION_3)dir) != NULL) {
-            //             mesh.triangleCount += 2;
-            //             break;
-            //         }
-            //     }
-            // }
         }
     });
     
     mesh.vertexCount = mesh.triangleCount * 3;
 
-    if (mesh.vertexCount > allocated_vertices && mesh_loaded) {
+    if (!mesh_loaded) {
+        mesh.vertexCount = max(10002, mesh.vertexCount);
         allocated_vertices = mesh.vertexCount;
-
+        mesh.vertices = (float*)malloc(allocated_vertices * 3 * sizeof(float));
+        mesh.texcoords = (float*)malloc(allocated_vertices * 2 * sizeof(float));
+    }
+    else if (mesh.vertexCount > allocated_vertices && mesh_loaded) {
+        allocated_vertices = mesh.vertexCount;
         UnloadMesh(mesh);
         mesh = { 0 };
         mesh.vertexCount = allocated_vertices;
@@ -196,41 +194,17 @@ void SubChunk::generateMesh() {
         mesh.vertices = (float*)malloc(allocated_vertices * 3 * sizeof(float));
         mesh.texcoords = (float*)malloc(allocated_vertices * 2 * sizeof(float));
         UploadMesh(&mesh, false);
-
-        // OS::print("----------------RESIZE (" + to_string(mesh.vertexCount) + ")----------------");
-    }
-
-    if (mesh.vertices == NULL) {
-        mesh.vertexCount = max(10002, mesh.vertexCount);
-        allocated_vertices = mesh.vertexCount;
-        mesh.vertices = (float*)malloc(allocated_vertices * 3 * sizeof(float));
-        mesh.texcoords = (float*)malloc(allocated_vertices * 2 * sizeof(float));
-        // mesh.normals = (float *)malloc(mesh.vertexCount*3*sizeof(float)); 
     }
     
     int face = 0;
-    int v = 0;
     ITERATE_BLOCKS({
         Block* block = chunk->getBlock(x, y, z);
-        if (block == NULL) {
-            continue;
-        }
-        
-        for (int dir = 0; dir < DIRECTION_3_COUNT; dir++) {
-            if (block->get((DIRECTION_3)dir) == NULL) {
-                addFace((DIRECTION_3)dir, block, face++);
-                v += 3;
+        if (block) {
+            for (int dir = 0; dir < DIRECTION_3_COUNT; dir++) {
+                if (block->get((DIRECTION_3)dir) == NULL) {
+                    addFace((DIRECTION_3)dir, block, face++);
+                }
             }
-
-            // if (block->get((DIRECTION_3)dir) == NULL) {
-            //     for (int offset = 0; offset < DIRECTION_COUNT; offset++) {
-            //         Block* neighbour = block->get(relativeDirection((DIRECTION_3)dir, (DIRECTION_3)offset));
-            //         if (neighbour == NULL || neighbour->get((DIRECTION_3)dir) != NULL) {
-            //             addFace(mesh, (DIRECTION_3)dir, x, y, z, face++);
-            //             break;
-            //         }
-            //     }
-            // }
         }
     });
 
@@ -249,21 +223,11 @@ void SubChunk::generateMesh() {
         UpdateMeshBuffer(mesh, 0, mesh.vertices, allocated_vertices * 3 * sizeof(float), 0);
         UpdateMeshBuffer(mesh, 1, mesh.texcoords, allocated_vertices * 2 * sizeof(float), 0);
     }
-
-    int *indices = (int* )malloc(mesh.vertexCount * sizeof(int));
-    for (int i = 0; i < mesh.vertexCount; i++ ) {
-        indices[i] = i;
-    }
-
+    
     setMeshShape(mesh);
-    // dGeomSetCollideBits(getShape(), 0x0001);
-    // dGeomSetCategoryBits(getShape(), 0x0002);
+}
 
-    // dTriMeshDataID mesh_data = dGeomTriMeshDataCreate();
-    // dGeomTriMeshDataBuildSingle(mesh_data, mesh.vertices, 3 * sizeof(float), mesh.vertexCount, indices, mesh.vertexCount, 3 * sizeof(int));
-    // dCreateTriMesh(chunk->world->space, mesh_data, NULL, NULL, NULL);
-
-    // OS::print("Chunkmesh generation took " + to_string(OS::getTime() - start_time) + " seconds");
+void SubChunk::onMeshGenerationFinished() {
 }
 
 void SubChunk::generateBoundingBox() {

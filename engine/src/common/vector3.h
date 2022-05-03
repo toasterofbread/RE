@@ -18,7 +18,7 @@ using json = nlohmann::json;
 
 struct InternalVector3: public Vector3 {
 
-    InternalVector3() {}
+    InternalVector3() {x = 0; y = 0; z = 0;}
     InternalVector3(float _x, float _y, float _z) {x = _x; y = _y; z = _z;}
     InternalVector3(int _x, int _y, int _z) {x = _x; y = _y; z = _z;}
     InternalVector3(unsigned int _x, unsigned int _y, unsigned int _z) {x = _x; y = _y; z = _z;}
@@ -177,6 +177,15 @@ struct InternalVector3: public Vector3 {
         return *this;
     }
     
+    float& operator[](const int index) {
+        switch (index) {
+            case 0: return x;
+            case 1: return y;
+            case 2: return z;
+            default: throw out_of_range("Vector3 index (" + to_string(index) + ") out of range. Must be >= 0 and < 3.");
+        }
+    }
+
     static InternalVector3 ZERO() {
         return InternalVector3(0.0f, 0.0f, 0.0f);
     }
@@ -210,14 +219,11 @@ struct InternalVector3: public Vector3 {
     }
 
     #if PHYSICS_3D_ENABLED
-    // operator dVector3() {
-    //     return dVector3(x, y, z);
-    // }
-    // InternalVector3(dVector3 vector) {
-    //     x = vector.x;
-    //     y = vector.y;
-    //     z = vector.z;
-    // }
+    InternalVector3(dVector3 vector) {
+        x = vector[0];
+        y = vector[1];
+        z = vector[2];
+    }
     // InternalVector3(Quaternion quat) {
     //     x = std::atan2(2 * (quat.w * quat.x + quat.y * quat.z), 1 - 2 * (quat.x * quat.x + quat.y * quat.y));
 

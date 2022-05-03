@@ -48,6 +48,7 @@ void World::init() {
 
             chunk_array[x][y] = chunk;
             chunk->world = this;
+            chunk->createBlocks();
             addChild(chunk);
         }
     }
@@ -57,7 +58,6 @@ void World::init() {
             chunk_array[x][y]->setup(Vector2(x, y), chunk_array);
         }
     }
-
 }
 
 void World::draw() {
@@ -224,4 +224,20 @@ void Block::loadTypeData() {
             }
         }
     }
+}
+
+void World::requestSubChunkMeshGeneration(SubChunk* chunk) {
+
+    // if (CHUNKMESH_GENERATION_THREADS == 0) {
+        chunk->generateMesh();
+        // return;
+    // }
+
+    // for (int i = 0; i < CHUNKMESH_GENERATION_THREADS; i++) {
+    //     if (!gen_threads[i].isRunning()) {
+    //         gen_threads[i].set(chunk, &SubChunk::generateMesh);
+    //         gen_threads[i].SIGNAL_FINISHED.connect(chunk, &SubChunk::onMeshGenerationFinished, true);
+    //         gen_threads[i].start();
+    //     }
+    // }
 }

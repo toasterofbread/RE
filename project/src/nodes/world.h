@@ -7,6 +7,8 @@
 #include "physics/node/physics_body_3d.h"
 
 #include <ode/ode.h>
+#include <thread>
+using namespace std;
 
 #define CHUNK_AMOUNT 10
 #define CHUNK_SIZE 16
@@ -15,6 +17,9 @@
 #define SUBCHUNK_COUNT (CHUNK_HEIGHT / SUBCHUNK_HEIGHT)
 #define TEXTURE_MAP_WIDTH 16.0
 #define TEXTURE_MAP_HEIGHT 16.0
+
+#define CHUNKMESH_GENERATION_THREADS 1
+static_assert(CHUNKMESH_GENERATION_THREADS >= 0);
 
 // Forward declarations
 class Player;
@@ -41,13 +46,18 @@ struct SubChunk: public CollisionShape3D  {
     BoundingBox bounding_box;
 
     Vector3 getCenter();
-    void generateMesh();
+    void requestMeshGeneration();
 
     private:
         void generateBoundingBox();
         void addFace(DIRECTION_3 face, Block* block, int face_i);
         bool mesh_loaded = false;
         unsigned int allocated_vertices = 0;
+        bool pending_generation = false;
+
+        friend class World;
+        void generateMesh();
+        void onMeshGenerationFinished();
 };
 
 struct Chunk: public Node3D {
@@ -67,6 +77,7 @@ struct Chunk: public Node3D {
     World* world;
 
     void setup(Vector2 grid_pos, Chunk* chunks[CHUNK_AMOUNT][CHUNK_AMOUNT]);
+    void createBlocks();
 
     Vector2 getGridPos() { return grid_position; }
     SubChunk* sub_chunks[SUBCHUNK_COUNT];
@@ -140,7 +151,6 @@ struct Block {
         global_x = x + chunk_position.x;
         global_y = y + chunk_position.y;
         global_z = z + chunk_position.z;
-
     }
 
     Block* get(DIRECTION_3 dir) {
@@ -201,7 +211,7 @@ struct Block {
     }
 
     void getBoundingBox(BoundingBox* box, Vector3 chunk_position) {
-        chunk_position.y = 0;
+        chunk_position.y = -1;
         box->min = chunk_position + Vector3(x, y, z);
         box->max = chunk_position + Vector3(x + 1, y + 1, z + 1);
     }
@@ -215,11 +225,15 @@ struct Block {
     Block* getLeft() {
         if (x > 0)
             return chunk->getBlock(x - 1, y, z);
+        else if (chunk->left)
+            return chunk->left->getBlock(CHUNK_SIZE - 1, y, z);
         return NULL;
     }
     Block* getRight() {
         if (x < CHUNK_SIZE - 1)
             return chunk->getBlock(x + 1, y, z);
+        else if (chunk->right)
+            return chunk->right->getBlock(0, y, z);
         return NULL;
     }
 
@@ -237,13 +251,90 @@ struct Block {
     Block* getFront() {
         if (z > 0)
             return chunk->getBlock(x, y, z - 1);
+        // else if (chunk->front)
+        //     return chunk->front->getBlock(x, y, CHUNK_SIZE - 1);
         return NULL;
     }
     Block* getBack() {
         if (z < CHUNK_SIZE - 1)
             return chunk->getBlock(x, y, z + 1);
+        // else if (chunk->back)
+        //     return chunk->back->getBlock(x, y, 0);
         return NULL;
     }
+};
+
+struct Thread {
+
+    Signal<> SIGNAL_FINISHED;
+
+    template<typename ObjectType, typename ReturnType, typename... Arguments>
+    void set(ObjectType* object, ReturnType(ObjectType::*function)(Arguments...), Arguments... arguments) {
+        if (caller != NULL) {
+            delete caller;
+        }
+        caller = new Caller(object, function, arguments...);
+        caller->parent = this;
+    }
+
+    bool isRunning() { 
+        return caller != NULL && caller->running; 
+    }
+
+    void start() {
+        ASSERT(caller != NULL);
+        caller->start();
+    }
+
+    void join() {
+        caller->join();
+    }
+
+    private:
+        struct CallerBase {
+            Thread* parent;
+            bool running = false;
+            virtual void start() = 0;
+            virtual void join() = 0;
+        };
+
+        template<typename ObjectType, typename ReturnType, typename... Arguments>
+        struct Caller: public CallerBase {
+            ObjectType* object;
+            ReturnType(ObjectType::*function)(Arguments...);
+            tuple<Arguments...> arguments;
+            
+            Caller(ObjectType* obj, ReturnType(ObjectType::*func)(Arguments...), Arguments... args): arguments(forward<Arguments>(args)...) {
+                object = obj;
+                function = func;
+            }
+
+            void start() {
+                ASSERT(!running);
+                _thread = thread(&Caller::threadFunction, this);
+            }
+
+            void join() {
+                _thread.join();
+            }
+
+            private:
+                thread _thread;
+
+                template<size_t... I>
+                void call(index_sequence<I...>) {
+                    (object->*function)(get<I>(arguments)...);
+                }
+
+                void threadFunction() {
+                    running = true;
+                    call(make_index_sequence<sizeof...(Arguments)>{});
+                    running = false;
+                    parent->SIGNAL_FINISHED.emit();
+                }
+        };
+
+        CallerBase* caller = NULL;
 };
 
 class World: public PhysicsBody3D {
@@ -270,10 +361,13 @@ class World: public PhysicsBody3D {
         dSpaceID space;
         dJointGroupID contact_group;
 
+        void requestSubChunkMeshGeneration(SubChunk* chunk);
+
     private:
         Player* player;
         void init();
 
+        Thread gen_threads[CHUNKMESH_GENERATION_THREADS];
 };
 
 #endif

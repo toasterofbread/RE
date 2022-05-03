@@ -332,11 +332,11 @@ void Node2D::onParentDrawLayerChanged(int old_draw_layer, int new_draw_layer) {
 void Node2D::addedToNode() {
     super::addedToNode();
     if (Node2D* parent_2d = getFirst2DParent()) {
-        parent_2d->SIGNAL_DRAW_LAYER_CHANGED.connect(&Node2D::onParentDrawLayerChanged, this);
+        parent_2d->SIGNAL_DRAW_LAYER_CHANGED.connect(this, &Node2D::onParentDrawLayerChanged);
 
-        parent_2d->SIGNAL_GLOBAL_POSITION_CHANGED.connect(&Node2D::onParentGlobalPositionChanged, this);
-        parent_2d->SIGNAL_GLOBAL_ROTATION_CHANGED.connect(&Node2D::onParentGlobalRotationChanged, this);
-        parent_2d->SIGNAL_GLOBAL_SCALE_CHANGED.connect(&Node2D::onParentGlobalScaleChanged, this);
+        parent_2d->SIGNAL_GLOBAL_POSITION_CHANGED.connect(this, &Node2D::onParentGlobalPositionChanged);
+        parent_2d->SIGNAL_GLOBAL_ROTATION_CHANGED.connect(this, &Node2D::onParentGlobalRotationChanged);
+        parent_2d->SIGNAL_GLOBAL_SCALE_CHANGED.connect(this, &Node2D::onParentGlobalScaleChanged);
     }
 }
 void Node2D::removedFromNode(Node* former_parent_node) {

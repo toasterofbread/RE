@@ -3,6 +3,7 @@
 
 #include "engine/src/node/node.h"
 #include "common/vector3.h"
+#include "common/quaternion.h"
 #include "common/enums.h"
 
 class Node3D: public Node {
@@ -74,6 +75,7 @@ class Node3D: public Node {
         bool getUseRelativeScale() { return scale_relative_to_parent; }
 
         virtual void setRotation(Vector3 value);
+        virtual void setRotation(Quaternion value);
         Vector3 getRotation();
         void setGlobalRotation(Vector3 value);
         Vector3 getGlobalRotation();
@@ -92,6 +94,7 @@ class Node3D: public Node {
         bool inFrontOfCamera(Vector3 global_position);
         Vector2 getForward(Vector3 global_rotation);
 
+        Quaternion rotation = QuaternionIdentity();
     protected:
         void addedToNode();
         void removedFromNode(Node* former_parent_node);
@@ -117,7 +120,7 @@ class Node3D: public Node {
         bool show_gizmos = false;
         Vector3 position = Vector3::ZERO();
         Vector3 scale = Vector3::ONE();
-        Vector3 rotation = Vector3::ZERO();
+        // Vector3 rotation = Vector3::ZERO();
         bool visible = true;
 
         vector<string> additional_gizmos;

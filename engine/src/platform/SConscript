@@ -13,7 +13,8 @@ env.Replace(
         "yaml-cpp",
         "box2d",
         "raylib",
-        "ode"
+        "ode",
+        "pthread"
     ],
     CXX = "g++",
 )

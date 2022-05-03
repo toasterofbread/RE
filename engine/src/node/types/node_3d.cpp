@@ -181,10 +181,30 @@ void Node3D::setGlobalScale(Vector3 value) {
 }
 
 Vector3 Node3D::getRotation() {
-    return Vector3(rotation);
+    return QuaternionToEuler(rotation);
 }
 void Node3D::setRotation(Vector3 value) {
 
+    if (getRotation() == value) {
+        return;
+    }
+
+    if (SIGNAL_GLOBAL_ROTATION_CHANGED.getConnectionCount() == 0) {
+        rotation = QuaternionFromEuler(value.x, value.y, value.z);
+        return;
+    }
+
+    Vector3 original_global_rotation = getRotation();
+    if (Node3D* parent_3d = getFirst3DParent()) {
+        original_global_rotation += parent_3d->getGlobalRotation();
+    }
+
+    rotation = QuaternionFromEuler(value.x, value.y, value.z);
+
+    SIGNAL_GLOBAL_ROTATION_CHANGED.emit(original_global_rotation);
+}
+
+void Node3D::setRotation(Quaternion value) {
     if (rotation == value) {
         return;
     }
@@ -194,7 +214,7 @@ void Node3D::setRotation(Vector3 value) {
         return;
     }
 
-    Vector3 original_global_rotation = rotation;
+    Vector3 original_global_rotation = getRotation();
     if (Node3D* parent_3d = getFirst3DParent()) {
         original_global_rotation += parent_3d->getGlobalRotation();
     }
@@ -202,6 +222,7 @@ void Node3D::setRotation(Vector3 value) {
     rotation = value;
 
     SIGNAL_GLOBAL_ROTATION_CHANGED.emit(original_global_rotation);
+
 }
 
 Vector3 Node3D::getGlobalRotation() {
@@ -348,11 +369,11 @@ void Node3D::onParentDrawLayerChanged(int old_draw_layer, int new_draw_layer) {
 void Node3D::addedToNode() {
     super::addedToNode();
     if (Node3D* parent_3d = getFirst3DParent()) {
-        parent_3d->SIGNAL_DRAW_LAYER_CHANGED.connect(&Node3D::onParentDrawLayerChanged, this);
+        parent_3d->SIGNAL_DRAW_LAYER_CHANGED.connect(this, &Node3D::onParentDrawLayerChanged);
 
-        parent_3d->SIGNAL_GLOBAL_POSITION_CHANGED.connect(&Node3D::onParentGlobalPositionChanged, this);
-        parent_3d->SIGNAL_GLOBAL_ROTATION_CHANGED.connect(&Node3D::onParentGlobalRotationChanged, this);
-        parent_3d->SIGNAL_GLOBAL_SCALE_CHANGED.connect(&Node3D::onParentGlobalScaleChanged, this);
+        parent_3d->SIGNAL_GLOBAL_POSITION_CHANGED.connect(this, &Node3D::onParentGlobalPositionChanged);
+        parent_3d->SIGNAL_GLOBAL_ROTATION_CHANGED.connect(this, &Node3D::onParentGlobalRotationChanged);
+        parent_3d->SIGNAL_GLOBAL_SCALE_CHANGED.connect(this, &Node3D::onParentGlobalScaleChanged);
     }
 }
 void Node3D::removedFromNode(Node* former_parent_node) {

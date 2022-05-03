@@ -45,20 +45,19 @@ void PhysicsBody3D::physicsProcess(float delta) {
 
     updating_position = true;
 
-    const float* rot = dBodyGetRotation(body);
+    // const float* rot = dBodyGetRotation(body);
     const float* pos = dBodyGetPosition(body);
 
-
-    Matrix mat;
-    mat.m0 = rot[0];
-    mat.m1 = rot[4];
-    mat.m2 = rot[8];
-    mat.m4 = rot[1];
-    mat.m5 = rot[5];
-    mat.m6 = rot[9];
-    mat.m8 = rot[2];
-    mat.m9 = rot[6];
-    mat.m10 = rot[10];
+    Matrix mat = MatrixIdentity();
+    // mat.m0 = rot[0];
+    // mat.m1 = rot[4];
+    // mat.m2 = rot[8];
+    // mat.m4 = rot[1];
+    // mat.m5 = rot[5];
+    // mat.m6 = rot[9];
+    // mat.m8 = rot[2];
+    // mat.m9 = rot[6];
+    // mat.m10 = rot[10];
     
     mat.m12 = pos[0];
     mat.m13 = pos[1];
@@ -70,7 +69,11 @@ void PhysicsBody3D::physicsProcess(float delta) {
     mat.m15 = 1;
 
     setGlobalPosition(PhysicsServer::phys2World3(Vector3Transform(Vector3::ZERO(), mat)));
-    setGlobalRotation(QuaternionToEuler(QuaternionFromMatrix(mat)));
+    // setRotation(QuaternionFromMatrix(mat));
+
+    // const float* rot = dBodyGetQuaternion(body);
+    // Quaternion quat = Quaternion(rot[1], rot[2], rot[3], rot[0]);
+    // setRotation(quat);
 
     // setGlobalPosition(PhysicsServer::phys2World3(Vector3(body_pos[0], body_pos[1], body_pos[2])));
 
@@ -207,6 +210,8 @@ void PhysicsBody3D::setPosition(Vector3 value) {
 void PhysicsBody3D::setRotation(Vector3 value) {
     super::setRotation(value);
 
+    return;
+
     if (updating_position) {
         return;
     }
@@ -214,18 +219,58 @@ void PhysicsBody3D::setRotation(Vector3 value) {
     if (body) {
 
         Vector3 v = getGlobalRotation();
-        Matrix rotation = MatrixRotateXYZ(getGlobalRotation());
+        Matrix rot = QuaternionToMatrix(rotation);
         dMatrix3 matrix;
 
-        matrix[0] = rotation.m0;
-        matrix[4] = rotation.m1;
-        matrix[8] = rotation.m2;
-        matrix[1] = rotation.m4;
-        matrix[5] = rotation.m5;
-        matrix[9] = rotation.m6;
-        matrix[2] = rotation.m8;
-        matrix[6] = rotation.m9;
-        matrix[10] = rotation.m10;
+        matrix[0] = rot.m0;
+        matrix[4] = rot.m1;
+        matrix[8] = rot.m2;
+        matrix[1] = rot.m4;
+        matrix[5] = rot.m5;
+        matrix[9] = rot.m6;
+        matrix[2] = rot.m8;
+        matrix[6] = rot.m9;
+        matrix[10] = rot.m10;
+
+        dBodySetRotation(body, matrix);
+
+        // Vector3 rotation = getGlobalRotation();
+        // Quaternion source = QuaternionFromEuler(rotation.z, rotation.y, rotation.x);
+        
+        // dQuaternion dest;
+        // dest[1] = source.x;
+        // dest[2] = source.y;
+        // dest[3] = source.z;
+        // dest[0] = source.w;
+
+        // dBodySetQuaternion(body, dest);
+    }
+}
+
+void PhysicsBody3D::setRotation(Quaternion value) {
+    super::setRotation(value);
+
+    return;
+
+    if (updating_position) {
+        return;
+    }
+    
+    if (body) {
+
+        Vector3 v = getGlobalRotation();
+        Matrix rot = QuaternionToMatrix(rotation);
+        dMatrix3 matrix;
+
+        matrix[0] = rot.m0;
+        matrix[4] = rot.m1;
+        matrix[8] = rot.m2;
+        matrix[1] = rot.m4;
+        matrix[5] = rot.m5;
+        matrix[9] = rot.m6;
+        matrix[2] = rot.m8;
+        matrix[6] = rot.m9;
+        matrix[10] = rot.m10;
 
         dBodySetRotation(body, matrix);
 
@@ -336,7 +381,7 @@ void PhysicsBody3D::addShape(CollisionShape3D* shape) {
         shape->attachToBody(this);
     }
 
-    shape->SIGNAL_POLYGON_CHANGED.connect(&PhysicsBody3D::onShapePolygonChanged, this, false, shape);
+    shape->SIGNAL_POLYGON_CHANGED.connect(this, &PhysicsBody3D::onShapePolygonChanged, false, shape);
 
     added_shapes.push_back(shape);
     SIGNAL_SHAPE_ADDED.emit(shape);
@@ -346,9 +391,11 @@ void PhysicsBody3D::removeShape(CollisionShape3D* shape) {
     SIGNAL_SHAPE_REMOVED.emit(shape);
 
     ASSERT(vectorContainsValue(added_shapes, shape));
-    ASSERT(shape->isAttachedToBody());
+    
+    if (shape->isAttachedToBody()) {
+        shape->detachFromBody();
+    }
 
-    shape->detachFromBody();
     vectorRemoveValue(&added_shapes, shape);
     SIGNAL_SHAPE_REMOVED.emit(shape);
 }
@@ -429,7 +476,9 @@ void PhysicsBody3D::onShapePolygonChanged(CollisionShape3D* shape) {
         return;
     }
 
-    shape->detachFromBody();
+    if (shape->isAttachedToBody()) {
+        shape->detachFromBody();
+    }
     shape->attachToBody(this);
 }
 

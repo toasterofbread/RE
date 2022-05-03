@@ -42,6 +42,7 @@ class PhysicsBody3D: public Node3D {
 
         void setPosition(Vector3 value);
         void setRotation(Vector3 value);
+        void setRotation(Quaternion value);
 
         bool isOnFloor();
         bool isOnWall();

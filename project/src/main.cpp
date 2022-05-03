@@ -97,7 +97,7 @@ struct Project {
 
 Project project;
 
-bool close = false;
+bool should_close = false;
 void mainLoop(float delta) {
     engine->process(delta);
 
@@ -105,7 +105,7 @@ void mainLoop(float delta) {
         engine->getTree()->getRoot()->printTree();
     }
     else if (quit_macro->isJustPressed()) {
-        close = true;
+        should_close = true;
     }
     else if (reset_macro->isJustPressed()) {
         project.toggle();
@@ -136,7 +136,7 @@ int main() {
     project.init();
     // DisableCursor();
 
-    while (!OS::shouldClose() && !Engine::fatal_error_occurred && !close) {
+    while (!OS::shouldClose() && !Engine::fatal_error_occurred && !should_close) {
 
         float delta = OS::getFrameDelta();
         

@@ -46,7 +46,7 @@ void CollisionShape3D::draw() {
 void CollisionShape3D::setPosition(Vector3 value) {
     super::setPosition(value);
 
-    if (dGeomGetBody(shape)) {
+    if (shape != NULL && dGeomGetBody(shape)) {
         value = PhysicsServer::world2Phys3(value);
         dGeomSetOffsetPosition(shape, value.x, value.y, value.z);
     }
@@ -116,43 +116,61 @@ void CollisionShape3D::setBoxShape(Vector3 size) {
     base_scale = getGlobalScale();
     size = PhysicsServer::world2Phys3(size) * base_scale;
 
-    shape = dCreateBox(PhysicsServer::getSpace(), size.x, size.y, size.z);
+    shape = dCreateCapsule(PhysicsServer::getSpace(), size.x / 2.0f, size.y);
+    // shape = dCreateBox(PhysicsServer::getSpace(), size.x, size.y, size.z);
     dGeomSetData(shape, this);
 
-    dGeomSetCategoryBits (shape, catBits[PLAYER]);
-    dGeomSetCollideBits (shape, catBits[PLANE]);
+    dGeomSetCategoryBits(shape, catBits[PLAYER]);
+    dGeomSetCollideBits(shape, catBits[PLANE]);
 
     SIGNAL_POLYGON_CHANGED.emit();
 }
 
 void CollisionShape3D::setMeshShape(Mesh& mesh) {
-    freeShape();
+    // freeShape();
 
-    mesh_indices = (int*)malloc(mesh.vertexCount * sizeof(int));
+    if (gen_thread.joinable()) {
+        gen_thread.join();
+    }
+    
+    generateMesh(mesh);
+    // gen_thread = thread(&CollisionShape3D::generateMesh, this, ref(mesh));
+}
+
+void CollisionShape3D::generateMesh(Mesh& mesh) {
+
+    if (shape != NULL) {
+        return;
+    }
+
+    dGeomID old_shape = shape;
+    int* old_indices = mesh_indices;
+    dTriMeshDataID old_data = mesh_data;
+
+    int* new_indices = (int*)malloc(mesh.vertexCount * sizeof(int));
     for (int i = 0; i < mesh.vertexCount; i++ ) {
-        mesh_indices[i] = i;
+        new_indices[i] = i;
     }
 
-    mesh_data = dGeomTriMeshDataCreate();
-    dGeomTriMeshDataBuildSingle(mesh_data, mesh.vertices, 3 * sizeof(float), mesh.vertexCount, mesh_indices, mesh.vertexCount, 3 * sizeof(int));
-    shape = dCreateTriMesh(PhysicsServer::getSpace(), mesh_data, NULL, NULL, NULL);
-    dGeomSetCategoryBits (shape, catBits[PLANE]);
-    dGeomSetCollideBits (shape, catBits[ALL]);
-    dGeomSetData(shape, NULL);
+    dTriMeshDataID new_mesh_data = dGeomTriMeshDataCreate();
+    dGeomTriMeshDataBuildSingle(new_mesh_data, mesh.vertices, 3 * sizeof(float), mesh.vertexCount, new_indices, mesh.vertexCount, 3 * sizeof(int));
+    
+    shape = dCreateTriMesh(PhysicsServer::getSpace(), new_mesh_data, NULL, NULL, NULL);
+    dGeomSetCategoryBits(shape, catBits[PLANE]);
+    dGeomSetCollideBits(shape, catBits[ALL]);
+    dGeomSetData(shape, this);
 
-    // return (PlaneGeom){.geom = planeGeom, .indexes = groundInd};
-
-    // mesh_indices = (int*)malloc(mesh.vertexCount * 3 * sizeof(int));
-    for (int i = 0; i < mesh.vertexCount; i++) {
-        mesh_indices[i] = i;
-    }
-
-    // mesh_data = dGeomTriMeshDataCreate();
-    // dGeomTriMeshDataBuildSingle(mesh_data, mesh.vertices, 3 * sizeof(float), mesh.vertexCount, mesh_indices, mesh.vertexCount, 3 * sizeof(int));
-
-    // shape = dCreateTriMesh(PhysicsServer::getSpace(), mesh_data, NULL, NULL, NULL);
-
-    SIGNAL_POLYGON_CHANGED.emit();
+    mesh_indices = new_indices;
+    mesh_data = new_mesh_data;
+    
+    if (old_shape != NULL)
+        dGeomDestroy(old_shape);
+    if (old_indices != NULL)
+        free(old_indices);
+    if (old_data != NULL)
+        dGeomTriMeshDataDestroy(old_data);
+    
+    this->SIGNAL_POLYGON_CHANGED.emit();
 }
 
 void CollisionShape3D::freeShape() {

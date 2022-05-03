@@ -223,7 +223,7 @@ shared_ptr<SpriteAnimationSet> SpriteAnimationSet::LocalResourcePool::getResourc
     // Can't use make_shared as SpriteAnimationSet constructor is private
     shared_ptr<SpriteAnimationSet> ret = shared_ptr<SpriteAnimationSet>(new SpriteAnimationSet(file_path, base_directory_override));
 
-    ret->SIGNAL_DELETED.connect(&ResourcePool::eraseMapKey, this, false, &pool, file_path);
+    ret->SIGNAL_DELETED.connect(this, &ResourcePool::eraseMapKey, false, &pool, file_path);
 
     if (pool.count(file_path)) {
         pool[file_path][base_directory_override] = (weak_ptr<SpriteAnimationSet>)ret;

@@ -66,26 +66,27 @@ void Draw::endDrawing() {
     EndDrawing();
 }
 
+#include "project/src/nodes/world.h"
+#define LOAD_TOTAL (CHUNK_AMOUNT * CHUNK_AMOUNT * SUBCHUNK_COUNT)
 void Draw::loadStep(string message, bool reverse) {
 
     Draw::beginDrawing();
 
     if (load_message != message) {
         load_message = message;
-        load_count = reverse ? 542 : 0;
+        load_count = reverse ? LOAD_TOTAL : 0;
     }
 
     load_count += reverse ? -1 : 1;
 
     float w = OS::getScreenWidth();
     float h = OS::getScreenHeight();
-    float progress = ((float)load_count) / 542.0f;
+    float progress = (float)load_count / (float)LOAD_TOTAL;
 
     drawLine(Vector2(w * LOAD_MARGIN, h / 2.0f), Vector2((w - (w * LOAD_MARGIN * 2.0f)) * progress + (w * LOAD_MARGIN), h / 2.0f), LOAD_COLOUR, true);
     drawText(message + " " + to_string(int(progress * 100.0f)) + "%", Vector2(w * LOAD_MARGIN, h / 2.0f - 20.0f), LOAD_COLOUR, 1.0f, true);
 
     Draw::endDrawing();
-
 }
 
 void Draw::drawLine(float start_x, float start_y, float end_x, float end_y, Colour colour, bool screen_position) {
@@ -159,7 +160,7 @@ void Draw::drawBoundingBox(BoundingBox box, Colour colour, Vector3 offset, Vecto
 }
 
 void Draw::drawMesh(Mesh mesh, Material material, Matrix transform) {
-    DRAW_3D(DrawMesh(mesh, material, transform));
+    DRAW_3D(DrawMeshWires(mesh, material, transform));
 }
 
 void drawMeshInstanced(Mesh mesh, Material material, Matrix *transforms, int instances) {
