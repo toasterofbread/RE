@@ -180,28 +180,8 @@ void Node3D::setGlobalScale(Vector3 value) {
     setScale(value / getGlobalScale());
 }
 
-Vector3 Node3D::getRotation() {
-    return QuaternionToEuler(rotation);
-}
-void Node3D::setRotation(Vector3 value) {
-
-    if (getRotation() == value) {
-        return;
-    }
-
-    if (SIGNAL_GLOBAL_ROTATION_CHANGED.getConnectionCount() == 0) {
-        rotation = QuaternionFromEuler(value.x, value.y, value.z);
-        return;
-    }
-
-    Vector3 original_global_rotation = getRotation();
-    if (Node3D* parent_3d = getFirst3DParent()) {
-        original_global_rotation += parent_3d->getGlobalRotation();
-    }
-
-    rotation = QuaternionFromEuler(value.x, value.y, value.z);
-
-    SIGNAL_GLOBAL_ROTATION_CHANGED.emit(original_global_rotation);
+Quaternion Node3D::getRotation() {
+    return rotation;
 }
 
 void Node3D::setRotation(Quaternion value) {
@@ -214,9 +194,9 @@ void Node3D::setRotation(Quaternion value) {
         return;
     }
 
-    Vector3 original_global_rotation = getRotation();
+    Quaternion original_global_rotation = getRotation();
     if (Node3D* parent_3d = getFirst3DParent()) {
-        original_global_rotation += parent_3d->getGlobalRotation();
+        original_global_rotation = QuaternionAdd(original_global_rotation, parent_3d->getGlobalRotation());
     }
 
     rotation = value;
@@ -225,7 +205,7 @@ void Node3D::setRotation(Quaternion value) {
 
 }
 
-Vector3 Node3D::getGlobalRotation() {
+Quaternion Node3D::getGlobalRotation() {
 
     if (!rotation_relative_to_parent) {
         return getRotation();
@@ -234,17 +214,13 @@ Vector3 Node3D::getGlobalRotation() {
     ASSERT(isInsideTree());
     
     if (Node3D* parent_3d = getFirst3DParent()) {
-        return parent_3d->getGlobalRotation() + getRotation();
+        return QuaternionMultiply(parent_3d->getGlobalRotation(), getRotation());
     }
 
     return getRotation();
 }
-void Node3D::setGlobalRotation(Vector3 value) {
+void Node3D::setGlobalRotation(Quaternion value) {
     ASSERT(isInsideTree());
-
-    if (!value.isValid()) {
-        return;
-    }
 
     if (!rotation_relative_to_parent) {
         setRotation(value);
@@ -252,7 +228,7 @@ void Node3D::setGlobalRotation(Vector3 value) {
     }
 
     if (Node3D* parent_3d = getFirst3DParent()) {
-        setRotation(value - parent_3d->getGlobalRotation());
+        setRotation(QuaternionSubtract(value, parent_3d->getGlobalRotation()));
         return;
     }
 
@@ -392,8 +368,8 @@ void Node3D::onParentGlobalPositionChanged(Vector3 old_global_position) {
     SIGNAL_GLOBAL_POSITION_CHANGED.emit(old_global_position + getPosition());
 }
 
-void Node3D::onParentGlobalRotationChanged(Vector3 old_global_rotation) {
-    SIGNAL_GLOBAL_ROTATION_CHANGED.emit(old_global_rotation + getRotation());
+void Node3D::onParentGlobalRotationChanged(Quaternion old_global_rotation) {
+    SIGNAL_GLOBAL_ROTATION_CHANGED.emit(QuaternionAdd(old_global_rotation, getRotation()));
 }
 
 void Node3D::onParentGlobalScaleChanged(Vector3 old_global_scale) {

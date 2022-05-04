@@ -46,9 +46,34 @@ void CollisionShape3D::draw() {
 void CollisionShape3D::setPosition(Vector3 value) {
     super::setPosition(value);
 
-    if (shape != NULL && dGeomGetBody(shape)) {
-        value = PhysicsServer::world2Phys3(value);
-        dGeomSetOffsetPosition(shape, value.x, value.y, value.z);
+    if (attached_body) {
+        btCompoundShape& container = attached_body->getShapeContainer();
+
+        for (int i = 0; i < container.getNumChildShapes(); i++) {
+            if (container.getChildShape(i) == shape) {
+                btTransform& transform = container.getChildTransform(i);
+                transform.setOrigin(PhysicsServer::world2Phys3(getPosition()));
+                container.updateChildTransform(i, transform, false);
+                break;
+            }
+        }
+    }
+}
+
+void CollisionShape3D::setRotation(Quaternion value) {
+    super::setRotation(value);
+
+    if (attached_body) {
+        btCompoundShape& container = attached_body->getShapeContainer();
+
+        for (int i = 0; i < container.getNumChildShapes(); i++) {
+            if (container.getChildShape(i) == shape) {
+                btTransform& transform = container.getChildTransform(i);
+                transform.setRotation(getRotation());
+                container.updateChildTransform(i, transform, true);
+                break;
+            }
+        }
     }
 }
 
@@ -76,6 +101,7 @@ void CollisionShape3D::scaleChanged(Vector3 old_scale) {
     base_scale = getGlobalScale();
     Vector3 multiplier = base_scale / (old_scale * getScale());
 
+    // !todo
     switch (getType()) {
         // case react::CollisionShapeType::CONCAVE_SHAPE: {
 
@@ -91,86 +117,45 @@ void CollisionShape3D::scaleChanged(Vector3 old_scale) {
     }
 }
 
-enum INDEX
-{
-  PLANE = 0,
-  PLAYER,
-  OBJS,
-  PLAYER_BULLET,
-  ALL,
-  LAST_INDEX_CNT
-};
-
-const int catBits[LAST_INDEX_CNT] =
-{
-    0x0001, ///< Plane category >          0001
-    0x0002, ///< Player category >         0010
-    0x0004, ///< Objects category >        0100
-    0x0008, ///< Player bullets category > 1000
-    ~0L     ///< All categories >          11111111111111111111111111111111
-};
-
 void CollisionShape3D::setBoxShape(Vector3 size) {
     freeShape();
 
     base_scale = getGlobalScale();
     size = PhysicsServer::world2Phys3(size) * base_scale;
 
-    shape = dCreateCapsule(PhysicsServer::getSpace(), size.x / 2.0f, size.y);
-    // shape = dCreateBox(PhysicsServer::getSpace(), size.x, size.y, size.z);
-    dGeomSetData(shape, this);
-
-    dGeomSetCategoryBits(shape, catBits[PLAYER]);
-    dGeomSetCollideBits(shape, catBits[PLANE]);
+    shape = new btBoxShape(size / 2.0f);
+    // shape = new btCapsuleShape(size.x / 2.0f, size.y);
+    shape->setUserPointer(this);
 
     SIGNAL_POLYGON_CHANGED.emit();
 }
 
 void CollisionShape3D::setMeshShape(Mesh& mesh) {
-    // freeShape();
+    freeShape();
 
-    if (gen_thread.joinable()) {
-        gen_thread.join();
-    }
-    
-    generateMesh(mesh);
-    // gen_thread = thread(&CollisionShape3D::generateMesh, this, ref(mesh));
-}
+    base_scale = getGlobalScale();
 
-void CollisionShape3D::generateMesh(Mesh& mesh) {
-
-    if (shape != NULL) {
-        return;
+    int* indices = (int*)malloc(mesh.vertexCount * sizeof(int));
+    for (int i = 0; i < mesh.vertexCount; i++) {
+        indices[i] = i;
     }
 
-    dGeomID old_shape = shape;
-    int* old_indices = mesh_indices;
-    dTriMeshDataID old_data = mesh_data;
-
-    int* new_indices = (int*)malloc(mesh.vertexCount * sizeof(int));
-    for (int i = 0; i < mesh.vertexCount; i++ ) {
-        new_indices[i] = i;
-    }
-
-    dTriMeshDataID new_mesh_data = dGeomTriMeshDataCreate();
-    dGeomTriMeshDataBuildSingle(new_mesh_data, mesh.vertices, 3 * sizeof(float), mesh.vertexCount, new_indices, mesh.vertexCount, 3 * sizeof(int));
+    btTriangleIndexVertexArray* interface = new btTriangleIndexVertexArray;
     
-    shape = dCreateTriMesh(PhysicsServer::getSpace(), new_mesh_data, NULL, NULL, NULL);
-    dGeomSetCategoryBits(shape, catBits[PLANE]);
-    dGeomSetCollideBits(shape, catBits[ALL]);
-    dGeomSetData(shape, this);
+    btIndexedMesh part;
+    part.m_vertexBase = (const unsigned char*)mesh.vertices;
+    part.m_vertexStride = sizeof(float) * 3;
+    part.m_numVertices = mesh.vertexCount;
+    part.m_triangleIndexBase = (const unsigned char*)indices;
+    part.m_triangleIndexStride = sizeof(int) * 3;
+    part.m_numTriangles = mesh.triangleCount;
 
-    mesh_indices = new_indices;
-    mesh_data = new_mesh_data;
-    
-    if (old_shape != NULL)
-        dGeomDestroy(old_shape);
-    if (old_indices != NULL)
-        free(old_indices);
-    if (old_data != NULL)
-        dGeomTriMeshDataDestroy(old_data);
-    
-    this->SIGNAL_POLYGON_CHANGED.emit();
+    interface->addIndexedMesh(part);
+
+    shape = new btBvhTriangleMeshShape(interface, false);
+    shape->setUserPointer(this);
+
+    SIGNAL_POLYGON_CHANGED.emit();
 }
 
 void CollisionShape3D::freeShape() {
@@ -179,16 +164,17 @@ void CollisionShape3D::freeShape() {
         return;
     }
 
-    dGeomDestroy(shape);
-    
+    detachFromBody();
+
     switch (getType()) {
-        case dTriMeshClass: {
-            free(mesh_indices);
-            dGeomTriMeshDataDestroy(mesh_data);
+        case TRIANGLE_MESH_SHAPE_PROXYTYPE: {
+            // free(mesh_indices);
+            // dGeomTriMeshDataDestroy(mesh_data);
             break;
         }
     }
 
+    delete shape;
     shape = NULL;
 }
 
@@ -196,31 +182,27 @@ bool CollisionShape3D::hasShape() {
     return shape != NULL;
 }
 
-dGeomID CollisionShape3D::getShape() {
+btCollisionShape* CollisionShape3D::getShape() {
     ASSERT(shape != NULL);
     return shape;
 }
 
-int CollisionShape3D::getType() {
+BroadphaseNativeTypes CollisionShape3D::getType() {
     ASSERT(shape != NULL);
-    return dGeomGetClass(shape);
+    return (BroadphaseNativeTypes)shape->getShapeType();
 }
 
 void CollisionShape3D::attachToBody(PhysicsBody3D* body) {
     ASSERT(attached_body == NULL);
     ASSERT(shape != NULL);
-
     attached_body = body;
-    dGeomSetBody(shape, body->getBody());
-
-    Vector3 position = PhysicsServer::world2Phys3(getPosition());
-    dGeomSetOffsetPosition(shape, position.x, position.y, position.z);
+    body->getShapeContainer().addChildShape(btTransform(getRotation(), PhysicsServer::world2Phys3(getPosition())), shape);
 }
 
 void CollisionShape3D::detachFromBody() {
     ASSERT(attached_body != NULL && shape != NULL);
+    attached_body->getShapeContainer().removeChildShape(shape);
     attached_body = NULL;
-    dGeomSetBody(shape, 0);
 }
 
 #endif

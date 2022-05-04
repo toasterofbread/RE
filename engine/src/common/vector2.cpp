@@ -16,6 +16,6 @@ InternalVector2 InternalVector2::fromJson(json data) {
     return ret;
 }
 
-string InternalVector2::toString() {
-    return "{ " + stringPadDecimals(to_string(x), 1) + ", " + stringPadDecimals(to_string(y), 1) + " }";
+string InternalVector2::toString(int max_decimals) {
+    return "{ " + stringPadDecimals(to_string(x), max_decimals) + ", " + stringPadDecimals(to_string(y), max_decimals) + " }";
 }

@@ -13,7 +13,7 @@ using namespace std;
 using json = nlohmann::json;
 
 #if PHYSICS_3D_ENABLED
-#include <ode/ode.h>
+#include <btBulletCollisionCommon.h>
 #endif
 
 struct InternalVector3: public Vector3 {
@@ -65,6 +65,20 @@ struct InternalVector3: public Vector3 {
 
     void normalise();
     InternalVector3 normalised() const;
+
+    void rotateByQuat(const Quaternion quat) {
+        const float _x = x;
+        const float _y = y;
+        const float _z = z;
+        x = _x*(quat.x*quat.x + quat.w*quat.w - quat.y*quat.y - quat.z*quat.z) + _y*(2*quat.x*quat.y - 2*quat.w*quat.z) + _z*(2*quat.x*quat.z + 2*quat.w*quat.y);
+        y = _x*(2*quat.w*quat.z + 2*quat.x*quat.y) + _y*(quat.w*quat.w - quat.x*quat.x + quat.y*quat.y - quat.z*quat.z) + _z*(-2*quat.w*quat.x + 2*quat.y*quat.z);
+        z = _x*(-2*quat.w*quat.y + 2*quat.x*quat.z) + _y*(2*quat.w*quat.x + 2*quat.y*quat.z)+ _z*(quat.w*quat.w - quat.x*quat.x - quat.y*quat.y + quat.z*quat.z);
+    }
+    InternalVector3 rotatedByQuat(const Quaternion quat) const {
+        InternalVector3 ret = InternalVector3(x, y, z);
+        ret.rotateByQuat(quat);
+        return ret;
+    }
 
     bool isValid() {
         return !isnan(x) && !isnan(y) && !isnan(z);
@@ -219,11 +233,19 @@ struct InternalVector3: public Vector3 {
     }
 
     #if PHYSICS_3D_ENABLED
-    InternalVector3(dVector3 vector) {
-        x = vector[0];
-        y = vector[1];
-        z = vector[2];
+    InternalVector3(const btVector3& vector) {
+        x = vector.x();
+        y = vector.y();
+        z = vector.z();
     }
+    operator btVector3() {
+        return btVector3(x, y, z);
+    }
+    // InternalVector3(dVector3 vector) {
+    //     x = vector[0];
+    //     y = vector[1];
+    //     z = vector[2];
+    // }
     // InternalVector3(Quaternion quat) {
     //     x = std::atan2(2 * (quat.w * quat.x + quat.y * quat.z), 1 - 2 * (quat.x * quat.x + quat.y * quat.y));
 

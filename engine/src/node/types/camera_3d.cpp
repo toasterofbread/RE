@@ -59,7 +59,7 @@ void Camera3D::onParentGlobalPositionChanged(Vector3 old_global_position) {
     updateCamera();
 }
 
-void Camera3D::onParentGlobalRotationChanged(Vector3 old_global_rotation) {
+void Camera3D::onParentGlobalRotationChanged(Quaternion old_global_rotation) {
     super::onParentGlobalRotationChanged(old_global_rotation);
     updateCamera();
 }
@@ -79,7 +79,7 @@ void Camera3D::setPosition(Vector3 value) {
     updateCamera();
 }
 
-void Camera3D::setRotation(Vector3 value) {
+void Camera3D::setRotation(Quaternion value) {
     super::setRotation(value);
     updateCamera();
 }
@@ -95,13 +95,7 @@ bool Camera3D::isPointVisibleInFrustum(Vector3 point) {
 
 void Camera3D::updateCamera() {
     camera.position = getGlobalPosition();
-
-    Vector3 rotation = getGlobalRotation();
-    Matrix transform = MatrixMultiply(MatrixTranslate(0, 0, 1), MatrixRotateXYZ(Vector3(PI * 2 - rotation.y, PI * 2 - rotation.x, 0.0f)));
-    camera.target.x = camera.position.x - transform.m12;
-    camera.target.y = camera.position.y - transform.m13;
-    camera.target.z = camera.position.z - transform.m14;
-
+    camera.target = Vector3::FRONT().rotatedByQuat(getGlobalRotation()) + camera.position;
     updateFrustum();
 }
 

@@ -6,7 +6,7 @@
 #include "physics/node/collision_shape_3d.h"
 #include "physics/node/physics_body_3d.h"
 
-#include <ode/ode.h>
+#include <btBulletCollisionCommon.h>
 #include <thread>
 using namespace std;
 
@@ -356,10 +356,6 @@ class World: public PhysicsBody3D {
         Chunk* getChunk(int x, int y, bool grid_pos = true);
 
         void addSubChunk(SubChunk* chunk);
-
-        dWorldID world;
-        dSpaceID space;
-        dJointGroupID contact_group;
 
         void requestSubChunkMeshGeneration(SubChunk* chunk);
 

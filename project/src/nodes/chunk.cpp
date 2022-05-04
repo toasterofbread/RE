@@ -3,7 +3,7 @@
 #include "common/draw.h"
 #include "node/types/camera_3d.h"
 
-#include <ode/ode.h>
+#include <btBulletCollisionCommon.h>
 
 void SubChunk::addFace(DIRECTION_3 face, Block* block, int face_i) {
 
@@ -246,9 +246,6 @@ void SubChunk::draw() {
     position.y = index * SUBCHUNK_HEIGHT;
 
     // rlDisableBackfaceCulling();
-
-    const float* pos = dGeomGetPosition(getShape());
-    Draw::drawCube(Vector3(pos[0], pos[1], pos[2]), Vector3::ONE(), Colour::GREEN());
 
     if (!isVisible(chunk->getTree()->getEnabledCamera3D(), position)) {
         return;

@@ -5,8 +5,10 @@
 #include "common/input.h"
 #include "node/types/camera_3d.h"
 
-#define MOUSE_SENSITIVITY 1.5f
-#define MOVEMENT_SPEED 9.0f
+#define MOUSE_SENSITIVITY 0.25f
+#define MOVEMENT_SPEED_H 9.0f
+#define MOVEMENT_SPEED_V 5.0f
+#define CAMERA_Y_CLAMP_MARGIN 0.0001f
 
 Camera3D* camera;
 CollisionShape3D* shape;
@@ -15,44 +17,44 @@ void Player::ready() {
     super::ready();
  
     // setKinematic(true);
-    setApplyGravity(false);
+    // setApplyGravity(false);
 
-    setPosition(Vector3(-0, 10, 0));
-    setLinearVelocity(Vector3(0, 0, 0));
+    setPosition(Vector3(-10, 10, -10));
+    // setLinearVelocity(Vector3(0, 0, 0));
 
-    setFixedRotation(true);
+    // setFixedRotation(true);
 
     shape = new CollisionShape3D;
     shape->setBoxShape(Vector3(0.5f, 1.8f, 0.5f));
     addChild(shape);
 
-    dGeomSetCollideBits(shape->getShape(), 0x0002);
-    dGeomSetCategoryBits(shape->getShape(), 0x0001);
+    // dGeomSetCollideBits(shape->getShape(), 0x0002);
+    // dGeomSetCategoryBits(shape->getShape(), 0x0001);
 
-    dMatrix3 R;
-    dRFromAxisAndAngle(R, 1.0f, 0, 0, DEG2RAD(90.0f));
-    dBodySetRotation(getBody(), R);
+    // dMatrix3 R;
+    // dRFromAxisAndAngle(R, 1.0f, 0, 0, DEG2RAD(90.0f));
+    // dBodySetRotation(getBody(), R);
 
     camera = new Camera3D;
     addChild(camera);
     camera->enable();
 }
 
-Vector3 angle;
+Vector2 angle = Vector2(-PI/2, 0.0f);
 void Player::process(float delta) {
     super::process(delta);
 
-    // Apply mouse or analog stick movement to rotation
-    Vector2 rotation_delta = -Vector2(GetMouseDelta());
+    // Get the rotation delta from mouse movement or left joystick
+    Vector2 rotation_delta = Vector2(GetMouseDelta());
     if (rotation_delta.isZero()) {
-        rotation_delta = Input::getAnalogPadVector(SIDE::RIGHT) * -1800.0f * delta;
+        rotation_delta = Input::getAnalogPadVector(SIDE::RIGHT).normalised() * 1800.0f;
     }
-    Vector3 rotation = getRotation();
-    rotation = (rotation + (Vector3(rotation_delta.x, rotation_delta.y, 0.0f) * MOUSE_SENSITIVITY * 0.001f * (camera->getCamera()->fovy / 45.0f))).clampAngle();
-    setRotation(rotation);
 
-    OS::dbPrint("Player rotation: " + rotation.toString());
-   
+    // Apply rotation delta to the final rotation
+    angle.x -= rotation_delta.x * delta * MOUSE_SENSITIVITY;
+    angle.y = clamp(angle.y - rotation_delta.y * delta * MOUSE_SENSITIVITY, -PI / 2 + CAMERA_Y_CLAMP_MARGIN, PI / 2 - CAMERA_Y_CLAMP_MARGIN);
+    setRotation(QuaternionFromEuler(angle.y, angle.x, 0));
+
     Vector3 position = getPosition();
 
     // Apply DPad or joystick value to movement
@@ -62,27 +64,32 @@ void Player::process(float delta) {
     }
     h_movement.normalise();
 
-    Vector3 velocity = Vector3::ZERO().move(h_movement, getGlobalRotation(), MOVEMENT_SPEED);
+    Vector3 velocity;
+    if (!h_movement.isZero())
+        velocity = Vector3(h_movement.x, 0.0f, h_movement.y).rotatedByQuat(getGlobalRotation()) * MOVEMENT_SPEED_H;
 
     #define APPREQ(a, b) (abs(a - b) < 0.00001)
-    for (CollisionShape3D::Contact* contact : shape->contacts) {
-        Vector3 normal = contact->getNormal();
-        for (int i = 0; i < 3; i++) {
-            if (!APPREQ(normal[i], 0.0) && sign(normal[i]) != sign(velocity[i])) {
-                velocity[i] = 0;
-            }
-        }
-    }
+    // for (CollisionShape3D::Contact* contact : shape->contacts) {
+    //     Vector3 normal = contact->getNormal();
+    //     for (int i = 0; i < 3; i++) {
+    //         if (!APPREQ(normal[i], 0.0) && sign(normal[i]) != sign(velocity[i])) {
+    //             velocity[i] = 0;
+    //         }
+    //     }
+    // }
 
-    OS::dbPrint("Player contacts: " + to_string(shape->contacts.size()));
+    // OS::dbPrint("Player contacts: " + to_string(shape->contacts.size()));
     OS::dbPrint("Player velocity: " + velocity.toString());
-
+    OS::dbPrint("Player rotation: " + getRotation().toString());
+    OS::dbPrint("Player position: " + getPosition().toString());
+   
     // Vertical movement
     int v_movement = INPUT_EVENT_JUMP.isTriggered() - INPUT_EVENT_CROUCH.isTriggered();
-    velocity.y += v_movement * delta * 400.0f;
+    velocity.y = v_movement * MOVEMENT_SPEED_V;
 
     // Apply final velocity
     setLinearVelocity(velocity);
+    // setPosition(getPosition() + velocity * delta);
 
     // Quaternion rot = QuaternionFromMatrix(MatrixAdd(MatrixLookAt(Vector3::ZERO(), velocity, Vector3::UP()), MatrixRotateY(DEG2RAD(180))));
     // OS::dbPrint("Rot: " + Vector3(QuaternionToEuler(rot)).toString());
@@ -95,11 +102,11 @@ void Player::process(float delta) {
     //     dBodySetQuaternion(getBody(), quat);
     // }
 
-    const float* body_pos = dGeomGetPosition(((CollisionShape3D*)getChild("CollisionShape3D"))->getShape());
-    OS::dbPrint("Player pos: " + Vector3(body_pos[0], body_pos[1], body_pos[2]).toString());
+    // const float* body_pos = dGeomGetPosition(((CollisionShape3D*)getChild("CollisionShape3D"))->getShape());
+    // OS::dbPrint("Player pos: " + Vector3(body_pos[0], body_pos[1], body_pos[2]).toString());
 
     // Zoom camera with mouse wheel (fov)
-    // camera->setZoom(min(max(camera->getZoom() + (GetMouseWheelMove() * -0.1f), 0.0f), 1.0f));
+    camera->setZoom(min(max(camera->getZoom() + (GetMouseWheelMove() * -0.1f), 0.0f), 1.0f));
 
     // !todo move to world process
     Chunk* chunk = world->getChunk(position.x, position.z, false);
@@ -111,11 +118,7 @@ void Player::process(float delta) {
     // Calculate camera view ray
     Ray view_ray;
     view_ray.position = position;
-    Matrix transform = MatrixMultiply(MatrixTranslate(0, 0, 1), MatrixRotateXYZ(Vector3(PI * 2 - rotation.y, PI * 2 - rotation.x, 0.0f)));
-    view_ray.direction.x = position.x - transform.m12;
-    view_ray.direction.y = position.y - transform.m13;
-    view_ray.direction.z = position.z - transform.m14;
-    view_ray.direction = ((Vector3)view_ray.direction - position).normalised();
+    view_ray.direction = Vector3Normalize(Vector3Subtract(camera->getCamera()->target, camera->getCamera()->position));
 
     // Get list of subchunks intersecting view ray, in order of proximity to player
     list<pair<SubChunk*, float>> intersecting;
@@ -215,10 +218,10 @@ void Player::process(float delta) {
             OS::print("Block position: " + Vector3(looking_at_block->x, looking_at_block->y, looking_at_block->z).toString());
             OS::print("Face: " + directionToString(looking_at_face));
 
-            const float* pos = dGeomGetPosition(looking_at_block->subchunk->getShape());
-            const float* off = dGeomGetOffsetPosition(looking_at_block->subchunk->getShape());
+            // const float* pos = dGeomGetPosition(looking_at_block->subchunk->getShape());
+            // const float* off = dGeomGetOffsetPosition(looking_at_block->subchunk->getShape());
 
-            OS::print("Geom pos: " + Vector3(pos[0] + off[0], pos[1] + off[1], pos[2] + off[2]).toString());
+            // OS::print("Geom pos: " + Vector3(pos[0] + off[0], pos[1] + off[1], pos[2] + off[2]).toString());
             OS::print("Subchunk pos: " + looking_at_block->subchunk->getGlobalPosition().toString());
             OS::print("Subchunk id: " + to_string(looking_at_block->subchunk->getId()));
             OS::print("-------------------");

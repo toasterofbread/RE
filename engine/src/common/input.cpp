@@ -91,27 +91,23 @@ bool Input::isKeyModifier(MouseButton key) {
 void Input::printPressedKey() {
     int key = GetKeyPressed();
     if (key != 0) {
-        OS::print("Key pressed: " + (string)to_string(key));
+        OS::print("Key pressed: " + to_string(key));
     }
 }
 
 Vector2 Input::getPadVector(bool just_pressed) {
-    Vector2 ret = Vector2(0, 0);
-
     if (just_pressed) {
-        ret.x -= INPUTEVENT_PAD_LEFT.isJustTriggered();
-        ret.x += INPUTEVENT_PAD_RIGHT.isJustTriggered();
-        ret.y -= INPUTEVENT_PAD_UP.isJustTriggered();
-        ret.y += INPUTEVENT_PAD_DOWN.isJustTriggered();
+        return Vector2(
+            INPUTEVENT_PAD_RIGHT.isJustTriggered() - INPUTEVENT_PAD_LEFT.isJustTriggered(), 
+            INPUTEVENT_PAD_DOWN.isJustTriggered() - INPUTEVENT_PAD_UP.isJustTriggered()
+        );
     }
     else {
-        ret.x -= INPUTEVENT_PAD_LEFT.isTriggered();
-        ret.x += INPUTEVENT_PAD_RIGHT.isTriggered();
-        ret.y -= INPUTEVENT_PAD_UP.isTriggered();
-        ret.y += INPUTEVENT_PAD_DOWN.isTriggered();
+        return Vector2(
+            INPUTEVENT_PAD_RIGHT.isTriggered() - INPUTEVENT_PAD_LEFT.isTriggered(), 
+            INPUTEVENT_PAD_DOWN.isTriggered() - INPUTEVENT_PAD_UP.isTriggered()
+        );
     }
-
-    return ret;
 }
 
 Vector2 Input::getAnalogPadVector(SIDE side, float deadzone) {

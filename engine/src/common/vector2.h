@@ -39,7 +39,7 @@ struct InternalVector2: public b2Vec2 {
         return InternalVector2(abs(x), abs(y));
     }
 
-    string toString();
+    string toString(int max_decimals = 1);
 
     void rotate(float angle) {
         float _x = x;

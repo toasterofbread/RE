@@ -31,6 +31,7 @@ env.LIB_SUBDIR = "lib/"
 
 env.ENGINE_SRC = "engine/src/"
 env.ENGINE_TESTS = "engine/tests/"
+env.ENGINE_EXTERNAL = "engine/external/"
 env.PROJECT_SRC = "project/src/"
 
 env.ENGINE_BINARY_NAME = "engine"
@@ -47,36 +48,7 @@ env.COLOURS = {
 }
 
 def recursiveGlob(self, path: str, extension: str, name: str = None, exclude_dirs: list = []):
-    if name is not None:
-        match = name
-    else:
-        match = "*"
-    
-    if extension is not None:
-        match += "." + extension
-    else:
-        match += "*"
-
-    matches = []
-    for root, dirnames, filenames in os.walk(os.path.join(env.DIRECTORY, path)):
-        
-        if root.startswith(".") or "/." in root:
-            continue
-         
-        excluded = False
-        for dir in exclude_dirs:
-            if root.startswith(os.path.join(os.getcwd(), dir).removesuffix("/")):
-                excluded = True
-                break
-        if excluded:
-            continue
-            
-        for filename in fnmatch.filter(filenames, match):
-            if filename.startswith("."):
-                continue
-            matches.append(File(os.path.join(root, filename)))
-
-    return matches
+    return utils.recursiveGlob(join(env.DIRECTORY, path), extension, name, exclude_dirs)
 
 AddMethod(Environment, recursiveGlob)
 
@@ -108,7 +80,7 @@ def progress_function(node = None, force: bool = False):
         previous_line = lines[-2]
 
         progress = int((node_count / (node_total)) * 100.0)
-        out.write(f"{env.convertSconsLine(previous_line, progress)}\n")
+        out.write(f"{env.convertSconsLine(previous_line, progress, out)}\n")
         out.flush()
 
         node_count += 1
@@ -146,7 +118,13 @@ if GetOption("build_engine"):
         BUILD_TARGETS.append(object_path)
         engine_objs.append(object_path)
 
-    env.engine_binary = env.Library(join(env.LIB_DIR, env.ENGINE_BINARY_NAME + env["LIBSUFFIX"]), engine_objs, LIBS=["box2d"])
+    for file in env.recursiveGlob(env.ENGINE_EXTERNAL, "cpp", None):
+        object_path = str(file).replace(env.ENGINE_EXTERNAL, env.OBJ_DIR + "engine/external/").replace(".cpp", env["OBJSUFFIX"])
+        env.Object(target = object_path, source=file, CCFLAGS="-g")
+        BUILD_TARGETS.append(object_path)
+        engine_objs.append(object_path)
+
+    env.engine_binary = env.Library(join(env.LIB_DIR, env.ENGINE_BINARY_NAME + env["LIBSUFFIX"]), engine_objs)
     Depends(env.engine_binary, engine_objs)
 
 project_objs = []
@@ -176,7 +154,7 @@ else:
     env.FINISH_COMMAND = Command("build_finished", [None], onBuildFinished)
     Depends(env.FINISH_COMMAND, env.engine_binary)
 
-node_total = len(engine_objs) + len(project_objs) + 5
+node_total = len(engine_objs) + len(project_objs) + 2
 
 if GetOption("run_tests"):
     test_objs = []

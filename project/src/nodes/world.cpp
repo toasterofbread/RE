@@ -5,14 +5,14 @@
 #include "physics/physics_server.h"
 
 #include "common/raylib.h"
-#include <ode/ode.h>
+#include <btBulletCollisionCommon.h>
 #include <json.hpp>
 using json = nlohmann::json;
 
 Block::TypeData Block::type_data[BLOCK_TYPE_COUNT];
 
 void World::init() {
-    setKinematic(true);
+    // setKinematic(true);
 
     player = new Player;
     player->world = this;
@@ -229,7 +229,7 @@ void Block::loadTypeData() {
 void World::requestSubChunkMeshGeneration(SubChunk* chunk) {
 
     // if (CHUNKMESH_GENERATION_THREADS == 0) {
-        chunk->generateMesh();
+    chunk->generateMesh();
         // return;
     // }
 

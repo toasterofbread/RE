@@ -45,65 +45,12 @@ void PhysicsBody3D::physicsProcess(float delta) {
 
     updating_position = true;
 
-    // const float* rot = dBodyGetRotation(body);
-    const float* pos = dBodyGetPosition(body);
+    const btTransform& transform = getBody()->getWorldTransform();
+    // setGlobalPosition(PhysicsServer::phys2World3(transform.getOrigin()));
 
-    Matrix mat = MatrixIdentity();
-    // mat.m0 = rot[0];
-    // mat.m1 = rot[4];
-    // mat.m2 = rot[8];
-    // mat.m4 = rot[1];
-    // mat.m5 = rot[5];
-    // mat.m6 = rot[9];
-    // mat.m8 = rot[2];
-    // mat.m9 = rot[6];
-    // mat.m10 = rot[10];
-    
-    mat.m12 = pos[0];
-    mat.m13 = pos[1];
-    mat.m14 = pos[2];
+    OS::print(getGlobalRotation().toString());
 
-    mat.m3 = 0;
-    mat.m7 = 0;
-    mat.m11 = 0;
-    mat.m15 = 1;
-
-    setGlobalPosition(PhysicsServer::phys2World3(Vector3Transform(Vector3::ZERO(), mat)));
-    // setRotation(QuaternionFromMatrix(mat));
-
-    // const float* rot = dBodyGetQuaternion(body);
-    // Quaternion quat = Quaternion(rot[1], rot[2], rot[3], rot[0]);
-    // setRotation(quat);
-
-    // setGlobalPosition(PhysicsServer::phys2World3(Vector3(body_pos[0], body_pos[1], body_pos[2])));
-
-
-    // Matrix mat = getTransform(dBodyGetPosition(body), dBodyGetRotation(body));
-    // setGlobalPosition(Vector3Transform(Vector3::ZERO(), mat));
-    // setGlobalRotation(QuaternionToEuler(QuaternionFromMatrix(mat)));
-
-    // mat.m0 = rot[0];
-    // mat.m1 = rot[4];
-    // mat.m2 = rot[8];
-    // mat.m4 = rot[1];
-    // mat.m5 = rot[5];
-    // mat.m6 = rot[9];
-    // mat.m8 = rot[2];
-    // mat.m9 = rot[6];
-    // mat.m10 = rot[10];
-
-    // Quaternion a = QuaternionFromMatrix(mat);
-    // Vector3 b = QuaternionToEuler(a);
-
-    // setGlobalRotation(b);
-
-    // const float* q1 = dBodyGetQuaternion(body);
-    // Quaternion q2;
-    // q2.x = q1[1];
-    // q2.y = q1[2];
-    // q2.z = q1[3];
-    // q2.w = q1[0];
-    // setGlobalRotation(QuaternionToEuler(q2));
+    setGlobalRotation(transform.getRotation());
 
     updating_position = false;
 
@@ -202,88 +149,24 @@ void PhysicsBody3D::setPosition(Vector3 value) {
         return;
     }
     
-    if (body) {
-        setBodyPosition(PhysicsServer::world2Phys3(getGlobalPosition()));
-    }
-}
-
-void PhysicsBody3D::setRotation(Vector3 value) {
-    super::setRotation(value);
-
-    return;
-
-    if (updating_position) {
-        return;
-    }
-    
-    if (body) {
-
-        Vector3 v = getGlobalRotation();
-        Matrix rot = QuaternionToMatrix(rotation);
-        dMatrix3 matrix;
-
-        matrix[0] = rot.m0;
-        matrix[4] = rot.m1;
-        matrix[8] = rot.m2;
-        matrix[1] = rot.m4;
-        matrix[5] = rot.m5;
-        matrix[9] = rot.m6;
-        matrix[2] = rot.m8;
-        matrix[6] = rot.m9;
-        matrix[10] = rot.m10;
-
-        dBodySetRotation(body, matrix);
-
-        // Vector3 rotation = getGlobalRotation();
-        // Quaternion source = QuaternionFromEuler(rotation.z, rotation.y, rotation.x);
-        
-        // dQuaternion dest;
-        // dest[1] = source.x;
-        // dest[2] = source.y;
-        // dest[3] = source.z;
-        // dest[0] = source.w;
-
-        // dBodySetQuaternion(body, dest);
+    if (isInsideTree()) {
+        btTransform& transform = body->getWorldTransform();
+        transform.setOrigin(PhysicsServer::world2Phys3(getGlobalPosition()));
+        body->setWorldTransform(transform);
     }
 }
 
 void PhysicsBody3D::setRotation(Quaternion value) {
     super::setRotation(value);
 
-    return;
-
     if (updating_position) {
         return;
     }
     
-    if (body) {
-
-        Vector3 v = getGlobalRotation();
-        Matrix rot = QuaternionToMatrix(rotation);
-        dMatrix3 matrix;
-
-        matrix[0] = rot.m0;
-        matrix[4] = rot.m1;
-        matrix[8] = rot.m2;
-        matrix[1] = rot.m4;
-        matrix[5] = rot.m5;
-        matrix[9] = rot.m6;
-        matrix[2] = rot.m8;
-        matrix[6] = rot.m9;
-        matrix[10] = rot.m10;
-
-        dBodySetRotation(body, matrix);
-
-        // Vector3 rotation = getGlobalRotation();
-        // Quaternion source = QuaternionFromEuler(rotation.z, rotation.y, rotation.x);
-        
-        // dQuaternion dest;
-        // dest[1] = source.x;
-        // dest[2] = source.y;
-        // dest[3] = source.z;
-        // dest[0] = source.w;
-
-        // dBodySetQuaternion(body, dest);
+    if (isInsideTree()) {
+        btTransform& transform = body->getWorldTransform();
+        transform.setRotation(getRotation());
+        body->setWorldTransform(transform);
     }
 }
 
@@ -301,61 +184,49 @@ bool PhysicsBody3D::isOnCeiling() {
 
 void PhysicsBody3D::setLinearVelocity(Vector3 value) {
     ASSERT(body);
-    dBodySetLinearVel(body, PhysicsServer::world2Phys3(value.x), PhysicsServer::world2Phys3(value.y), PhysicsServer::world2Phys3(value.z));
+    body->setLinearVelocity(value);
 }
 
 Vector3 PhysicsBody3D::getLinearVelocity() {
     ASSERT(body);
-    
-    const float* vel = dBodyGetLinearVel(body);
-    return Vector3(vel[0], vel[1], vel[2]);
+    return body->getLinearVelocity();
 }
 
 void PhysicsBody3D::setFixedRotation(bool value) {
-    ASSERT(!isKinematic());
-    dBodySetMaxAngularSpeed(body, value ? 0.0f : dInfinity);
+    fixed_rotation = value;
+    body->setAngularFactor(value ? Vector3::ZERO() : Vector3::ONE());
 }
 
 bool PhysicsBody3D::isFixedRotation() {
-    ASSERT(!isKinematic());
-    return dBodyGetMaxAngularSpeed(body) == 0.0f;
+    return fixed_rotation;
 }
 
-void PhysicsBody3D::setApplyGravity(bool value) {
-    apply_gravity = value;
-
-    if (body) {
-        dBodySetGravityMode(body, apply_gravity);
-    }
+void PhysicsBody3D::setGravityScale(Vector3 value) {
+    body->setGravity(PhysicsServer::getSingleton()->getGravity3() * value);
 }
 
-bool PhysicsBody3D::isApplyGravity() {
-    return apply_gravity;
+Vector3 PhysicsBody3D::getGravityScale() {
+    return body->getGravity() / PhysicsServer::getSingleton()->getGravity3();
 }
 
 Vector3 PhysicsBody3D::getFinalGravity() {
-    if (!apply_gravity) {
-        return Vector3::ZERO();
-    }
-    return PhysicsServer::getSingleton()->getGravity3();
-}
-
-void PhysicsBody3D::setUpDirection(Vector3 value) {
-    up_direction = value;
-}
-
-Vector3 PhysicsBody3D::getUpDirection() {
-    return up_direction;
+    return body->getGravity();
 }
 
 void PhysicsBody3D::enteredTree() {
-    createBody();
+    PhysicsServer::getWorld3()->addRigidBody(body);
+    
+    btTransform& transform = body->getWorldTransform();
+    transform.setOrigin(PhysicsServer::world2Phys3(getGlobalPosition()));
+    transform.setRotation(getGlobalRotation());
+    body->setWorldTransform(transform);
+
     super::enteredTree();
 }
 
 void PhysicsBody3D::removedFromNode(Node* former_parent_node) {
     super::removedFromNode(former_parent_node);
-    destroyBody();
+    PhysicsServer::getWorld3()->removeRigidBody(body);
 }
 
 void PhysicsBody3D::addChild(Node* child) {
@@ -377,7 +248,7 @@ void PhysicsBody3D::addShape(CollisionShape3D* shape) {
     ASSERT(!vectorContainsValue(added_shapes, shape));
     ASSERT(!shape->isAttachedToBody());
     
-    if (body != NULL && shape->hasShape()) {
+    if (shape->hasShape()) {
         shape->attachToBody(this);
     }
 
@@ -400,42 +271,53 @@ void PhysicsBody3D::removeShape(CollisionShape3D* shape) {
     SIGNAL_SHAPE_REMOVED.emit(shape);
 }
 
-void PhysicsBody3D::setKinematic(bool value) {
-    if (kinematic == value) {
+void PhysicsBody3D::setType(TYPE value) {
+    if (type == value) {
         return;
     }
+    type = value;
+    recreateBody();
+}
 
-    kinematic = value;
+PhysicsBody3D::TYPE PhysicsBody3D::getType() {
+    return type;
+}
 
-    if (body) {
-        if (kinematic) {
-            dBodySetKinematic(body);
+void PhysicsBody3D::recreateBody() {
+
+    if (body == NULL) {
+
+        btTransform transform;
+
+        if (isInsideTree()) {
+            transform.setOrigin(PhysicsServer::world2Phys3(getGlobalPosition()));
+            transform.setRotation(getGlobalRotation());
         }
         else {
-            dBodySetDynamic(body);
+            transform.setOrigin(PhysicsServer::world2Phys3(getPosition()));
+            transform.setRotation(getRotation());
         }
-    }
-}
 
-bool PhysicsBody3D::isKinematic() {
-    return kinematic;
-}
+        btDefaultMotionState* state = new btDefaultMotionState(transform);
+        btRigidBody::btRigidBodyConstructionInfo definition = btRigidBody::btRigidBodyConstructionInfo(mass, state, &shape_container);
+        body = new btRigidBody(definition);
 
-void PhysicsBody3D::createBody() {
-    ASSERT(body == NULL);
-
-    body = PhysicsServer::getSingleton()->createBody3();
-    dBodySetGravityMode(body, apply_gravity);
-
-    Vector3 position = PhysicsServer::world2Phys3(getGlobalPosition());
-    dBodySetPosition(body, position.x, position.y, position.z);
-
-    if (kinematic) {
-        dBodySetKinematic(body);
+        if (isInsideTree())
+            PhysicsServer::getWorld3()->addCollisionObject(body);
     }
     else {
-        dBodySetDynamic(body);
+        
     }
+
+    // setFixedRotation(fixed_rotation);
+    // setApplyGravity(apply_gravity);
+
+    // if (kinematic) {
+    //     dBodySetKinematic(body);
+    // }
+    // else {
+    //     dBodySetDynamic(body);
+    // }
 
     for (CollisionShape3D* shape : added_shapes) {
         if (shape->hasShape()) {
@@ -444,38 +326,7 @@ void PhysicsBody3D::createBody() {
     }
 }
 
-void PhysicsBody3D::destroyBody() {
-
-    for (CollisionShape3D* shape : added_shapes) {
-        if (shape->isAttachedToBody()) {
-            shape->detachFromBody();
-        }
-    }
-
-    PhysicsServer::getSingleton()->destroyBody3(body);
-    body = NULL;
-}
-
-void PhysicsBody3D::setBodyPosition(Vector3 position) {
-    if (body == NULL) {
-        return;
-    }
-
-    dBodySetPosition(body, position.x, position.y, position.z);
-
-    // dGeomID shape = dBodyGetFirstGeom(body);
-    // while (shape) {
-    //     dGeomSetPosition(shape, position.x, position.y, position.z);
-    //     shape = dBodyGetNextGeom(shape);
-    // }
-}
-
 void PhysicsBody3D::onShapePolygonChanged(CollisionShape3D* shape) {
-
-    if (body == NULL) {
-        return;
-    }
-
     if (shape->isAttachedToBody()) {
         shape->detachFromBody();
     }
@@ -486,8 +337,9 @@ void PhysicsBody3D::onShapePolygonChanged(CollisionShape3D* shape) {
 void PhysicsBody3D::onParentGlobalPositionChanged(Vector3 old_global_position) {
     super::onParentGlobalPositionChanged(old_global_position);
 
-    if (body) {
-        setBodyPosition(PhysicsServer::world2Phys3(getGlobalPosition()));
+    if (isInsideTree()) {
+        btTransform& transform = body->getWorldTransform();
+        transform.setOrigin(PhysicsServer::world2Phys3(getGlobalPosition()));
     }
 }
 

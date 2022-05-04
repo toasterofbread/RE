@@ -1,11 +1,11 @@
 #include "physics_server.h"
 
-#include <box2d/box2d.h>
-#include <stdlib.h>
-
 #include "common/utils.h"
 #include "common/draw.h"
 #include "physics/node/collision_shape_3d.h"
+
+#include <box2d/box2d.h>
+#include <stdlib.h>
 
 PhysicsServer* PhysicsServer::singleton = NULL;
 
@@ -25,13 +25,21 @@ PhysicsServer::PhysicsServer() {
     #endif
 
     #if PHYSICS_3D_ENABLED
-    dInitODE2(0);
-    world_3d = dWorldCreate();
-    // dWorldSetCFM(world_3d, 0.000001);
-    // dWorldSetERP(world_3d, 0.000001);
-    // dWorldSetQuickStepNumItlerations(world_3d, 100);
-    main_space = dHashSpaceCreate(NULL);
-    main_group = dJointGroupCreate(0);
+
+    btDefaultCollisionConfiguration* config = new btDefaultCollisionConfiguration;
+    btCollisionDispatcher* dispatcher = new btCollisionDispatcher(config);
+
+    btBroadphaseInterface* broadphase = new btDbvtBroadphase;
+    btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver; // btConstraintSolverPoolMt for multithreading
+
+    world_3d = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, config);
+
+    
+    // dInitODE2(0);
+    // world_3d = dWorldCreate();
+    // main_space = dHashSpaceCreate(NULL);
+    // main_group = dJointGroupCreate(0);
+    
     setGravity(Vector3(0.0f, -9.8f, 0.0f));
     #endif
 
@@ -75,53 +83,53 @@ PhysicsServer* PhysicsServer::getSingleton() {
     return singleton;
 }
 
-void callNearCallback(void *data, dGeomID o1, dGeomID o2) {
-    PhysicsServer::getSingleton()->nearCallback(data, o1, o2);
-}
+// void callNearCallback(void *data, dGeomID o1, dGeomID o2) {
+//     PhysicsServer::getSingleton()->nearCallback(data, o1, o2);
+// }
 
-void PhysicsServer::nearCallback(void *data, dGeomID o1, dGeomID o2) {
+// void PhysicsServer::nearCallback(void *data, dGeomID o1, dGeomID o2) {
 
-    CollisionShape3D* A = reinterpret_cast<CollisionShape3D*>(dGeomGetData(o1));
-    CollisionShape3D* B = reinterpret_cast<CollisionShape3D*>(dGeomGetData(o2));
+//     CollisionShape3D* A = reinterpret_cast<CollisionShape3D*>(dGeomGetData(o1));
+//     CollisionShape3D* B = reinterpret_cast<CollisionShape3D*>(dGeomGetData(o2));
 
-    ASSERT(A);
-    ASSERT(B);
+//     ASSERT(A);
+//     ASSERT(B);
 
-    if (A->getAttachedBody() == B->getAttachedBody()) {
-        return;
-    }
+//     if (A->getAttachedBody() == B->getAttachedBody()) {
+//         return;
+//     }
 
-    dBodyID b1 = dGeomGetBody(o1);
-    dBodyID b2 = dGeomGetBody(o2);
-    // if (b1 && b2 && dAreConnectedExcluding(b1, b2, dJointTypeContact))
-    //     return;
+//     dBodyID b1 = dGeomGetBody(o1);
+//     dBodyID b2 = dGeomGetBody(o2);
+//     // if (b1 && b2 && dAreConnectedExcluding(b1, b2, dJointTypeContact))
+//     //     return;
 
-    dContact* contacts = (dContact*)malloc(MAX_CONTACTS * sizeof(dContact));
-    contact_pool.push_back(contacts);
+//     dContact* contacts = (dContact*)malloc(MAX_CONTACTS * sizeof(dContact));
+//     contact_pool.push_back(contacts);
 
-    int i;
-    for (i = 0; i < MAX_CONTACTS; i++) {
-        contacts[i].surface.mode = dContactMu2;
-        contacts[i].surface.mu = dInfinity;
-        contacts[i].surface.mu2 = dInfinity;
+//     int i;
+//     for (i = 0; i < MAX_CONTACTS; i++) {
+//         contacts[i].surface.mode = dContactMu2;
+//         contacts[i].surface.mu = dInfinity;
+//         contacts[i].surface.mu2 = dInfinity;
 
-        // contacts[i].surface.mode = dContactSoftERP;
-        // contacts[i].surface.mu = 0.0;
-        // contacts[i].surface.soft_cfm = 0.000001;
-        // contacts[i].surface.soft_erp = 0.000001;
-    }
+//         // contacts[i].surface.mode = dContactSoftERP;
+//         // contacts[i].surface.mu = 0.0;
+//         // contacts[i].surface.soft_cfm = 0.000001;
+//         // contacts[i].surface.soft_erp = 0.000001;
+//     }
 
-    int contact_count = dCollide(o1, o2, MAX_CONTACTS | CONTACTS_UNIMPORTANT, &contacts[0].geom, sizeof(dContact));
+//     int contact_count = dCollide(o1, o2, MAX_CONTACTS | CONTACTS_UNIMPORTANT, &contacts[0].geom, sizeof(dContact));
     
-    for (i = 0; i < contact_count; i++) {
-        dJointID c = dJointCreateContact(world_3d, main_group, &contacts[i]);
-        dJointAttach(c, b1, b2);
+//     for (i = 0; i < contact_count; i++) {
+//         dJointID c = dJointCreateContact(world_3d, main_group, &contacts[i]);
+//         dJointAttach(c, b1, b2);
 
-        CollisionShape3D::Contact* contact = new CollisionShape3D::Contact(&contacts[i], A, B);
-        A->contacts.push_back(contact);
-        B->contacts.push_back(contact);
-    }
-}
+//         CollisionShape3D::Contact* contact = new CollisionShape3D::Contact(&contacts[i], A, B);
+//         A->contacts.push_back(contact);
+//         B->contacts.push_back(contact);
+//     }
+// }
 
 void PhysicsServer::physicsProcess(float delta) {
 
@@ -134,14 +142,7 @@ void PhysicsServer::physicsProcess(float delta) {
     #endif
 
     #if PHYSICS_3D_ENABLED
-    for (dContact* contacts : contact_pool) {
-        free(contacts);
-    }
-    contact_pool.clear();
-
-    dSpaceCollide(main_space, 0, &callNearCallback);
-    dWorldQuickStep(world_3d, time_step * delta);
-    dJointGroupEmpty(main_group);
+    world_3d->stepSimulation(time_step * delta);
     #endif
 }
 
@@ -165,19 +166,10 @@ void PhysicsServer::destroyBody2(b2Body* body) {
 
 #if PHYSICS_3D_ENABLED
 void PhysicsServer::setGravity(Vector3 value) {
-    gravity_3d.set(value.x, value.y, value.z);
-    dWorldSetGravity(world_3d, value.x, value.y, value.z);
+    world_3d->setGravity(PhysicsServer::world2Phys3(value));
 }
 Vector3 PhysicsServer::getGravity3() {
-    return gravity_3d;
-}
-
-dBodyID PhysicsServer::createBody3() {
-    return dBodyCreate(world_3d);
-}
-
-void PhysicsServer::destroyBody3(dBodyID body) {
-    return dBodyDestroy(body);
+    return PhysicsServer::phys2World3(world_3d->getGravity());
 }
 
 #endif

@@ -13,8 +13,7 @@ env.Replace(
         "yaml-cpp",
         "box2d",
         "raylib",
-        "ode",
-        "pthread"
+        "bullet"
     ],
     CXX = "g++",
 )
@@ -22,15 +21,46 @@ env.Replace(
 if path.isdir(env.DIRECTORY + "/include/lib/" + env.PLATFORM_NAME):
     env.Append(LIBPATH = "include/lib/" + env.PLATFORM_NAME)
 
-def convertSconsLine(self, line: str, progress: int):
+previous_output = ""
+def convertSconsLine(self, line: str, progress: int, out):
+    global previous_output
 
     line = line.strip()
+    progress = str(progress)
+    for i in range(3 - len(progress)):
+        progress = " " + progress
+    progress = f"[{progress}%]"
+
+    def compilingExternal(path: str, skip: bool):
+        lib = path.split("/")[0]
+        path = "/".join(path.split("/")[1:])
+
+        ret = "Compiling " + utils.format_colour(env.COLOURS["skip" if skip else "compile"]["colour"], lib, env.COLOURS["skip" if skip else "compile"]["attrs"])
+        
+        if ret in previous_output:
+            a = '\x1b[1A'
+            b = '\x1b[2K'
+            out.write(a + b)
+            out.flush()
+
+        if skip:
+            ret += " (skipping)"
+        else:
+            ret += " | " + utils.format_colour(env.COLOURS["skip" if skip else "compile"]["colour"], path, env.COLOURS["skip" if skip else "compile"]["attrs"])
+        return ret
 
     if line.endswith(" is up to date."):
-        path = line.split("`")[1].split("'")[0].replace(".o", ".cpp").replace(env.OBJ_DIR + "project/", env.PROJECT_SRC).replace(env.OBJ_DIR + "engine/", env.ENGINE_SRC)
-        line = "Compiling " + utils.format_colour(env.COLOURS["skip"]["colour"], path, env.COLOURS["skip"]["attrs"]) + " (skipping)"
+        path = line.split("`")[1].split("'")[0].replace(".o", ".cpp").replace(env.OBJ_DIR + "project/", env.PROJECT_SRC)#.replace(env.OBJ_DIR + "engine/", env.ENGINE_SRC)
+        if path.startswith(join(env.OBJ_DIR, env.ENGINE_EXTERNAL)):
+            line = compilingExternal(path.removeprefix(join(env.OBJ_DIR, env.ENGINE_EXTERNAL)), True)
+        else:
+            line = "Compiling " + utils.format_colour(env.COLOURS["skip"]["colour"], path, env.COLOURS["skip"]["attrs"]) + " (skipping)"
     elif line.startswith("Compiling "):
-        line = "Compiling " + utils.format_colour(env.COLOURS["compile"]["colour"], line[len("Compiling "):], env.COLOURS["compile"]["attrs"])
+        path = line[len("Compiling "):]
+        if path.startswith(env.ENGINE_EXTERNAL):
+            line = compilingExternal(path.removeprefix(env.ENGINE_EXTERNAL), False)
+        else:
+            line = "Compiling " + utils.format_colour(env.COLOURS["compile"]["colour"], path, env.COLOURS["compile"]["attrs"])
     elif line.startswith("ranlib "):
         line = "Indexing library " + utils.format_colour(env.COLOURS["index"]["colour"], line[len("ranlib "):], env.COLOURS["index"]["attrs"])
     elif line.startswith("Linking "):
@@ -38,12 +68,8 @@ def convertSconsLine(self, line: str, progress: int):
     elif line == "scons: Building targets ...":
         return utils.format_colour("magenta", f"\n - - Starting build ({env.PLATFORM_NAME}) - - \n", ["reverse"])
 
-    progress = str(progress)
-    for i in range(3 - len(progress)):
-        progress = " " + progress
-    progress = f"[{progress}%]"
-
-    return f"{utils.format_colour(env.COLOURS['progress']['colour'], progress, env.COLOURS['progress']['attrs'])} {line}"
+    previous_output = f"{utils.format_colour(env.COLOURS['progress']['colour'], progress, env.COLOURS['progress']['attrs'])} {line}"
+    return previous_output
 
 env.AddMethod(convertSconsLine)
 

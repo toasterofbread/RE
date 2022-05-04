@@ -1,4 +1,3 @@
-from logging import exception
 import time
 from spectre7 import utils
 import os
@@ -165,7 +164,7 @@ env.Append(
 # )
 
 original_converter = env.convertSconsLine
-def convertSconsLine(self, line: str, progress: float):
+def convertSconsLine(self, line: str, progress: float, out):
     if line.startswith("vita-mksfoex"):
         line = "Generating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[-1], env.COLOURS["compile"]["attrs"])
     elif line.startswith("vita-elf-create"):
@@ -174,7 +173,7 @@ def convertSconsLine(self, line: str, progress: float):
         line = "Creating " + utils.format_colour(env.COLOURS["compile"]["colour"], line.split(" ")[2], env.COLOURS["compile"]["attrs"])
     # elif line.startswith("vita-pack-vpk"):
         # line = "Packing " + utils.format_colour(env.COLOURS["link"]["colour"], line.split(" ")[5], env.COLOURS["link"]["attrs"])
-    return original_converter(line, progress)
+    return original_converter(line, progress, out)
 env.AddMethod(convertSconsLine)
 
 lib_dir = env.DIRECTORY + env.LIB_DIR

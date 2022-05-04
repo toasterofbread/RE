@@ -49,7 +49,7 @@ class Camera3D: public Node3D, public CameraBase {
         float getZoom();
     
         void setPosition(Vector3 value);
-        void setRotation(Vector3 value);
+        void setRotation(Quaternion value);
 
         struct Frustum {
             enum FACE {
@@ -102,7 +102,7 @@ class Camera3D: public Node3D, public CameraBase {
         void removedFromNode(Node* former_parent_node);
 
         void onParentGlobalPositionChanged(Vector3 old_global_position);
-        void onParentGlobalRotationChanged(Vector3 old_global_rotation);
+        void onParentGlobalRotationChanged(Quaternion old_global_rotation);
     
     private:
         RayCam3D camera;

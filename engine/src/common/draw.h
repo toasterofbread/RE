@@ -4,7 +4,6 @@
 #include "common/vector2.h"
 #include "common/vector3.h"
 #include "common/colour.h"
-#include "common/matrix.h"
 #include "node/types/camera_2d.h"
 
 #include <string>

@@ -11,7 +11,7 @@ def getPlatformList() -> dict:
     ret = {}
     for file in env.recursiveGlob("engine/src/platform/", None, "SConscript"):
         file = str(file)
-        if file == "engine/src/platform/SConscript":
+        if file.endswith("engine/src/platform/SConscript") or os.path.isdir(file):
             continue
         ret[os.path.dirname(file).split("/")[-1]] = os.path.join(env.DIRECTORY, file)
     return ret
@@ -73,6 +73,7 @@ if generate_settings:
 
     data += f"\n\n/* Enable debug mode */\n\n#define DEBUG_ENABLED {str(GetOption('target') == 'debug').lower()}"
 
+    # !todo
     data += "\n\n#define PHYSICS_2D_ENABLED false\n#define PHYSICS_3D_ENABLED true"
 
     data += "\n\n#endif\n"

@@ -14,7 +14,7 @@ class Node3D: public Node {
             c->template registerProperty<bool>("show_gizmos", &NodeType::setShowGizmos)
             ->template registerProperty<Vector3>("position", &NodeType::setPosition)
             ->template registerProperty<Vector3>("scale", &NodeType::setScale)
-            ->template registerProperty<Vector3>("rotation", &NodeType::setRotation)
+            ->template registerProperty<Quaternion>("rotation", &NodeType::setRotation)
             ->template registerProperty<bool>("visible", &NodeType::setVisible)
             ->template registerProperty<int>("draw_layer", &NodeType::setDrawLayer);
         })
@@ -22,7 +22,7 @@ class Node3D: public Node {
         Signal<int, int> SIGNAL_DRAW_LAYER_CHANGED;
 
         Signal<Vector3> SIGNAL_GLOBAL_POSITION_CHANGED;
-        Signal<Vector3> SIGNAL_GLOBAL_ROTATION_CHANGED;
+        Signal<Quaternion> SIGNAL_GLOBAL_ROTATION_CHANGED;
         Signal<Vector3> SIGNAL_GLOBAL_SCALE_CHANGED;
 
         void ready();
@@ -74,11 +74,11 @@ class Node3D: public Node {
         }
         bool getUseRelativeScale() { return scale_relative_to_parent; }
 
-        virtual void setRotation(Vector3 value);
         virtual void setRotation(Quaternion value);
-        Vector3 getRotation();
-        void setGlobalRotation(Vector3 value);
-        Vector3 getGlobalRotation();
+        Quaternion getRotation();
+        
+        void setGlobalRotation(Quaternion value);
+        Quaternion getGlobalRotation();
 
         void setUseRelativeRotation(bool value) { rotation_relative_to_parent = value; }
         bool getUseRelativeRotation() { return rotation_relative_to_parent; }
@@ -109,7 +109,7 @@ class Node3D: public Node {
         }
         
         virtual void onParentGlobalPositionChanged(Vector3 old_global_position);
-        virtual void onParentGlobalRotationChanged(Vector3 old_global_rotation);
+        virtual void onParentGlobalRotationChanged(Quaternion old_global_rotation);
         virtual void onParentGlobalScaleChanged(Vector3 old_global_scale);
 
     private:

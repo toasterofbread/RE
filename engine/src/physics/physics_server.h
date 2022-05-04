@@ -7,7 +7,8 @@
 #if PHYSICS_3D_ENABLED
 #define MAX_CONTACTS 8
 #include "physics/node/physics_body_3d.h"
-#include <ode/ode.h> 
+#include <btBulletCollisionCommon.h>
+#include <btBulletDynamicsCommon.h>
 #endif
 
 class PhysicsServer {
@@ -40,12 +41,9 @@ class PhysicsServer {
         void setGravity(Vector3 value);
         Vector3 getGravity3();
 
-        dBodyID createBody3();
-        void destroyBody3(dBodyID body);
-
-        static dWorldID getWorld3() { return singleton->world_3d; }
-        static dSpaceID getSpace() { return singleton->main_space; }
-        void nearCallback(void *data, dGeomID o1, dGeomID o2);
+        static btDiscreteDynamicsWorld* getWorld3() { return singleton->world_3d; }
+        // static dSpaceID getSpace() { return singleton->main_space; }
+        btDiscreteDynamicsWorld* world_3d;
         #endif
 
         void physicsProcess(float delta);
@@ -60,12 +58,7 @@ class PhysicsServer {
         #endif
 
         #if PHYSICS_3D_ENABLED
-        dWorldID world_3d;
-        dSpaceID main_space;
-        dJointGroupID main_group;
         static const float world_scale_3d;
-        Vector3 gravity_3d;
-        vector<dContact*> contact_pool;
         #endif
 
         float time_step;
