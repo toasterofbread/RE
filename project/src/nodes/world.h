@@ -12,9 +12,9 @@
 #include <thread>
 using namespace std;
 
-#define CHUNK_AMOUNT 16
+#define CHUNK_AMOUNT 10
 #define CHUNK_SIZE 16
-#define CHUNK_HEIGHT 16 * 16
+#define CHUNK_HEIGHT 16 * 2
 #define SUBCHUNK_HEIGHT 16
 #define SUBCHUNK_COUNT (CHUNK_HEIGHT / SUBCHUNK_HEIGHT)
 #define TEXTURE_MAP_WIDTH 16.0

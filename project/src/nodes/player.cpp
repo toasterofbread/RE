@@ -7,7 +7,7 @@
 #include "common/input.h"
 #include "core/resource/shape/box_shape.h"
 
-#define MOUSE_SENSITIVITY 0.20f
+#define MOUSE_SENSITIVITY 0.15f
 #define MOVEMENT_SPEED_H 9.0f
 #define MOVEMENT_SPEED_V 5.0f
 #define CAMERA_Y_CLAMP_MARGIN 0.0001f
@@ -41,13 +41,13 @@ void Player::process(float delta) {
     super::process(delta);
 
     // Get the rotation delta from mouse movement or left joystick
-    Vector2 rotation_delta = Vector2(GetMouseDelta());
+    Vector2 rotation_delta = Vector2(GetMouseDelta()) / 60.0f;
     if (rotation_delta.isZero())
         rotation_delta = Input::getAnalogPadVector(SIDE::RIGHT).normalised() * 10.0f * delta;
 
     // Apply rotation delta to the final rotation
     camera_angle.x -= rotation_delta.x * MOUSE_SENSITIVITY;
-    camera_angle.y = clamp(camera_angle.y - rotation_delta.y * delta * MOUSE_SENSITIVITY, -PI / 2 + CAMERA_Y_CLAMP_MARGIN, PI / 2 - CAMERA_Y_CLAMP_MARGIN);
+    camera_angle.y = clamp(camera_angle.y - rotation_delta.y * MOUSE_SENSITIVITY, -PI / 2 + CAMERA_Y_CLAMP_MARGIN, PI / 2 - CAMERA_Y_CLAMP_MARGIN);
     camera.setRotation(QuaternionFromEuler(camera_angle.y, camera_angle.x, 0));
 
     Vector3 position = getPosition();
