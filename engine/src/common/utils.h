@@ -16,7 +16,7 @@ using namespace std;
 #include "common/enums.h"
 #include "core/os.h"
 
-// !todo Clean this file up
+// TODO Clean this file up
 
 // Forward declaration
 class Node;
@@ -107,7 +107,7 @@ if (static_cast<bool>(cond)) { \
 #else
 #define ASSERT_MSG(expr, msg)
 #define ASSERT(expr)
-#define WARN_IP(cond, msg)
+#define WARN_IF(cond, msg)
 #endif
 
 string formatPath(string& path);

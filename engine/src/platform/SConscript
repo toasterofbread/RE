@@ -26,7 +26,7 @@ def convertSconsLine(self, line: str, progress: int, out):
     global previous_output
 
     line = line.strip()
-    progress = str(progress)
+    progress = str(min(100, progress)) # Progress can exceed 100 in some cases
     for i in range(3 - len(progress)):
         progress = " " + progress
     progress = f"[{progress}%]"

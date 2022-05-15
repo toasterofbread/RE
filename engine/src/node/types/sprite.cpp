@@ -20,7 +20,7 @@ void Sprite::draw() {
         origin = getRotationOrigin();
     }
 
-    // !todo origin
+    // TODO origin
     Draw::drawTextureRST(texture->getTexture(), getGlobalPosition() + origin, getGlobalRotation(), getGlobalScale(), getGlobalModulate());
 
 }

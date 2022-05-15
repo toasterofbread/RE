@@ -42,7 +42,6 @@ class PhysicsServer {
         Vector3 getGravity3();
 
         static btDiscreteDynamicsWorld* getWorld3() { return singleton->world_3d; }
-        // static dSpaceID getSpace() { return singleton->main_space; }
         btDiscreteDynamicsWorld* world_3d;
         #endif
 

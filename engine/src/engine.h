@@ -13,13 +13,13 @@ using namespace std;
 #include "engine/src/core/resource/resource.h"
 
 // Forward declarations
-class InputEvent;
 class Resource;
 class EngineTexture;
 
 class Engine {
     public:
         Signal<float> SIGNAL_PROCESS;
+        Signal<> SIGNAL_SCREEN_SIZE_CHANGED;
 
         Engine();
         void process(float delta);
@@ -41,10 +41,6 @@ class Engine {
         // - Resource management -
         void resourceCreated(Resource* resource);
         void resourceDeleted(Resource* resource);
-
-        // - InputEvent management -
-        void inputEventCreated(InputEvent* event);
-        void inputEvenDeleted(InputEvent* event);
 
         // Debug
         void rebuildAndRun();
@@ -106,9 +102,10 @@ class Engine {
         SceneTree* scene_tree_singleton = new SceneTree();
         YAMLDataConverter* yaml_data_converter_singleton = new YAMLDataConverter();
 
-        vector<InputEvent*> all_inputevents;
         thread::id main_thread_id = this_thread::get_id();
         unordered_map<string, ObjectConstructorBase*> registered_object_constructors;
+
+        Vector2 previous_screen_size = Vector2::ZERO();
 
     public:
         // - Texture management -

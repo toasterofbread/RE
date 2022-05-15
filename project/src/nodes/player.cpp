@@ -1,151 +1,113 @@
 #include "player.h"
 
+#include "chunk.h"
+
 #include "common/draw.h"
 #include "common/enums.h"
 #include "common/input.h"
-#include "node/types/camera_3d.h"
+#include "core/resource/shape/box_shape.h"
 
-#define MOUSE_SENSITIVITY 0.25f
+#define MOUSE_SENSITIVITY 0.20f
 #define MOVEMENT_SPEED_H 9.0f
 #define MOVEMENT_SPEED_V 5.0f
 #define CAMERA_Y_CLAMP_MARGIN 0.0001f
-
-Camera3D* camera;
-CollisionShape3D* shape;
+#define BLOCK_REACH_DISTANCE numeric_limits<float>::max()
 
 void Player::ready() {
     super::ready();
  
-    // setKinematic(true);
-    // setApplyGravity(false);
+    setPosition(Vector3(10, CHUNK_HEIGHT, 10));
+    setFixedRotation(true);
+    setGravityScale(Vector3::ZERO());
 
-    setPosition(Vector3(-10, 10, -10));
-    // setLinearVelocity(Vector3(0, 0, 0));
+    auto box = Shape::create<BoxShape3D>();
+    box->setSize(Vector3(0.5f, 1.8f, 0.5f));
+    shape.setShape(box);
+    addChild(&shape);
 
-    // setFixedRotation(true);
+    addChild(&camera);
+    camera.enable();
 
-    shape = new CollisionShape3D;
-    shape->setBoxShape(Vector3(0.5f, 1.8f, 0.5f));
-    addChild(shape);
+    addChild(&hotbar);
 
-    // dGeomSetCollideBits(shape->getShape(), 0x0002);
-    // dGeomSetCategoryBits(shape->getShape(), 0x0001);
+    INPUT_EVENT_ATTACK.hold_type = InputEvent::HOLD_TYPE::REPEAT;
+    INPUT_EVENT_ATTACK.hold_interval = 0.1f;
 
-    // dMatrix3 R;
-    // dRFromAxisAndAngle(R, 1.0f, 0, 0, DEG2RAD(90.0f));
-    // dBodySetRotation(getBody(), R);
-
-    camera = new Camera3D;
-    addChild(camera);
-    camera->enable();
+    INPUT_EVENT_INTERACT.hold_type = InputEvent::HOLD_TYPE::REPEAT;
+    INPUT_EVENT_INTERACT.hold_interval = 0.1f;
 }
 
-Vector2 angle = Vector2(-PI/2, 0.0f);
 void Player::process(float delta) {
     super::process(delta);
 
     // Get the rotation delta from mouse movement or left joystick
     Vector2 rotation_delta = Vector2(GetMouseDelta());
-    if (rotation_delta.isZero()) {
-        rotation_delta = Input::getAnalogPadVector(SIDE::RIGHT).normalised() * 1800.0f;
-    }
+    if (rotation_delta.isZero())
+        rotation_delta = Input::getAnalogPadVector(SIDE::RIGHT).normalised() * 10.0f * delta;
 
     // Apply rotation delta to the final rotation
-    angle.x -= rotation_delta.x * delta * MOUSE_SENSITIVITY;
-    angle.y = clamp(angle.y - rotation_delta.y * delta * MOUSE_SENSITIVITY, -PI / 2 + CAMERA_Y_CLAMP_MARGIN, PI / 2 - CAMERA_Y_CLAMP_MARGIN);
-    setRotation(QuaternionFromEuler(angle.y, angle.x, 0));
+    camera_angle.x -= rotation_delta.x * MOUSE_SENSITIVITY;
+    camera_angle.y = clamp(camera_angle.y - rotation_delta.y * delta * MOUSE_SENSITIVITY, -PI / 2 + CAMERA_Y_CLAMP_MARGIN, PI / 2 - CAMERA_Y_CLAMP_MARGIN);
+    camera.setRotation(QuaternionFromEuler(camera_angle.y, camera_angle.x, 0));
 
     Vector3 position = getPosition();
 
     // Apply DPad or joystick value to movement
     Vector2 h_movement = Input::getPadVector();
-    if (h_movement.isZero()) {
+    if (h_movement.isZero())
         h_movement = Input::getAnalogPadVector(SIDE::LEFT);
-    }
     h_movement.normalise();
 
     Vector3 velocity;
-    if (!h_movement.isZero())
-        velocity = Vector3(h_movement.x, 0.0f, h_movement.y).rotatedByQuat(getGlobalRotation()) * MOVEMENT_SPEED_H;
+    // if (!h_movement.isZero())
+        velocity = Vector3(h_movement.x, 0.0f, h_movement.y).rotatedByQuat(camera.getGlobalRotation().getAxisComponent(Vector3::UP())) * MOVEMENT_SPEED_H;
+    velocity.y = getLinearVelocity().y;
 
-    #define APPREQ(a, b) (abs(a - b) < 0.00001)
-    // for (CollisionShape3D::Contact* contact : shape->contacts) {
-    //     Vector3 normal = contact->getNormal();
-    //     for (int i = 0; i < 3; i++) {
-    //         if (!APPREQ(normal[i], 0.0) && sign(normal[i]) != sign(velocity[i])) {
-    //             velocity[i] = 0;
-    //         }
-    //     }
-    // }
-
-    // OS::dbPrint("Player contacts: " + to_string(shape->contacts.size()));
-    OS::dbPrint("Player velocity: " + velocity.toString());
-    OS::dbPrint("Player rotation: " + getRotation().toString());
-    OS::dbPrint("Player position: " + getPosition().toString());
-   
     // Vertical movement
     int v_movement = INPUT_EVENT_JUMP.isTriggered() - INPUT_EVENT_CROUCH.isTriggered();
-    velocity.y = v_movement * MOVEMENT_SPEED_V;
+    // if (v_movement != 0)
+        velocity.y = v_movement * MOVEMENT_SPEED_V;
 
     // Apply final velocity
-    setLinearVelocity(velocity);
-    // setPosition(getPosition() + velocity * delta);
-
-    // Quaternion rot = QuaternionFromMatrix(MatrixAdd(MatrixLookAt(Vector3::ZERO(), velocity, Vector3::UP()), MatrixRotateY(DEG2RAD(180))));
-    // OS::dbPrint("Rot: " + Vector3(QuaternionToEuler(rot)).toString());
     // if (!velocity.isZero()) {
-    //     float quat[4];
-    //     quat[1] = rot.x;
-    //     quat[2] = rot.y;
-    //     quat[3] = rot.z;
-    //     quat[0] = rot.w;
-    //     dBodySetQuaternion(getBody(), quat);
+        setLinearVelocity(velocity);
+        getBody()->activate();
     // }
 
-    // const float* body_pos = dGeomGetPosition(((CollisionShape3D*)getChild("CollisionShape3D"))->getShape());
-    // OS::dbPrint("Player pos: " + Vector3(body_pos[0], body_pos[1], body_pos[2]).toString());
+    OS::dbPrint("Camera rotation: " + camera.getRotation().toString());
+    OS::dbPrint("Player position: " + getPosition().toString());
+    OS::dbPrint("Player velocity: " + velocity.toString());
 
-    // Zoom camera with mouse wheel (fov)
-    camera->setZoom(min(max(camera->getZoom() + (GetMouseWheelMove() * -0.1f), 0.0f), 1.0f));
-
-    // !todo move to world process
-    Chunk* chunk = world->getChunk(position.x, position.z, false);
-    if (chunk)
-        world->starting_chunk = chunk->sub_chunks[SUBCHUNK_COUNT - 1];
-    else
-        world->starting_chunk = NULL;
-
-    // Calculate camera view ray
-    Ray view_ray;
-    view_ray.position = position;
-    view_ray.direction = Vector3Normalize(Vector3Subtract(camera->getCamera()->target, camera->getCamera()->position));
+    // Get camera view ray
+    Ray view_ray = {position, (camera.getCameraTarget() - camera.getCameraPosition()).normalised()};
 
     // Get list of subchunks intersecting view ray, in order of proximity to player
     list<pair<SubChunk*, float>> intersecting;
-    chunk = world->chunks;
+    Chunk* chunk = World::get()->chunks;
     while (chunk) {
         
         // Check if view ray intersects chunk bounding box
-        if (GetRayCollisionBox(view_ray, chunk->bounding_box).hit) {
+        RayCollision chunk_collision = GetRayCollisionBox(view_ray, chunk->bounding_box);
+        if (chunk_collision.hit && chunk_collision.distance <= BLOCK_REACH_DISTANCE) {
 
             // Iterate through subchunks
             for (int i = 0; i < SUBCHUNK_COUNT; i++) {
                 SubChunk* sub = chunk->sub_chunks[i];
 
                 // Check if view ray intersects subchunk bounding box
-                RayCollision collision = GetRayCollisionBox(view_ray, sub->bounding_box);
-                if (collision.hit) {
+                RayCollision subchunk_collision = GetRayCollisionBox(view_ray, sub->bounding_box);
+                if (subchunk_collision.hit && subchunk_collision.distance <= BLOCK_REACH_DISTANCE) {
 
                     // First colliding subchunk can go directly into list
                     if (intersecting.empty()) {
-                        intersecting.push_back(make_pair(sub, collision.distance));
+                        intersecting.push_back(make_pair(sub, subchunk_collision.distance));
                     }
                     else {
                         // Find the first intersected subchunk further away than this one
                         bool found = false;
                         for (auto i = intersecting.begin(); i != intersecting.end(); i++) {
-                            if (collision.distance < i->second) {
-                                intersecting.insert(i, make_pair(sub, collision.distance));
+                            if (subchunk_collision.distance < i->second) {
+                                intersecting.insert(i, make_pair(sub, subchunk_collision.distance));
                                 found = true;
                                 break;
                             }
@@ -153,7 +115,7 @@ void Player::process(float delta) {
 
                         // If no further subchunk was found, this one is the furthest away
                         if (!found)
-                            intersecting.push_back(make_pair(sub, collision.distance));
+                            intersecting.push_back(make_pair(sub, subchunk_collision.distance));
                     }
                 }
             }
@@ -163,6 +125,7 @@ void Player::process(float delta) {
     }
 
     looking_at_block = NULL;
+    DIRECTION_3 previous_looking_at_face = looking_at_face;
     looking_at_face = DIRECTION_3::NONE;
 
     // Iterate through intersected subchunks
@@ -173,27 +136,24 @@ void Player::process(float delta) {
         Vector3 chunk_position = chunk->chunk->getGlobalPosition();
         chunk_position.y = 0;
 
-        float closest_distance = -1.0f;
-        Vector3 closest_point;
+        RayCollision closest_collision = { false };
 
         // Iterate through subchunk blocks
         for (int x = 0; x < CHUNK_SIZE; x++) {
             for (int y = SUBCHUNK_HEIGHT * chunk->index; y < SUBCHUNK_HEIGHT * (chunk->index + 1); y++) {
                 for (int z = 0; z < CHUNK_SIZE; z++) {
                     Block* block = chunk->chunk->getBlock(x, y, z);
-                    if (block == NULL) {
+                    if (block == NULL || !block->isTangible()) {
                         continue;
                     }
 
                     // Check if view ray intersects with block
-                    block->getBoundingBox(&box, chunk_position);
-                    RayCollision collision = GetRayCollisionBox(view_ray, box);
-
+                    RayCollision block_collision = block->checkInteractionRay(view_ray, chunk_position);
+                    
                     // Overwrite looking_at_block if block is closer
-                    if (collision.hit && (closest_distance == -1.0f || collision.distance < closest_distance)) {
+                    if (block_collision.hit && block_collision.distance <= BLOCK_REACH_DISTANCE && (!closest_collision.hit || block_collision.distance < closest_collision.distance)) {
                         looking_at_block = block;
-                        closest_distance = collision.distance;
-                        closest_point = collision.point;
+                        closest_collision = block_collision;
                     }
                 }
             }
@@ -201,33 +161,59 @@ void Player::process(float delta) {
 
         // End iteration if block was found
         if (looking_at_block) {
-            looking_at_face = looking_at_block->getNearestFace(closest_point);
-            Draw::markPoint(closest_point, Colour::BLUE());
+            
+            looking_at_face = DIRECTION_3::NONE;
+            
+            for (int i = 0; i < 3; i++) {
+                float normal = ((Vector3)closest_collision.normal)[i];
+                if (abs((int)normal) == 1) {
+                    switch (i) {
+                        case 0: looking_at_face = normal == 1 ? DIRECTION_3::RIGHT : DIRECTION_3::LEFT; break;
+                        case 1: looking_at_face = normal == 1 ? DIRECTION_3::UP : DIRECTION_3::DOWN; break;
+                        case 2: looking_at_face = normal == 1 ? DIRECTION_3::BACK : DIRECTION_3::FRONT; break;
+                    }
+                    break;
+                }
+                // Handle the normal sometimes being incorrect
+                else if (normal != 0.0f) {
+                    looking_at_face = previous_looking_at_face;
+                    break;
+                }
+            }
+
+            Draw::markPoint(closest_collision.point, Colour::BLUE());
             break;
         }
     }
 
     if (looking_at_block != NULL) {
-
-        if (INPUT_EVENT_ATTACK.isJustTriggered()) {
-            looking_at_block->type = Block::TYPE::AIR;
-            looking_at_block->subchunk->requestMeshGeneration();
+        
+        if (INPUT_EVENT_PICKBLOCK.isJustTriggered()) {
+            
         }
 
         if (INPUT_EVENT_INTERACT.isJustTriggered()) {
-            OS::print("Block position: " + Vector3(looking_at_block->x, looking_at_block->y, looking_at_block->z).toString());
-            OS::print("Face: " + directionToString(looking_at_face));
+            if (INPUT_EVENT_CROUCH.isTriggered()) {
+                if (looking_at_block->isInteractable())
+                    looking_at_block->interact(this);
+            }
+            else {
+                Block* place_block = looking_at_block->getNeighbour(looking_at_face);
+                if (place_block == NULL) {
+                    OS::print("INV: " + directionToString(looking_at_face));
+                }
+                else if (hotbar.getSelected() != Block::TYPE::INVALID) {
+                    place_block->setType(hotbar.getSelected());
+                    place_block->subchunk->requestMeshGeneration();
+                }
+            }
+        }
 
-            // const float* pos = dGeomGetPosition(looking_at_block->subchunk->getShape());
-            // const float* off = dGeomGetOffsetPosition(looking_at_block->subchunk->getShape());
-
-            // OS::print("Geom pos: " + Vector3(pos[0] + off[0], pos[1] + off[1], pos[2] + off[2]).toString());
-            OS::print("Subchunk pos: " + looking_at_block->subchunk->getGlobalPosition().toString());
-            OS::print("Subchunk id: " + to_string(looking_at_block->subchunk->getId()));
-            OS::print("-------------------");
+        if (INPUT_EVENT_ATTACK.isJustTriggered()) {
+            looking_at_block->setType(Block::TYPE::AIR);
+            looking_at_block->subchunk->requestMeshGeneration();
         }
     }
-
 }
 
 void Player::draw() {

@@ -18,6 +18,39 @@ DIRECTION convertDirection(DIRECTION_3 base) {
     }
 }
 
+DIRECTION_3 convertDirection(Vector3 normal) {
+    if (normal.x > 0)
+        return DIRECTION_3::RIGHT;
+    if (normal.x < 0)
+        return DIRECTION_3::LEFT;
+    
+    if (normal.y > 0)
+        return DIRECTION_3::UP;
+    if (normal.y < 0)
+        return DIRECTION_3::DOWN;
+    
+    if (normal.z > 0)
+        return DIRECTION_3::BACK;
+    if (normal.z < 0)
+        return DIRECTION_3::FRONT;
+    
+    return DIRECTION_3::NONE;
+}
+
+DIRECTION convertDirection(Vector2 normal) {
+    if (normal.x > 0)
+        return DIRECTION::RIGHT;
+    if (normal.x < 0)
+        return DIRECTION::LEFT;
+    
+    if (normal.y > 0)
+        return DIRECTION::DOWN;
+    if (normal.y < 0)
+        return DIRECTION::UP;
+    
+    return DIRECTION::NONE;
+}
+
 DIRECTION_3 invertDirection(DIRECTION_3 base) {
     switch (base) {
         case DIRECTION_3::FRONT: return DIRECTION_3::BACK;

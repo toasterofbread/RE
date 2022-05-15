@@ -30,7 +30,7 @@
 #define GIT_COMMIT_HASH "UNDEFINED"
 #endif
 
-// !todo Rewrite or remove VitaTexture system 
+// TODO Rewrite or remove VitaTexture system 
 
 int _newlib_heap_size_user  = 300 * 1024 * 1024;
 uint32_t sceLibcHeapSize = 16 * 1024 * 1024;

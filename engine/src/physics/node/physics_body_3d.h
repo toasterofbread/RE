@@ -12,28 +12,28 @@
 #include <btBulletDynamicsCommon.h>
 
 // Forward declarations
-class CollisionShape3D;
+class CollisionObject3D;
 
 class PhysicsBody3D: public Node3D {
 
     public:
     
-        REGISTER_NODE_WITH_CONSTRUCTOR(PhysicsBody3D, Node3D, {
+        REGISTER_NODE(PhysicsBody3D, Node3D, {
             c->template registerProperty<Vector3>("linear_velocity", &NodeType::setLinearVelocity)
             ->template registerProperty<bool>("fixed_rotation", &NodeType::setFixedRotation)
             ->template registerProperty<Vector3>("gravity_scale", &NodeType::setGravityScale);
-        }, {
-            recreateBody();
         });
 
-        Signal<CollisionShape3D*> SIGNAL_SHAPE_ADDED;
-        Signal<CollisionShape3D*> SIGNAL_SHAPE_REMOVED;
+        Signal<CollisionObject3D*> SIGNAL_SHAPE_ADDED;
+        Signal<CollisionObject3D*> SIGNAL_SHAPE_REMOVED;
 
         Signal<PhysicsBody3D*> SIGNAL_COLLIDED; // Emitted on the first frame of collision
         Signal<PhysicsBody3D*> SIGNAL_COLLIDING; // Emitted on every frame of collision (including the first)
         Signal<PhysicsBody3D*> SIGNAL_COLLISION_ENDED; // Emitted on the first frame after collision ends
 
         enum class TYPE { RIGID, KINEMATIC, STATIC };
+
+        void init();
 
         void physicsProcess(float delta);
 
@@ -50,9 +50,15 @@ class PhysicsBody3D: public Node3D {
         bool isOnWall();
         bool isOnCeiling();
 
+        void setEnabled(bool value);
+        bool isEnabled();
+
         // Physics parameters
         void setType(TYPE value);
         TYPE getType();
+
+        void setMass(float value);
+        float getMass();
 
         void setLinearVelocity(Vector3 value);
         Vector3 getLinearVelocity();
@@ -74,22 +80,25 @@ class PhysicsBody3D: public Node3D {
     private:
         TYPE type = TYPE::RIGID;
         btRigidBody* body = NULL;
-        btCompoundShape shape_container;
-        // btSphereShape shape_container = btSphereShape(1.0f);
+        btCompoundShape shape_container = btCompoundShape(true);
+        btDefaultMotionState* state = NULL;
 
-        void addShape(CollisionShape3D* shape);
-        void removeShape(CollisionShape3D* shape);
+        void setBodyMass(float value);
 
-        void recreateBody();
-
-        void onShapePolygonChanged(CollisionShape3D* shape);
+        void addShape(CollisionObject3D* shape);
+        void removeShape(CollisionObject3D* shape);
 
         void onParentGlobalPositionChanged(Vector3 old_global_position);
 
-        vector<CollisionShape3D*> added_shapes;
+        void addBodyToWorld();
+        void removeBodyFromWorld();
+
+        vector<CollisionObject3D*> added_shapes;
         
         bool updating_position = false;
         vector<PhysicsBody3D*> previous_collisions;
+
+        bool enabled = true;
 
         // Runtime data
         bool on_floor = false;

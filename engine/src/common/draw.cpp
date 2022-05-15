@@ -97,20 +97,24 @@ void Draw::drawLine(Vector2 start, Vector2 end, Colour colour, bool screen_posit
     DRAW_2D(DrawLine(start.x, start.y, end.x, end.y, colour), screen_position);
 }
 
-void Draw::drawTextureRST(TEXTURE_TYPE texture, Vector2 position, float rotation, Vector2 scale, Colour tint, bool screen_position) {
+void Draw::drawTexture(Texture2D texture, Vector2 position, Colour tint, bool screen_position) {
+    DRAW_2D(DrawTexture(texture, position.x, position.y, tint), screen_position);
+}
+
+void Draw::drawTextureRST(Texture2D texture, Vector2 position, float rotation, Vector2 scale, Colour tint, bool screen_position) {
     DRAW_2D(DrawTexturePro(
-        OS::getRaylibTexture(texture),
+        texture,
         Rectangle{
             0,
             0,
-            (float)OS::getTextureWidth(texture),// * (flip_x ? -1.0f : 1.0f),
-            (float)OS::getTextureHeight(texture)// * (flip_y ? -1.0f : 1.0f)
+            (float)texture.width,// * (flip_x ? -1.0f : 1.0f),
+            (float)texture.height// * (flip_y ? -1.0f : 1.0f)
         },
         Rectangle{
             position.x,
             position.y,
-            (float)OS::getTextureWidth(texture) * scale.x,
-            (float)OS::getTextureHeight(texture) * scale.y
+            (float)texture.width * scale.x,
+            (float)texture.height * scale.y
         },
         Vector2::ZERO(),
         RAD2DEG(rotation),
@@ -151,8 +155,8 @@ void Draw::drawCube(Vector3 position, Vector3 size, Colour colour) {
     DRAW_3D(DrawCubeWiresV(position, size, Colour::WHITE()));
 }
 
-void Draw::drawCube(Vector3 position, Vector3 size, TEXTURE_TYPE texture, Colour colour) {
-    DRAW_3D(DrawCubeTexture(OS::getRaylibTexture(texture), position, size.x, size.y, size.z, colour));
+void Draw::drawCube(Vector3 position, Vector3 size, Texture2D texture, Colour colour) {
+    DRAW_3D(DrawCubeTexture(texture, position, size.x, size.y, size.z, colour));
 }
 
 void Draw::drawBoundingBox(BoundingBox box, Colour colour, Vector3 offset, Vector3 scale) {
@@ -160,7 +164,7 @@ void Draw::drawBoundingBox(BoundingBox box, Colour colour, Vector3 offset, Vecto
 }
 
 void Draw::drawMesh(Mesh mesh, Material material, Matrix transform) {
-    DRAW_3D(DrawMeshWires(mesh, material, transform));
+    DRAW_3D(DrawMesh(mesh, material, transform));
 }
 
 void drawMeshInstanced(Mesh mesh, Material material, Matrix *transforms, int instances) {

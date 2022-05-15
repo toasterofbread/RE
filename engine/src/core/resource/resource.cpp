@@ -6,13 +6,11 @@
 #include "engine/src/engine.h"
 #include "engine/src/core/signal.h"
 
-Resource::ResourcePool* Resource::resource_pool = NULL;
-
 Resource::Resource() {
     Engine::getSingleton()->resourceCreated(this);
-    ASSERT(registered());
 }
 
 Resource::~Resource() {
     SIGNAL_DELETED.emit();
+    Engine::getSingleton()->resourceDeleted(this);
 }

@@ -5,31 +5,17 @@
 #include "physics_body_3d.h"
 
 #include "engine/src/physics/physics_server.h"
-#include "engine/src/physics/node/collision_shape_3d.h"
+#include "engine/src/physics/node/collision_object_3d.h"
 #include "engine/src/node/types/timer.h"
 
 #define FLOOR_ANGLE_THRESHOLD 0.01
 #define p_floor_max_angle DEG2RAD(45.0f)
 
-Matrix getTransform(const float pos[3], const float R[12]) {
-    Matrix ret;
-    ret.m0 = R[0];
-    ret.m1 = R[4];
-    ret.m2 = R[8];
-    ret.m3 = 0;
-    ret.m4 = R[1];
-    ret.m5 = R[5];
-    ret.m6 = R[9];
-    ret.m7 = 0;
-    ret.m8 = R[2];
-    ret.m9 = R[6];
-    ret.m10 = R[10];
-    ret.m11 = 0;
-    ret.m12 = pos[0];
-    ret.m13 = pos[1];
-    ret.m14 = pos[2];
-    ret.m15 = 1;
-    return ret;
+void PhysicsBody3D::init() {
+    super::init();
+    
+    state = new btDefaultMotionState(btTransform::getIdentity());
+    body = new btRigidBody(btRigidBody::btRigidBodyConstructionInfo(mass, state, &shape_container));
 }
 
 void PhysicsBody3D::physicsProcess(float delta) {
@@ -39,18 +25,29 @@ void PhysicsBody3D::physicsProcess(float delta) {
     on_wall = false;
     on_ceiling = false;
 
-    // if (isKinematic()) {
-    //     return;
-    // }
+    if (type == TYPE::STATIC) {
+        return;
+    }
 
     updating_position = true;
 
-    const btTransform& transform = getBody()->getWorldTransform();
-    // setGlobalPosition(PhysicsServer::phys2World3(transform.getOrigin()));
+    Vector3 position;
+    Quaternion rotation;
 
-    OS::print(getGlobalRotation().toString());
-
-    setGlobalRotation(transform.getRotation());
+    if (btMotionState* state = body->getMotionState()) {
+        btTransform transform;
+        state->getWorldTransform(transform);
+        // setGlobalPosition(PhysicsServer::phys2World3(transform.getOrigin()));
+        setGlobalRotation(transform.getRotation());
+        const btTransform& aa = body->getWorldTransform();
+        setGlobalPosition(PhysicsServer::phys2World3(aa.getOrigin()));
+        // setGlobalRotation(aa.getRotation());
+    }
+    else {
+        const btTransform& transform = body->getWorldTransform();
+        setGlobalPosition(PhysicsServer::phys2World3(transform.getOrigin()));
+        setGlobalRotation(transform.getRotation());
+    }
 
     updating_position = false;
 
@@ -149,7 +146,7 @@ void PhysicsBody3D::setPosition(Vector3 value) {
         return;
     }
     
-    if (isInsideTree()) {
+    if (isInsideTree() && enabled) {
         btTransform& transform = body->getWorldTransform();
         transform.setOrigin(PhysicsServer::world2Phys3(getGlobalPosition()));
         body->setWorldTransform(transform);
@@ -162,11 +159,20 @@ void PhysicsBody3D::setRotation(Quaternion value) {
     if (updating_position) {
         return;
     }
-    
-    if (isInsideTree()) {
-        btTransform& transform = body->getWorldTransform();
-        transform.setRotation(getRotation());
-        body->setWorldTransform(transform);
+
+    if (isInsideTree() && enabled) {
+
+        if (btMotionState* state = body->getMotionState()) {
+            btTransform transform;
+            state->getWorldTransform(transform);
+            transform.setRotation(getRotation());
+            state->setWorldTransform(transform);
+        }
+        else {
+            btTransform& transform = body->getWorldTransform();
+            transform.setRotation(getRotation());
+            body->setWorldTransform(transform);
+        }
     }
 }
 
@@ -182,14 +188,33 @@ bool PhysicsBody3D::isOnCeiling() {
     return on_ceiling;
 }
 
+void PhysicsBody3D::setEnabled(bool value) {
+    if (value == enabled)
+        return;
+
+    enabled = value;
+
+    if (!isInsideTree())
+        return;
+    
+    if (enabled)
+        addBodyToWorld();
+    else
+        removeBodyFromWorld();
+}
+
+bool PhysicsBody3D::isEnabled() {
+    return enabled;
+}
+
 void PhysicsBody3D::setLinearVelocity(Vector3 value) {
     ASSERT(body);
-    body->setLinearVelocity(value);
+    body->setLinearVelocity(PhysicsServer::world2Phys3(value));
 }
 
 Vector3 PhysicsBody3D::getLinearVelocity() {
     ASSERT(body);
-    return body->getLinearVelocity();
+    return PhysicsServer::phys2World3(body->getLinearVelocity());
 }
 
 void PhysicsBody3D::setFixedRotation(bool value) {
@@ -214,51 +239,48 @@ Vector3 PhysicsBody3D::getFinalGravity() {
 }
 
 void PhysicsBody3D::enteredTree() {
-    PhysicsServer::getWorld3()->addRigidBody(body);
-    
-    btTransform& transform = body->getWorldTransform();
-    transform.setOrigin(PhysicsServer::world2Phys3(getGlobalPosition()));
-    transform.setRotation(getGlobalRotation());
-    body->setWorldTransform(transform);
-
+    if (enabled)
+        addBodyToWorld();
     super::enteredTree();
 }
 
 void PhysicsBody3D::removedFromNode(Node* former_parent_node) {
     super::removedFromNode(former_parent_node);
-    PhysicsServer::getWorld3()->removeRigidBody(body);
+    if (enabled)
+        removeBodyFromWorld();
 }
 
 void PhysicsBody3D::addChild(Node* child) {
-    if (CollisionShape3D* collision_shape = dynamic_cast<CollisionShape3D*>(child)) {
-        addShape(collision_shape);
+    if (CollisionObject3D* collision_object = dynamic_cast<CollisionObject3D*>(child)) {
+        addShape(collision_object);
     }
     super::addChild(child);
 }
 
 void PhysicsBody3D::removeChild(Node* child) {
     super::removeChild(child);
-    if (CollisionShape3D* collision_shape = dynamic_cast<CollisionShape3D*>(child)) {
-        removeShape(collision_shape);
+    if (CollisionObject3D* collision_object = dynamic_cast<CollisionObject3D*>(child)) {
+        removeShape(collision_object);
     }
 }
 
-void PhysicsBody3D::addShape(CollisionShape3D* shape) {
+void PhysicsBody3D::addShape(CollisionObject3D* shape) {
 
     ASSERT(!vectorContainsValue(added_shapes, shape));
     ASSERT(!shape->isAttachedToBody());
     
-    if (shape->hasShape()) {
+    if (shape->hasPhysicsShape()) {
         shape->attachToBody(this);
     }
 
-    shape->SIGNAL_POLYGON_CHANGED.connect(this, &PhysicsBody3D::onShapePolygonChanged, false, shape);
+    shape->SIGNAL_SHAPE_CHANGED.connect(shape, &CollisionObject3D::attachToBody, false, this);
+    shape->SIGNAL_SHAPE_CHANGED.connect(&shape_container, &btCompoundShape::recalculateLocalAabb);
 
     added_shapes.push_back(shape);
     SIGNAL_SHAPE_ADDED.emit(shape);
 }
 
-void PhysicsBody3D::removeShape(CollisionShape3D* shape) {
+void PhysicsBody3D::removeShape(CollisionObject3D* shape) {
     SIGNAL_SHAPE_REMOVED.emit(shape);
 
     ASSERT(vectorContainsValue(added_shapes, shape));
@@ -276,71 +298,46 @@ void PhysicsBody3D::setType(TYPE value) {
         return;
     }
     type = value;
-    recreateBody();
+
+    switch (type) {
+        case TYPE::KINEMATIC:
+        case TYPE::STATIC:
+            setBodyMass(0); break;
+        case TYPE::RIGID:
+            setBodyMass(mass); break;
+    }
 }
 
 PhysicsBody3D::TYPE PhysicsBody3D::getType() {
     return type;
 }
 
-void PhysicsBody3D::recreateBody() {
-
-    if (body == NULL) {
-
-        btTransform transform;
-
-        if (isInsideTree()) {
-            transform.setOrigin(PhysicsServer::world2Phys3(getGlobalPosition()));
-            transform.setRotation(getGlobalRotation());
-        }
-        else {
-            transform.setOrigin(PhysicsServer::world2Phys3(getPosition()));
-            transform.setRotation(getRotation());
-        }
-
-        btDefaultMotionState* state = new btDefaultMotionState(transform);
-        btRigidBody::btRigidBodyConstructionInfo definition = btRigidBody::btRigidBodyConstructionInfo(mass, state, &shape_container);
-        body = new btRigidBody(definition);
-
-        if (isInsideTree())
-            PhysicsServer::getWorld3()->addCollisionObject(body);
-    }
-    else {
-        
-    }
-
-    // setFixedRotation(fixed_rotation);
-    // setApplyGravity(apply_gravity);
-
-    // if (kinematic) {
-    //     dBodySetKinematic(body);
-    // }
-    // else {
-    //     dBodySetDynamic(body);
-    // }
-
-    for (CollisionShape3D* shape : added_shapes) {
-        if (shape->hasShape()) {
-            shape->attachToBody(this);
-        }
-    }
-}
-
-void PhysicsBody3D::onShapePolygonChanged(CollisionShape3D* shape) {
-    if (shape->isAttachedToBody()) {
-        shape->detachFromBody();
-    }
-    shape->attachToBody(this);
-}
-
-
 void PhysicsBody3D::onParentGlobalPositionChanged(Vector3 old_global_position) {
     super::onParentGlobalPositionChanged(old_global_position);
 
-    if (isInsideTree()) {
+    if (isInsideTree() && enabled) {
         btTransform& transform = body->getWorldTransform();
         transform.setOrigin(PhysicsServer::world2Phys3(getGlobalPosition()));
     }
+}
+
+void PhysicsBody3D::setBodyMass(float value) {
+    btVector3 inertia;
+    body->getCollisionShape()->calculateLocalInertia(value, inertia);
+    body->setMassProps(value, inertia);
+}
+
+void PhysicsBody3D::addBodyToWorld() {
+    PhysicsServer::getWorld3()->addRigidBody(body);
+    
+    btTransform& transform = body->getWorldTransform();
+    transform.setOrigin(PhysicsServer::world2Phys3(getGlobalPosition()));
+    transform.setRotation(getGlobalRotation());
+    body->setWorldTransform(transform);
+}
+
+void PhysicsBody3D::removeBodyFromWorld() {
+    PhysicsServer::getWorld3()->removeRigidBody(body);
 }
 
 #endif

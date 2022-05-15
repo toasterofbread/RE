@@ -12,6 +12,8 @@ using namespace std;
 #include "engine/src/node/scene_tree.h"
 #include "engine/src/core/signal.h"
 
+SpriteAnimationSet::LocalResourcePool SpriteAnimationSet::resource_pool;
+
 SpriteAnimation::SpriteAnimation(string animation_name, json animation_data, json file_data, string load_directory): Resource() {
     name = animation_name;
 
@@ -223,7 +225,7 @@ shared_ptr<SpriteAnimationSet> SpriteAnimationSet::LocalResourcePool::getResourc
     // Can't use make_shared as SpriteAnimationSet constructor is private
     shared_ptr<SpriteAnimationSet> ret = shared_ptr<SpriteAnimationSet>(new SpriteAnimationSet(file_path, base_directory_override));
 
-    ret->SIGNAL_DELETED.connect(this, &ResourcePool::eraseMapKey, false, &pool, file_path);
+    ret->SIGNAL_DELETED.connect(this, &LocalResourcePool::eraseMapKey, false, &pool, file_path);
 
     if (pool.count(file_path)) {
         pool[file_path][base_directory_override] = (weak_ptr<SpriteAnimationSet>)ret;

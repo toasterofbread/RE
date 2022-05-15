@@ -3,8 +3,8 @@
 
 #include "engine/compiler_settings.h"
 #include "common/vector2.h"
-#include "raylib/raymath.h"
 
+#include <raylib/raymath.h>
 #include <json.hpp>
 #include "common/raylib.h"
 #include <box2d/box2d.h>
@@ -40,6 +40,62 @@ struct InternalVector3: public Vector3 {
     }
 
     string toString(int max_decimals = 1) const;
+
+    struct Iterator {
+
+        Iterator operator++() {
+            x++;
+            if (x >= max_x) {
+                x = 0;
+                y++;
+
+                if (y >= max_y) {
+                    y = 0;
+                    z++;
+                }
+            }
+            return *this;
+        }
+        
+        bool operator!=(const Iterator& other) {
+            return x != other.x || y != other.y || z != other.z || max_x != other.max_x || max_y != other.max_y || max_z != other.max_z;
+        }
+
+        const tuple<int, int, int> operator*() {
+            return make_tuple(x, y, z);
+        }
+
+        private:
+            friend class InternalVector3;
+            Iterator(int mx, int my, int mz) {
+                max_x = mx;
+                max_y = my;
+                max_z = mz;
+            }
+            int x = 0;
+            int y = 0;
+            int z = 0;
+            int max_x;
+            int max_y;
+            int max_z;
+
+    };
+
+    Iterator begin() {
+        
+        if (x <= 0 || y <= 0 || z <= 0) {
+            return end();
+        }
+
+        return Iterator(x, y, z);
+    }
+    Iterator end() {
+        Iterator ret = Iterator(x, y, z);
+        ret.x = x - 1;
+        ret.y = y - 1;
+        ret.z = z - 1;
+        return ret;
+    }
 
     InternalVector3 deg2rad() const;
     InternalVector3 rad2deg() const;
@@ -108,6 +164,10 @@ struct InternalVector3: public Vector3 {
 
     bool equals(float _x, float _y, float _z) {
         return x == _x && y == _y && z == _z;
+    }
+
+    bool isUnsigned() {
+        return x >= 0 && y >= 0 && z >= 0;
     }
 
     InternalVector3& operator=(const ::InternalVector3& vector) {
@@ -209,11 +269,11 @@ struct InternalVector3: public Vector3 {
     }
 
     static InternalVector3 UP() {
-        return InternalVector3(0, -1, 0);
+        return InternalVector3(0, 1, 0);
     }
 
     static InternalVector3 DOWN() {
-        return InternalVector3(0, 1, 0);
+        return InternalVector3(0, -1, 0);
     }
 
     static InternalVector3 LEFT() {
@@ -241,22 +301,6 @@ struct InternalVector3: public Vector3 {
     operator btVector3() {
         return btVector3(x, y, z);
     }
-    // InternalVector3(dVector3 vector) {
-    //     x = vector[0];
-    //     y = vector[1];
-    //     z = vector[2];
-    // }
-    // InternalVector3(Quaternion quat) {
-    //     x = std::atan2(2 * (quat.w * quat.x + quat.y * quat.z), 1 - 2 * (quat.x * quat.x + quat.y * quat.y));
-
-    //     double sinp = 2 * (quat.w * quat.y - quat.z * quat.x);
-    //     if (std::abs(sinp) >= 1)
-    //         y = std::copysign(PI / 2, sinp);
-    //     else
-    //         y = std::asin(sinp);
-
-    //     z = std::atan2(2 * (quat.w * quat.z + quat.x * quat.y), 1 - 2 * (quat.y * quat.y + quat.z * quat.z));
-    // }
     #endif
 
 };

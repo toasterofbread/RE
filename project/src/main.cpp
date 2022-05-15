@@ -10,17 +10,19 @@
 #include "node/scene_loader.h"
 #include "input/macro.h"
 #include "physics/physics_server.h"
+#include "node/types/node_2d.h"
 
 #include "project/src/nodes/player.h"
 #include "project/src/nodes/world.h"
+#include "project/src/nodes/hotbar.h"
 
 #include "node/types/timer.h"
+
+#include "project/src/nodes/block.h"
 
 Engine* engine = Engine::getSingleton();
 
 Macro* quit_macro = Macro::create()->setKb({Input::KEY_ESC});
-Macro* reset_macro = Macro::create()->setKb({Input::KEY_F1})->setPad({Input::SELECT});
-// Macro* reset_macro = Macro::create()->setKb({Input::KEY_F1});
 Macro* tree_macro = Macro::create()->setKb({Input::KEY_TAB});
 Macro* toggle_mouse_capture_macro = Macro::create()->setKb({Input::KEY_TILDE});
 
@@ -30,9 +32,10 @@ struct Project {
     Model chonk;
     bool on = true;
 
-    void init() {
+    bool init() {
         Node* main_scene = SceneLoader::loadSceneFromFile("project/resources/main.rescn");
         engine->getTree()->addNode(main_scene);
+        return true;
     }
 
     void toggle() {
@@ -62,9 +65,6 @@ void mainLoop(float delta) {
     else if (quit_macro->isJustPressed()) {
         should_close = true;
     }
-    else if (reset_macro->isJustPressed()) {
-        project.toggle();
-    }
     else if (toggle_mouse_capture_macro->isJustPressed()) {
         if (IsCursorHidden()) {
             EnableCursor();
@@ -88,11 +88,11 @@ int main() {
     registerNodes();
     Engine::print_disabled = true;
 
-    project.init();
-    // DisableCursor();
+    if (!project.init())
+        return 1;
 
     while (!OS::shouldClose() && !Engine::fatal_error_occurred && !should_close) {
-
+        
         float delta = OS::getFrameDelta();
         
         Draw::beginDrawing();
@@ -110,7 +110,6 @@ int main() {
                 i++;
             }
             catch (bad_any_cast) {
-
                 try {
                     float num = any_cast<float>(message);
                     dbPrint(to_string(num), i++, num >= 0.0f ? Colour::GREEN() : Colour::RED());
@@ -118,7 +117,6 @@ int main() {
                 catch (bad_any_cast) {
                     dbPrint(any_cast<Vector3>(message).toString(), i++);
                 }
-
             }
         }
 

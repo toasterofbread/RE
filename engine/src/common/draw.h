@@ -31,8 +31,8 @@ namespace Draw {
     void drawLine(float start_x, float start_y, float end_x, float end_y, Colour colour, bool screen_position = false);
     void drawLine(Vector2 start, Vector2 end, Colour colour, bool screen_position = false);
 
-    void drawTexture(TEXTURE_TYPE texture, Vector2 position, bool screen_position = false);
-    void drawTextureRST(TEXTURE_TYPE texture, Vector2 position, float rotation, Vector2 scale, Colour tint, bool screen_position = false);
+    void drawTexture(Texture2D texture, Vector2 position, Colour tint = Colour::WHITE(), bool screen_position = false);
+    void drawTextureRST(Texture2D texture, Vector2 position, float rotation, Vector2 scale, Colour tint, bool screen_position = false);
 
     void drawText(string text, float pos_x, float pos_y, Colour colour, float size = 1.0f, bool screen_position = true);
     void drawText(string text, Vector2 position, Colour colour, float size = 1.0f, bool screen_position = true);
@@ -48,7 +48,7 @@ namespace Draw {
     void drawTriangle(Vector3 p1, Vector3 p2, Vector3 p3, Colour colour);
 
     void drawCube(Vector3 position, Vector3 size, Colour colour = Colour::WHITE());
-    void drawCube(Vector3 position, Vector3 size, TEXTURE_TYPE texture, Colour colour = Colour::WHITE());
+    void drawCube(Vector3 position, Vector3 size, Texture2D texture, Colour colour = Colour::WHITE());
 
     void drawBoundingBox(BoundingBox box, Colour colour, Vector3 offset = Vector3::ZERO(), Vector3 scale = Vector3::ONE());
 

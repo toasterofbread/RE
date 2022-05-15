@@ -1,6 +1,9 @@
 #ifndef INCLUDED_ENUMS
 #define INCLUDED_ENUMS
 
+#include "common/vector2.h"
+#include "common/vector3.h"
+
 #include <string>
 using namespace std;
 
@@ -15,8 +18,9 @@ enum class DIRECTION_3 {
 #define DIRECTION_3_COUNT 6
 
 DIRECTION_3 convertDirection(DIRECTION base);
-
 DIRECTION convertDirection(DIRECTION_3 base);
+DIRECTION_3 convertDirection(Vector3 normal);
+DIRECTION convertDirection(Vector2 normal);
 
 DIRECTION_3 invertDirection(DIRECTION_3 base);
 

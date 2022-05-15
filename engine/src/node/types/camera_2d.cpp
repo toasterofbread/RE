@@ -1,5 +1,13 @@
 #include "camera_2d.h"
 
+void Camera2D::init() {
+    super::init();
+    camera.offset = Vector2::ZERO();
+    camera.target = Vector2::ZERO();
+    camera.rotation = 0.0f;
+    camera.zoom = 1.0f;
+}
+
 void Camera2D::kill() {
     super::kill();
     disable();

@@ -1,6 +1,9 @@
 #include "world.h"
 
+#include "chunk.h"
+#include "block.h"
 #include "player.h"
+
 #include "common/draw.h"
 #include "physics/physics_server.h"
 
@@ -9,21 +12,150 @@
 #include <json.hpp>
 using json = nlohmann::json;
 
-Block::TypeData Block::type_data[BLOCK_TYPE_COUNT];
+World* World::singleton = NULL;
+
+void setupChunk(Chunk* chunk, Vector2 grid_pos, Chunk* chunks[CHUNK_AMOUNT][CHUNK_AMOUNT]) {
+    chunk->setup(grid_pos, chunks);
+}
 
 void World::init() {
-    // setKinematic(true);
+    super::init();
+
+    ASSERT(World::singleton == NULL);
+    World::singleton = this;
 
     player = new Player;
-    player->world = this;
 
     addChild(player);
     player->setPosition(Vector3(CHUNK_AMOUNT * 0.5f * CHUNK_SIZE, SUBCHUNK_COUNT * SUBCHUNK_HEIGHT, CHUNK_AMOUNT * 0.5f * CHUNK_SIZE));
 
     material = LoadMaterialDefault();
-    material.shader = LoadShader(0, 0);
-    material.maps[MATERIAL_MAP_DIFFUSE].color = Colour(0.8, 0.8, 0.8);
-    material.maps[MATERIAL_MAP_DIFFUSE].texture = OS::getRaylibTexture(OS::loadTexture("project/resources/terrain.png"));
+    material.shader = LoadShaderFromMemory(
+
+// Vertex shader
+#if PLATFORM != PLATFORM_VITA
+R"V0G0N(
+
+#version 330                      
+in vec3 vertexPosition;
+in vec2 vertexTexCoord;
+in vec2 vertexTexCoord2;
+in vec3 vertexNormal;
+in vec4 vertexColor;
+
+out vec2 uv;
+out vec2 atlasPosition;
+out vec2 tileSize;
+out vec4 fragColor;
+out mat2 rotation;
+uniform mat4 mvp;
+
+void main() {
+    uv = vertexTexCoord;
+    atlasPosition = vertexTexCoord2;
+    tileSize = vertexNormal.yx;
+    
+    float sin_factor = sin(vertexNormal.z);
+    float cos_factor = cos(vertexNormal.z);
+    rotation = mat2(cos_factor, sin_factor, -sin_factor, cos_factor);
+
+    fragColor = vertexColor;      
+    gl_Position = mvp * vec4(vertexPosition, 1.0);
+}
+
+)V0G0N",
+#else
+R"V0G0N(
+void main(float3 vertexPosition,             
+    float2 vertexTexCoord, float2 vertexTexCoord2,
+    float3 vertexNormal,            
+    float4 vertexColor,                
+    float2 out uv : TEXCOORD0,
+    float2 out tileSize: TEXCOORD1,
+    float2 out atlasPosition: TEXCOORD2,
+    float4 out fragColor : COLOR0,      
+    float4 out gl_Position : POSITION, 
+    uniform float4x4 mvp) {
+
+    uv = vertexTexCoord;
+    atlasPosition = vertexTexCoord2;
+    tileSize = vertexNormal.yx;
+    fragColor = vertexColor;      
+    gl_Position = mul(mvp, float4(vertexPosition, 1.0));
+}
+)V0G0N",
+#endif
+
+// Fragment shader
+#if PLATFORM != PLATFORM_VITA
+R"V0G0N(
+
+#version 330
+in vec2 uv;
+in vec4 fragColor;
+in vec2 atlasPosition;
+in vec2 tileSize;
+in mat2 rotation;
+
+out vec4 finalColor;
+uniform sampler2D texture0;
+uniform sampler2D texture1;
+uniform vec4 colDiffuse;
+uniform vec2 atlasSize;
+
+void main() {
+
+    vec2 coord = mod(uv, 1.0 / tileSize) * tileSize;
+    coord = vec2((coord.x - 0.5) * (atlasSize.x / atlasSize.y), coord.y - 0.5) * rotation;
+    coord += 0.5;
+
+    vec4 texelColor = texture(texture0, (atlasPosition + coord) / atlasSize);
+    finalColor = texelColor * colDiffuse * fragColor; // * texture(texture1, uv);
+}
+
+)V0G0N"
+#else
+R"V0G0N(
+
+float mod(float a, float b) {
+    return a * floor(a / b);
+}
+
+float2 mod(float2 a, float2 b) {
+    return float2(mod(a.x, b.x), mod(a.y, b.y));
+}
+
+void main(float2 uv : TEXCOORD0, 
+    float2 atlasPosition: TEXCOORD2, float2 tileSize: TEXCOORD1,
+    float4 fragColor : COLOR0,                  
+    uniform sampler2D texture0,        
+    uniform float4 colDiffuse,
+    uniform float2 atlasSize,        
+    float4 out finalColor) {
+    float4 texelColor = tex2D(texture0, (atlasPosition + (mod(uv, 1.0 / tileSize) * tileSize)) / atlasSize);
+    finalColor = texelColor * colDiffuse * fragColor;
+}
+)V0G0N"
+#endif
+    );
+
+    // material.shader = LoadShader(0, 0);
+
+    material.maps[MATERIAL_MAP_DIFFUSE].color = Colour::WHITE();
+
+    Texture2D texture = OS::getRaylibTexture(OS::loadTexture("project/resources/terrain.png"));
+    material.maps[MATERIAL_MAP_DIFFUSE].texture = texture;
+
+    // Image image = GenImageChecked(2, 2, 1, 1, Colour(0.5, 0.5, 1), Colour(1, 1, 1));
+    // material.maps[MATERIAL_MAP_SPECULAR].texture = LoadTextureFromImage(image);
+    // UnloadImage(image);
+
+    float* atlasSize = (float*)malloc(2 * sizeof(float));
+    atlasSize[0] = sqrt(texture.width);
+    atlasSize[1] = sqrt(texture.height);
+
+    SetShaderValue(material.shader, GetShaderLocation(material.shader, "atlasSize"), atlasSize, SHADER_UNIFORM_VEC2);
+    // SetTextureWrap(material.maps[MATERIAL_MAP_DIFFUSE].texture, TEXTURE_WRAP_REPEAT);
 
     // Load block data
     Block::loadTypeData();
@@ -47,7 +179,6 @@ void World::init() {
             }
 
             chunk_array[x][y] = chunk;
-            chunk->world = this;
             chunk->createBlocks();
             addChild(chunk);
         }
@@ -67,8 +198,18 @@ void World::draw() {
         return;
     }
 
+    for (Chunk* chunk = chunks; chunk != NULL; chunk = chunk->next ) {
+        for (int i = 0; i < SUBCHUNK_COUNT; i++) {
+            chunk->sub_chunks[i]->drawn = false;
+            chunk->sub_chunks[i]->drawChunk();
+        }
+    }
+
+    return;
+
+    Chunk* starting_chunk = player->getEnteredChunk();
     if (starting_chunk == NULL) {
-        starting_chunk = getChunk((int)(CHUNK_AMOUNT * 0.5) * CHUNK_SIZE, (int)(CHUNK_AMOUNT * 0.5) * CHUNK_SIZE, false)->sub_chunks[SUBCHUNK_COUNT - 1];
+        starting_chunk = getChunk((int)(CHUNK_AMOUNT * 0.5) * CHUNK_SIZE, (int)(CHUNK_AMOUNT * 0.5) * CHUNK_SIZE, false);
     }
     
     Chunk* chunk = chunks;
@@ -79,7 +220,7 @@ void World::draw() {
         chunk = chunk->next;
     }
 
-    vector<SubChunk*> draw_queue = {starting_chunk};
+    vector<SubChunk*> draw_queue = {starting_chunk->sub_chunks[SUBCHUNK_COUNT - 1]};
 
     #define ADD(subchunk) \
     if (!subchunk->drawn) { \
@@ -91,17 +232,17 @@ void World::draw() {
         SubChunk* chunk = *(draw_queue.end() - 1);
         draw_queue.pop_back();
 
-        chunk->draw();
+        chunk->drawChunk();
 
         if (chunk->index == 0 || chunk->index == SUBCHUNK_COUNT - 1) {
-            if (chunk->chunk->front)
-                ADD(chunk->chunk->front->sub_chunks[chunk->index]);
-            if (chunk->chunk->back)
-                ADD(chunk->chunk->back->sub_chunks[chunk->index]);
-            if (chunk->chunk->left)
-                ADD(chunk->chunk->left->sub_chunks[chunk->index]);
-            if (chunk->chunk->right)
-                ADD(chunk->chunk->right->sub_chunks[chunk->index]);
+            if (chunk->chunk->getFront())
+                ADD(chunk->chunk->getFront()->sub_chunks[chunk->index]);
+            if (chunk->chunk->getBack())
+                ADD(chunk->chunk->getBack()->sub_chunks[chunk->index]);
+            if (chunk->chunk->getLeft())
+                ADD(chunk->chunk->getLeft()->sub_chunks[chunk->index]);
+            if (chunk->chunk->getRight())
+                ADD(chunk->chunk->getRight()->sub_chunks[chunk->index]);
         }
     }
 }
@@ -138,94 +279,6 @@ void World::unloadChunk(Vector2 grid_position) {
 
 }
 
-void Block::loadTypeData() {
-    json block_data = json::parse(OS::loadFileText(OS::getResPath("project/resources/block_data.json")), nullptr, false, true);
-    ASSERT(block_data.is_object());
-
-    for (auto& [name, data] : block_data.items()) {
-    
-        ASSERT(data.is_object());
-        
-        // Get block type enum from string name
-        Block::TYPE type = Block::getTypeFromString(name);
-        ASSERT_MSG((int)type >= 0, "Invalid block name: " + name);
-
-        // Get the data container struct for this type
-        Block::TypeData& type_data = Block::type_data[(int)type];
-        ASSERT(!type_data.populated);
-        type_data.populated = true;
-
-        if (data.contains("tangible")) {
-            ASSERT(data["tangible"].is_boolean());
-            type_data.tangible = data["tangible"].get<bool>();
-        }
-
-        // Get texture coordinates
-        if (data.contains("textures") && !data["textures"].empty()) {
-            json texture_coords = data["textures"];
-            ASSERT_MSG(texture_coords.is_object() || texture_coords.is_array(), texture_coords.type_name());
-            
-            #define CHECK_COORDS(coords) \
-            ASSERT(coords.size() == 2); \
-            ASSERT(coords[0].is_number_integer() && coords[0].get<int>() >= 0); \
-            ASSERT(coords[1].is_number_integer() && coords[1].get<int>() >= 0);
-
-            // Dictionary of faces
-            if (texture_coords.is_object()) {
-                json other = json::object();
-                for (auto& [_face_name, coords] : texture_coords.items()) {
-                    CHECK_COORDS(coords);
-                    const string face_name = lowerString(_face_name);
-
-                    // The 'else' coordinates are used for all unspecified faces
-                    if (face_name == "e" || face_name == "else") {
-                        ASSERT(other.empty());
-                        other = coords;
-                    }
-                    else {
-                        // Get face direction enum from string name
-                        DIRECTION_3 face = stringToDirection3(face_name);
-                        ASSERT(face != DIRECTION_3::NONE);
-                        ASSERT(type_data.texcoords[(int)face][0] == -1)
-
-                        type_data.texcoords[(int)face][0] = coords[0].get<int>();
-                        type_data.texcoords[(int)face][1] = coords[1].get<int>();
-                    }
-                }
-
-                if (!other.empty()) {
-                    // Fill unspecified faces with the 'else' coordinates
-                    bool other_used = false;
-                    for (int face = 0; face < DIRECTION_3_COUNT; face++) {
-                        if (type_data.texcoords[face][0] < 0) {
-                            type_data.texcoords[face][0] = other[0].get<int>();
-                            type_data.texcoords[face][1] = other[1].get<int>();
-                            other_used = true;
-                        }
-                    }
-                    WARN_IF(!other_used, "An 'else' texcoord was specified for block '" + name + "', but isn't needed");
-                }
-            }
-            // Single coordinate set for all faces
-            else {
-                CHECK_COORDS(texture_coords);
-
-                for (int face = 0; face < DIRECTION_3_COUNT; face++) {
-                    type_data.texcoords[face][0] = texture_coords[0].get<int>();
-                    type_data.texcoords[face][1] = texture_coords[1].get<int>();
-                }
-            }
-        }
-        // Use the void texture (or transparent if block is intangible) if no texcoords are specified
-        else {
-            for (int face = 0; face < DIRECTION_3_COUNT; face++) {
-                type_data.texcoords[(int)face][0] = TEXTURE_MAP_WIDTH - (type_data.tangible ? 1.0 : 2.0);
-                type_data.texcoords[(int)face][1] = TEXTURE_MAP_HEIGHT - 1;
-            }
-        }
-    }
-}
-
 void World::requestSubChunkMeshGeneration(SubChunk* chunk) {
 
     // if (CHUNKMESH_GENERATION_THREADS == 0) {
@@ -240,4 +293,8 @@ void World::requestSubChunkMeshGeneration(SubChunk* chunk) {
     //         gen_threads[i].start();
     //     }
     // }
+}
+
+Player* World::getPlayer() {
+    return player;
 }

@@ -15,7 +15,7 @@ class SceneTree;
 template<typename ObjectType>
 class ObjectConstructor;
 
-#define REGISTER_NODE_WITH_CONSTRUCTOR(name, super_type, registration_code, constructor_code) \
+#define REGISTER_NODE(name, super_type, registration_code) \
 private:                                                   \
 typedef super_type super;                                  \
 bool registered() {                                        \
@@ -30,7 +30,7 @@ string getTypeName() {                                     \
 }                                                          \
 name() {                                                   \
     setName(getTypeName());                                \
-    constructor_code;                                      \
+    init();                                                \
 }                                                          \
 template<typename NodeType = name> \
 static ObjectConstructor<NodeType>* registerNode(string node_type_name = name::getTypeNameStatic()) { \
@@ -38,8 +38,6 @@ static ObjectConstructor<NodeType>* registerNode(string node_type_name = name::g
     registration_code; \
     return c; \
 }
-
-#define REGISTER_NODE(name, super_type, registration_code) REGISTER_NODE_WITH_CONSTRUCTOR(name, super_type, registration_code, {})
 
 class Node {
     private:
@@ -57,6 +55,8 @@ class Node {
         }
 
     protected:
+        virtual void init() {}
+
         virtual void enteredTree();
         virtual void addedToNode();
         virtual void removedFromNode(Node* former_parent_node);
@@ -89,8 +89,6 @@ class Node {
         Signal<> SIGNAL_READY;
         Signal<> SIGNAL_KILLED;
     
-    public:
-
         // - Core -
         virtual void ready();
         virtual void process(float delta);

@@ -9,15 +9,15 @@
 // Forward declarations
 class PhysicsBody2D;
 
-class CollisionShape2D: public Node2D {
+class CollisionObject2D: public Node2D {
 
     public:
     
-        REGISTER_NODE(CollisionShape2D, Node2D, ({
+        REGISTER_NODE(CollisionObject2D, Node2D, ({
             c->template registerMethod<Vector2, Vector2, float>("setBoxShape", &NodeType::setBoxShape);
         }));
         
-        Signal<> SIGNAL_POLYGON_CHANGED;
+        Signal<> SIGNAL_SHAPE_CHANGED;
 
         void ready();
         void draw();
@@ -51,9 +51,9 @@ class CollisionShape2D: public Node2D {
 
         void onScaleChanged(Vector2 old_scale);
 
-        shared_ptr<b2Shape> collision_shape = NULL;
+        shared_ptr<b2Shape> collision_object = NULL;
         Vector2 base_scale = Vector2::ONE();
-        bool disabled = false; // !todo
+        bool disabled = false; // TODO
 
         void scaleChanged(Vector2 old_scale);
 };

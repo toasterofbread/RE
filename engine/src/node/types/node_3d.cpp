@@ -189,6 +189,8 @@ void Node3D::setRotation(Quaternion value) {
         return;
     }
 
+    ASSERT(value.isValid());
+
     if (SIGNAL_GLOBAL_ROTATION_CHANGED.getConnectionCount() == 0) {
         rotation = value;
         return;
@@ -228,7 +230,15 @@ void Node3D::setGlobalRotation(Quaternion value) {
     }
 
     if (Node3D* parent_3d = getFirst3DParent()) {
-        setRotation(QuaternionSubtract(value, parent_3d->getGlobalRotation()));
+        Vector3 parent_rotation = QuaternionToEuler(parent_3d->getGlobalRotation());
+        Vector3 target = (InternalVector3)QuaternionToEuler(value) - parent_rotation;
+        Vector3 value_euler = QuaternionToEuler(value);
+        setRotation(QuaternionFromEuler(target.x, target.y, target.z));
+        
+        
+
+        // setRotation(QuaternionMultiply(value, QuaternionInvert(parent_3d->getGlobalRotation())));
+        
         return;
     }
 

@@ -31,11 +31,21 @@ if not VITASDK.endswith("/"):
 
 VITA_PLATFORM_PREFIX = "arm-vita-eabi"
 VITA_TITLEID = "RETEST001" # Doesn't like underscores
-VITA_IP = "192.168.10.105"
+# VITA_IP = "192.168.10.105"
+VITA_IP = "10.42.0.180"
 USB_DEVICE_DIR = "/run/media/" + os.environ["USER"] + "/"
 
 def vitaCommand(cmd: str):
     os.system(f"echo {cmd} | nc {VITA_IP} 1338")
+    if (cmd == "destroy"):
+        time.sleep(0.5)
+
+# Returns the TitleID of the running Vita app, or None if no app is running (or on connection failure)
+def getVitaApp():
+    ret = os.popen(f"echo appinfo | nc {VITA_IP} 1338").read()
+    if ret == "" or ret == "No app is running":
+        return None
+    return ret.strip()
 
 def ftpProcess(ftp: FTP, file, filename: str):
     try:
@@ -111,10 +121,12 @@ def runProjectBinary(path: str):
     if cancelled:
         return
 
-    vitaCommand("destroy")
     if PACK_VPK:
-        vitaCommand("launch VITASHELL")
+        if getVitaApp() != "VITASHELL":
+            vitaCommand("destroy")
+            vitaCommand("launch VITASHELL")
     else:
+        vitaCommand("destroy")
         vitaCommand("launch " + VITA_TITLEID)
 
 env.runProjectBinary = runProjectBinary
@@ -128,7 +140,7 @@ env.Replace(
 env.Append(
     LINKFLAGS = ["-Wl,-q"],
     LIBPATH = VITASDK + VITA_PLATFORM_PREFIX + "/lib",
-    CPPPATH = [VITASDK + VITA_PLATFORM_PREFIX + "/include"],
+    CPPPATH = [VITASDK + VITA_PLATFORM_PREFIX + "/include", "include/bullet"],
 
     CCFLAGS = ["-DVITA", "-Wno-psabi", "-fno-lto", "-fno-pic", "-fno-plt", "-DRLGL_IMPLEMENTATION", "-DGRAPHICS_API_OPENGL_ES2", "-DSUPPORT_MESH_GENERATION"],
     LIBS = [

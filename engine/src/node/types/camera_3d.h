@@ -17,16 +17,11 @@ class SceneTree;
 
 class Camera3D: public Node3D, public CameraBase {
         public:
-        REGISTER_NODE_WITH_CONSTRUCTOR(Camera3D, Node3D, {
+        REGISTER_NODE(Camera3D, Node3D, {
             CameraBase::registerCameraBase<NodeType>(c);
-        }, {
-            camera.position = Vector3::ZERO();
-            camera.target = Vector3(0, 0, 0);
-            camera.up = Vector3(0, 1, 0);
-            camera.fovy = 65.0f;
-            camera.projection = CAMERA_PERSPECTIVE;
         });
 
+        void init();
         void ready();
         void kill();
 
@@ -42,14 +37,14 @@ class Camera3D: public Node3D, public CameraBase {
         void enable();
         void disable();
 
-        void setTarget(Vector3 value);
-        Vector3 getTarget();
+        Vector3 getCameraTarget();
+        Vector3 getCameraPosition();
 
         void setZoom(float value);
         float getZoom();
     
-        void setPosition(Vector3 value);
         void setRotation(Quaternion value);
+        void setPosition(Vector3 value);
 
         struct Frustum {
             enum FACE {

@@ -6,7 +6,7 @@
 // Forward declarations
 class Engine;
 
-// !todo Remove or rewrite
+// TODO Remove or rewrite
 class SceneNode: public Node {
     public:
         REGISTER_NODE(SceneNode, Node, {});

@@ -2,22 +2,22 @@
 
 #if PHYSICS_2D_ENABLED
 
-#include "collision_shape_2d.h"
+#include "collision_object_2d.h"
 
 #include "common/draw.h"
 #include "engine/src/physics/physics_server.h"
 #include "engine/src/physics/node/physics_body.h"
 
-void CollisionShape2D::ready() {
+void CollisionObject2D::ready() {
     super::ready();
 }
 
-void CollisionShape2D::draw() {
+void CollisionObject2D::draw() {
     super::draw();
 
     // return;
 
-    if (!isGlobalVisible() || collision_shape == NULL) {
+    if (!isGlobalVisible() || collision_object == NULL) {
         return;
     }
 
@@ -26,7 +26,7 @@ void CollisionShape2D::draw() {
             
             b2Body* body = getAttachedFixture()->GetBody();
             Vector2 body_position = PhysicsServer::phys2World2(body->GetPosition());
-            shared_ptr<b2PolygonShape> shape = reinterpret_pointer_cast<b2PolygonShape>(collision_shape);
+            shared_ptr<b2PolygonShape> shape = reinterpret_pointer_cast<b2PolygonShape>(collision_object);
 
             Vector2 scale = Vector2(1, 1);
 
@@ -45,7 +45,7 @@ void CollisionShape2D::draw() {
     }
 }
 
-void CollisionShape2D::onParentGlobalScaleChanged(Vector2 old_global_scale) {
+void CollisionObject2D::onParentGlobalScaleChanged(Vector2 old_global_scale) {
     super::onParentGlobalScaleChanged(old_global_scale);
 
     if (!getUseRelativeScale() || attached_fixture == NULL) {
@@ -55,12 +55,12 @@ void CollisionShape2D::onParentGlobalScaleChanged(Vector2 old_global_scale) {
     scaleChanged(old_global_scale);
 }
 
-void CollisionShape2D::enteredTree() {
+void CollisionObject2D::enteredTree() {
     super::enteredTree();
     scaleChanged(base_scale);
 }
 
-void CollisionShape2D::scaleChanged(Vector2 old_scale) {
+void CollisionObject2D::scaleChanged(Vector2 old_scale) {
 
     if (attached_fixture == NULL) {
         return;
@@ -72,19 +72,19 @@ void CollisionShape2D::scaleChanged(Vector2 old_scale) {
     switch (attached_fixture->GetShape()->GetType()) {
         case b2Shape::Type::e_polygon: {
 
-            shared_ptr<b2PolygonShape> shape = reinterpret_pointer_cast<b2PolygonShape>(collision_shape);
+            shared_ptr<b2PolygonShape> shape = reinterpret_pointer_cast<b2PolygonShape>(collision_object);
             for (int i = 0; i < shape->m_count; i++) {
                 shape->m_vertices[i].x *= multiplier.x; 
                 shape->m_vertices[i].y *= multiplier.y; 
             }
 
-            SIGNAL_POLYGON_CHANGED.emit();
+            SIGNAL_SHAPE_CHANGED.emit();
 
         }
     }
 }
 
-void CollisionShape2D::setBoxShape(float width, float height, Vector2 position, float rotation) {
+void CollisionObject2D::setBoxShape(float width, float height, Vector2 position, float rotation) {
     base_scale = getGlobalScale();
 
     width = PhysicsServer::world2Phys2(width) * base_scale.x;
@@ -93,36 +93,36 @@ void CollisionShape2D::setBoxShape(float width, float height, Vector2 position, 
     shared_ptr<b2PolygonShape> shape = make_shared<b2PolygonShape>();
     shape->SetAsBox(width / 2.0f, height / 2.0f, b2Vec2((width / 2.0f) + PhysicsServer::world2Phys2(position.x), (height / 2.0f) + PhysicsServer::world2Phys2(position.y)), rotation);
 
-    collision_shape = shape;
+    collision_object = shape;
     
-    SIGNAL_POLYGON_CHANGED.emit();
+    SIGNAL_SHAPE_CHANGED.emit();
 }
 
-void CollisionShape2D::setBoxShape(Vector2 size, Vector2 position, float rotation) {
+void CollisionObject2D::setBoxShape(Vector2 size, Vector2 position, float rotation) {
     setBoxShape(size.x, size.y, position, rotation);
 }
 
-bool CollisionShape2D::hasShape() {
-    return collision_shape != NULL;
+bool CollisionObject2D::hasShape() {
+    return collision_object != NULL;
 }
 
-shared_ptr<b2Shape> CollisionShape2D::getShape() {
-    ASSERT(collision_shape != NULL);
-    return collision_shape;
+shared_ptr<b2Shape> CollisionObject2D::getShape() {
+    ASSERT(collision_object != NULL);
+    return collision_object;
 }
 
-b2Shape::Type CollisionShape2D::getType() {
-    ASSERT(collision_shape != NULL);
-    return collision_shape->GetType();
+b2Shape::Type CollisionObject2D::getType() {
+    ASSERT(collision_object != NULL);
+    return collision_object->GetType();
 }
 
-void CollisionShape2D::attachToBody(PhysicsBody2D* body, b2Fixture* fixture) {
+void CollisionObject2D::attachToBody(PhysicsBody2D* body, b2Fixture* fixture) {
     ASSERT(attached_body == NULL && attached_fixture == NULL);
     attached_body = body;
     attached_fixture = fixture;
 }
 
-void CollisionShape2D::detachFromBody() {
+void CollisionObject2D::detachFromBody() {
     ASSERT(attached_body != NULL && attached_fixture != NULL);
     attached_body = NULL;
     attached_fixture = NULL;

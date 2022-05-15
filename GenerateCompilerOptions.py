@@ -70,10 +70,10 @@ if generate_settings:
     
     data += "\n/* Platform in use */\n\n"
     data += f"#define PLATFORM PLATFORM_{env.PLATFORM_NAME.upper()}"
-
+    
     data += f"\n\n/* Enable debug mode */\n\n#define DEBUG_ENABLED {str(GetOption('target') == 'debug').lower()}"
-
-    # !todo
+    
+    # TODO
     data += "\n\n#define PHYSICS_2D_ENABLED false\n#define PHYSICS_3D_ENABLED true"
 
     data += "\n\n#endif\n"

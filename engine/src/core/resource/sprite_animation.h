@@ -34,18 +34,22 @@ class SpriteAnimation: public Resource {
 class SpriteAnimationSet: public Resource {
     private:
         friend struct LocalResourcePool;
-        struct LocalResourcePool: public ResourcePool {
+        struct LocalResourcePool {
+            template<typename MapType, typename KeyType>
+            void eraseMapKey(MapType* map, KeyType key) {
+                map->erase(key);
+            }
             shared_ptr<SpriteAnimationSet> getResource(string file_path, string base_directory_override = "//");
             private:
                 unordered_map<string, unordered_map<string, weak_ptr<SpriteAnimationSet>>> pool;
         };
+        
+        static LocalResourcePool resource_pool;
 
     public:
 
-        REGISTER_RESOURCE(SpriteAnimationSet, LocalResourcePool);
-
         static shared_ptr<SpriteAnimationSet> getInstance(string _file_path, string _base_directory_override = "//") {
-            return getPool()->getResource(_file_path, _base_directory_override);
+            return resource_pool.getResource(_file_path, _base_directory_override);
         }
 
         bool hasAnimation(string animation_key);

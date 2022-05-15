@@ -2,7 +2,7 @@
 
 #include "common/utils.h"
 #include "common/draw.h"
-#include "physics/node/collision_shape_3d.h"
+#include "physics/node/collision_object_3d.h"
 
 #include <box2d/box2d.h>
 #include <stdlib.h>
@@ -15,6 +15,30 @@ const float PhysicsServer::world_scale_2d = 13.0f;
 #if PHYSICS_3D_ENABLED
 const float PhysicsServer::world_scale_3d = 1.0f;
 #endif
+
+#include "LinearMath/btIDebugDraw.h"
+
+class GLDebugDrawer : public btIDebugDraw {
+    int mode = DBG_DrawAabb;
+
+    public:
+
+        GLDebugDrawer() {}
+
+        void drawLine(const btVector3& from, const btVector3& to, const btVector3& fromColor, const btVector3& toColor) {
+            // drawLine(from, to, fromColor);
+        };
+        void drawLine(const btVector3& from, const btVector3& to, const btVector3& colour) {
+            // Draw::drawLine(from, to, colour);
+        };
+        void drawSphere(const btVector3& p, btScalar radius, const btVector3& color) {};
+        void drawTriangle(const btVector3& a, const btVector3& b, const btVector3& c, const btVector3& color, btScalar alpha) {};
+        void drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color) {};
+        void reportErrorWarning(const char* warningString) {};
+        void draw3dText(const btVector3& location, const char* textString) {};
+        void setDebugMode(int debugMode) { mode = debugMode; };
+        int getDebugMode() const { return mode; }
+};
 
 PhysicsServer::PhysicsServer() {
     ASSERT(singleton == NULL);
@@ -34,7 +58,10 @@ PhysicsServer::PhysicsServer() {
 
     world_3d = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, config);
 
-    
+    #if PLATFORM != PLATFORM_VITA
+    world_3d->setDebugDrawer(new GLDebugDrawer);
+    #endif
+
     // dInitODE2(0);
     // world_3d = dWorldCreate();
     // main_space = dHashSpaceCreate(NULL);
@@ -89,8 +116,8 @@ PhysicsServer* PhysicsServer::getSingleton() {
 
 // void PhysicsServer::nearCallback(void *data, dGeomID o1, dGeomID o2) {
 
-//     CollisionShape3D* A = reinterpret_cast<CollisionShape3D*>(dGeomGetData(o1));
-//     CollisionShape3D* B = reinterpret_cast<CollisionShape3D*>(dGeomGetData(o2));
+//     CollisionObject3D* A = reinterpret_cast<CollisionObject3D*>(dGeomGetData(o1));
+//     CollisionObject3D* B = reinterpret_cast<CollisionObject3D*>(dGeomGetData(o2));
 
 //     ASSERT(A);
 //     ASSERT(B);
@@ -125,7 +152,7 @@ PhysicsServer* PhysicsServer::getSingleton() {
 //         dJointID c = dJointCreateContact(world_3d, main_group, &contacts[i]);
 //         dJointAttach(c, b1, b2);
 
-//         CollisionShape3D::Contact* contact = new CollisionShape3D::Contact(&contacts[i], A, B);
+//         CollisionObject3D::Contact* contact = new CollisionObject3D::Contact(&contacts[i], A, B);
 //         A->contacts.push_back(contact);
 //         B->contacts.push_back(contact);
 //     }
@@ -143,6 +170,11 @@ void PhysicsServer::physicsProcess(float delta) {
 
     #if PHYSICS_3D_ENABLED
     world_3d->stepSimulation(time_step * delta);
+
+    #if PLATFORM != PLATFORM_VITA
+    world_3d->debugDrawWorld();
+    #endif
+    
     #endif
 }
 

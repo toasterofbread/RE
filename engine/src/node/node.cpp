@@ -63,8 +63,7 @@ void Node::removedFromNode(Node* former_parent_node) {
 void Node::process(float delta) {
     vector<Node*>* nodes = getChildren();
     for (auto i = nodes->cbegin(); i != nodes->cend(); ++i) {
-        Node& node = **i;
-        node.process(delta);
+        (*i)->process(delta);
     }
 }
 

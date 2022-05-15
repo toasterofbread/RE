@@ -5,11 +5,15 @@
 #include "physics_body_2d.h"
 
 #include "engine/src/physics/physics_server.h"
-#include "engine/src/physics/node/collision_shape_2d.h"
+#include "engine/src/physics/node/collision_object_2d.h"
 #include "engine/src/node/types/timer.h"
 
 #define FLOOR_ANGLE_THRESHOLD 0.01
 #define p_floor_max_angle DEG2RAD(45.0f)
+
+void PhysicsBody2D::init() {
+    definition.userData.pointer = reinterpret_cast<uintptr_t>(this);
+}
 
 void PhysicsBody2D::physicsProcess(float delta) {
     super::physicsProcess(delta);
@@ -204,20 +208,20 @@ void PhysicsBody2D::removedFromNode(Node* former_parent_node) {
 }
 
 void PhysicsBody2D::addChild(Node* child) {
-    if (CollisionShape2D* collision_shape = dynamic_cast<CollisionShape2D*>(child)) {
-        addShape(collision_shape);
+    if (CollisionObject2D* collision_object = dynamic_cast<CollisionObject2D*>(child)) {
+        addShape(collision_object);
     }
     super::addChild(child);
 }
 
 void PhysicsBody2D::removeChild(Node* child) {
     super::removeChild(child);
-    if (CollisionShape2D* collision_shape = dynamic_cast<CollisionShape2D*>(child)) {
-        removeShape(collision_shape);
+    if (CollisionObject2D* collision_object = dynamic_cast<CollisionObject2D*>(child)) {
+        removeShape(collision_object);
     }
 }
 
-void PhysicsBody2D::addShape(CollisionShape2D* shape) {
+void PhysicsBody2D::addShape(CollisionObject2D* shape) {
 
     ASSERT(!vectorContainsValue(added_shapes, shape));
     ASSERT(!shape->isAttachedToBody());
@@ -226,13 +230,13 @@ void PhysicsBody2D::addShape(CollisionShape2D* shape) {
         createShapeFixture(shape);
     }
 
-    shape->SIGNAL_POLYGON_CHANGED.connect(&PhysicsBody2D::onShapePolygonChanged, this, false, shape);
+    shape->SIGNAL_SHAPE_CHANGED.connect(&PhysicsBody2D::onShapeShapeChanged, this, false, shape);
 
     added_shapes.push_back(shape);
     SIGNAL_SHAPE_ADDED.emit(shape);
 }
 
-void PhysicsBody2D::removeShape(CollisionShape2D* shape) {
+void PhysicsBody2D::removeShape(CollisionObject2D* shape) {
     SIGNAL_SHAPE_REMOVED.emit(shape);
 
     ASSERT(vectorContainsValue(added_shapes, shape));
@@ -262,7 +266,7 @@ void PhysicsBody2D::createBody() {
     ASSERT(body == NULL);
     body = PhysicsServer::getSingleton()->createBody(&definition);
 
-    for (CollisionShape2D* shape : added_shapes) {
+    for (CollisionObject2D* shape : added_shapes) {
         createShapeFixture(shape);
     }
 }
@@ -273,7 +277,7 @@ void PhysicsBody2D::destroyBody() {
 }
 
 
-void PhysicsBody2D::onShapePolygonChanged(CollisionShape2D* shape) {
+void PhysicsBody2D::onShapeShapeChanged(CollisionObject2D* shape) {
 
     if (body == NULL) {
         return;
@@ -288,7 +292,7 @@ void PhysicsBody2D::onShapePolygonChanged(CollisionShape2D* shape) {
     }
 }
 
-void PhysicsBody2D::createShapeFixture(CollisionShape2D* shape) {
+void PhysicsBody2D::createShapeFixture(CollisionObject2D* shape) {
     ASSERT(body != NULL);
     ASSERT(shape->hasShape());
 
@@ -300,10 +304,10 @@ void PhysicsBody2D::createShapeFixture(CollisionShape2D* shape) {
     shape->attachToBody(this, body->CreateFixture(&fixture_def));
 }
 
-void PhysicsBody2D::destroyShapeFixture(CollisionShape2D* shape) {
+void PhysicsBody2D::destroyShapeFixture(CollisionObject2D* shape) {
     ASSERT(body != NULL);
     body->DestroyFixture(shape->getAttachedFixture());
-    shape->SIGNAL_POLYGON_CHANGED.disconnect(this);
+    shape->SIGNAL_SHAPE_CHANGED.disconnect(this);
     shape->detachFromBody();
 }
 

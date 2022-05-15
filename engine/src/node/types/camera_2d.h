@@ -10,13 +10,9 @@ class SceneTree;
 class Camera2D: public Node2D {
     
     public:
-        REGISTER_NODE_WITH_CONSTRUCTOR(Camera2D, Node2D, {}, {
-            camera.offset = Vector2::ZERO();
-            camera.target = Vector2::ZERO();
-            camera.rotation = 0.0f;
-            camera.zoom = 1.0f;
-        });
+        REGISTER_NODE(Camera2D, Node2D, {});
 
+        void init();
         void kill();
 
         RayCam2D* getCamera() {

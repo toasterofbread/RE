@@ -26,7 +26,7 @@ void SceneTree::process(float delta) {
     current_state = STATE::PROCESS;
 
     for (auto i = root_node->getChildren()->begin(); i != root_node->getChildren()->end(); ++i) {
-        // !todo proper idle / physics frame implementation
+        // TODO proper idle / physics frame implementation
         (*i)->process(delta);
         (*i)->physicsProcess(delta);
     }

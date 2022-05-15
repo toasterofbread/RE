@@ -6,6 +6,15 @@
 #define MAX_FOV 100.0f
 #define MIN_FOV 10.0f
 
+void Camera3D::init() {
+    super::init();
+    camera.position = Vector3::ZERO();
+    camera.target = Vector3(0, 0, 0);
+    camera.up = Vector3(0, 1, 0);
+    camera.fovy = 65.0f;
+    camera.projection = CAMERA_PERSPECTIVE;
+}
+
 void Camera3D::ready() {
     super::ready();
     if (getEnableOnReady()) {
@@ -37,11 +46,11 @@ void Camera3D::disable() {
     getTree()->setEnabledCamera3D(NULL);
 }
 
-void Camera3D::setTarget(Vector3 value) {
-    camera.target = value;
+Vector3 Camera3D::getCameraPosition() {
+    return camera.position;
 }
 
-Vector3 Camera3D::getTarget() {
+Vector3 Camera3D::getCameraTarget() {
     return camera.target;
 }
 

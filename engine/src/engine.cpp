@@ -18,7 +18,7 @@
 #include "engine/src/core/resource/sprite_animation.h"
 #include "engine/src/physics/physics_server.h"
 #include "engine/src/physics/node/physics_body_2d.h"
-#include "engine/src/physics/node/collision_shape_2d.h"
+#include "engine/src/physics/node/collision_object_2d.h"
 #include "node/types/camera_2d.h"
 #include "node/types/camera_3d.h"
 
@@ -47,7 +47,7 @@ Engine::Engine() {
 
     #if PHYSICS_2D_ENABLED
     PhysicsBody2D::registerNode();
-    CollisionShape2D::registerNode();
+    CollisionObject2D::registerNode();
     #endif
 }
 
@@ -69,9 +69,15 @@ void Engine::process(float delta) {
     for (auto i = all_resources.begin(); i != all_resources.end(); ++i) {
         (*i)->process(delta);
     }
-    for (auto i = all_inputevents.begin(); i != all_inputevents.end(); ++i) {
-        (*i)->process(delta);
+
+    #if PLATFORM != PLATFORM_VITA
+    if (previous_screen_size.isZero()) {
+        previous_screen_size = OS::getScreenSize();
     }
+    else if (previous_screen_size != OS::getScreenSize()) {
+        SIGNAL_SCREEN_SIZE_CHANGED.emit();
+    }
+    #endif
 
     const int x_basis = OS::getScreenWidth();
     Draw::drawText("FPS " + stringPadDecimals(to_string(1.0f / GetFrameTime()), 1), Vector2(x_basis - 55, 10), Colour::GREEN());
@@ -122,14 +128,6 @@ void Engine::resourceDeleted(Resource* resource) {
 }
 
 // - InputEvent management -
-
-void Engine::inputEventCreated(InputEvent* event) {
-    all_inputevents.push_back(event);
-}
-
-void Engine::inputEvenDeleted(InputEvent* event) {
-    vectorRemoveValue(&all_inputevents, event);
-}
 
 int Engine::getNewNodeId() {
     current_node_id_max++;

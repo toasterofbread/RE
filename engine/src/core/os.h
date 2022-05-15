@@ -24,9 +24,6 @@ namespace OS {
     // Closes the application
     void closeApplication();
 
-    void beginDrawing();
-    void endDrawing();
-
     // Returns time since application start in seconds
     double getTime();
 
