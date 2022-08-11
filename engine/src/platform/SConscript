@@ -5,8 +5,8 @@ from spectre7 import utils
 Import("env")
 
 env.Replace(
-    CPPPATH = [".", env.ENGINE_SRC, join(env.ENGINE_SRC, "platform", env.PLATFORM_NAME), "include"],
-    CCFLAGS = ["-std=c++17", "-g", "-fpermissive", "-Wundef", "-fdiagnostics-color=always", f"-DGIT_COMMIT_HASH='\"{env.getGitHash()}\"'", "-Linclude/lib/vita", "-Wl,-rpath include/lib/vita", "-lbox2d"],
+    CPPPATH = [".", env.ENGINE_SRC, join(env.ENGINE_SRC, "platform", env.PLATFORM_NAME), "include", "include/bullet"],
+    CCFLAGS = ["-std=c++17", "-g", "-fpermissive", "-fdiagnostics-color=always", f"-DGIT_COMMIT_HASH='\"{env.getGitHash()}\"'", "-Linclude/lib/vita", "-Wl,-rpath include/lib/vita", "-lbox2d"],
     LINKFLAGS = ["-g"],
     LIBPATH = [env.LIB_DIR],
     LIBS = [

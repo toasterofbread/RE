@@ -5,7 +5,7 @@
 #include "common/vector2.h"
 
 #include <raylib/raymath.h>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include "common/raylib.h"
 #include <box2d/box2d.h>
 #include <string>

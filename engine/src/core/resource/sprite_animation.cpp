@@ -1,7 +1,7 @@
 #include "sprite_animation.h"
 
 #include <unordered_map>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 using json = nlohmann::json;
 using namespace std;
 
