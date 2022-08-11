@@ -3,7 +3,7 @@
 
 #include "engine/compiler_settings.h"
 
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 #include "common/raylib.h"
 #include <box2d/box2d.h>
 #include <string>

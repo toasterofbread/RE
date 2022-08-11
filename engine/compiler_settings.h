@@ -10,8 +10,8 @@
 
 /* Available platforms */
 
-#define PLATFORM_RAYLIB 2
-#define PLATFORM_VITA 3
+#define PLATFORM_VITA 2
+#define PLATFORM_RAYLIB 3
 
 /* Platform in use */
 

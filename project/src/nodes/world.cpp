@@ -9,7 +9,7 @@
 
 #include "common/raylib.h"
 #include <btBulletCollisionCommon.h>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 World* World::singleton = NULL;

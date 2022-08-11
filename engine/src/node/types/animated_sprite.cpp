@@ -1,7 +1,7 @@
 #include "animated_sprite.h"
 
 #include <memory>
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 #include "common/utils.h"
