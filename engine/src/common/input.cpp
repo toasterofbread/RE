@@ -19,9 +19,9 @@ bool Input::isButtonPressed(GamepadButton button) {
 bool Input::isButtonPressed(MouseButton button) {
     switch (button) {
         case MouseButton::MOUSE_WHEEL_UP:
-            return GetMouseWheelMove() == 1.0f;
+            return GetMouseWheelMove() >= 1.0f;
         case MouseButton::MOUSE_WHEEL_DOWN:
-            return GetMouseWheelMove() == -1.0f;
+            return GetMouseWheelMove() <= -1.0f;
         default:
             return IsMouseButtonDown(button);
     }
@@ -36,9 +36,9 @@ bool Input::isButtonJustPressed(GamepadButton button) {
 bool Input::isButtonJustPressed(MouseButton button) {
     switch (button) {
         case MouseButton::MOUSE_WHEEL_UP:
-            return GetMouseWheelMove() == 1.0f;
+            return GetMouseWheelMove() >= 1.0f;
         case MouseButton::MOUSE_WHEEL_DOWN:
-            return GetMouseWheelMove() == -1.0f;
+            return GetMouseWheelMove() <= -1.0f;
         default:
             return IsMouseButtonPressed(button);
     }
